@@ -4,7 +4,7 @@
       <v-app-bar title="Lemmy Seeder">
         <template v-slot:append>
           <v-btn to="/" class="mx-2">Home</v-btn>
-          <v-btn to="/manage" class="mx-2">Manage Instance</v-btn>
+          <TheHeaderAuth />
         </template>
       </v-app-bar>
       <v-main

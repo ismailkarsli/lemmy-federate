@@ -13,25 +13,26 @@ datasource db {
 model Instance {
   id          Int           @id @default(autoincrement())
   host        String        @unique
-  bot_name    String
-  bot_pass    String
-  nsfw        Boolean
+  enabled     Boolean       @default(false)
+  bot_name    String?
+  bot_pass    String?
+  nsfw        Boolean       @default(false)
   fediseer    FediseerUsage @default(BLACKLIST_ONLY)
   communities Community[]
   allowedBy   Instance[]    @relation("InstanceAllows")
   allowed     Instance[]    @relation("InstanceAllows")
-  User        User[]
+  users       User[]
 }
 
 model User {
-  id         Int       @id @default(autoincrement())
-  name       String
-  instance   Instance  @relation(fields: [instanceId], references: [id])
+  id         Int      @id @default(autoincrement())
+  username   String
+  instance   Instance @relation(fields: [instanceId], references: [id])
   instanceId Int
-  token      String?
-  tokenExp   DateTime?
+  code       String
+  codeExp    DateTime
 
-  @@unique([name, instanceId])
+  @@unique([username, instanceId])
 }
 
 model Community {
