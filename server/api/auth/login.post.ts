@@ -1,4 +1,4 @@
-import { PrismaClient, User } from "@prisma/client";
+import { Instance, PrismaClient, User } from "@prisma/client";
 import { getGuarantees } from "@/lib/fediseer";
 import { LemmyHttp } from "lemmy-js-client";
 import { randomNumber, sendAuthCode } from "~/server/utils";
@@ -14,7 +14,9 @@ const prisma = new PrismaClient();
 
 type ResponseType =
   | {
-      user: Omit<User, "code" | "codeExp">;
+      user: Omit<User, "code" | "codeExp"> & {
+        instance: Instance;
+      };
       token: string;
     }
   | {
@@ -48,23 +50,23 @@ export default defineEventHandler(async function (
       });
     }
 
-    const lemmyClient = new LemmyHttp(`https://${body.instance}`);
-    const siteView = await lemmyClient.getSite();
-    const isAdmin = siteView.admins.some(
-      ({ person }) =>
-        person.name === body.username && !person.banned && !person.deleted
-    );
-    if (!isAdmin) {
-      throw createError({
-        statusCode: 403,
-        message: "You are not an admin on this instance",
-      });
-    }
-
     instance = await prisma.instance.create({
       data: {
         host: body.instance,
       },
+    });
+  }
+
+  const lemmyClient = new LemmyHttp(`https://${body.instance}`);
+  const siteView = await lemmyClient.getSite();
+  const isAdmin = siteView.admins.some(
+    ({ person }) =>
+      person.name === body.username && !person.banned && !person.deleted
+  );
+  if (!isAdmin) {
+    throw createError({
+      statusCode: 403,
+      message: "You are not an admin on this instance",
     });
   }
 
@@ -97,7 +99,7 @@ export default defineEventHandler(async function (
         instance: user.instance.host,
         iss: "lemmy-federate",
         iat: Math.floor(Date.now() / 1000),
-        exp: Math.floor(Date.now() + ms("3 months") / 1000),
+        exp: Math.floor((Date.now() + ms("90 days")) / 1000),
         nbf: Math.floor(Date.now() / 1000),
       },
       SECRET_KEY

@@ -77,7 +77,7 @@ function back() {
     </v-list>
 
     <form v-else @submit.prevent="submit">
-      <v-card width="360" class="px-4 pt-8">
+      <v-card width="360" class="px-4 py-8">
         <v-text-field
           v-model="username"
           label="Username"

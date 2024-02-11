@@ -1,15 +1,18 @@
-import type { User } from "@prisma/client";
+import type { User, Instance } from "@prisma/client";
 import { defineStore } from "pinia";
 
+export type UserWithInstance = Omit<User, "code" | "codeExp"> & {
+  instance: Instance;
+};
 interface UserPayloadInterface {
   token: string;
-  user: Omit<User, "code" | "codeExp">;
+  user: UserWithInstance;
 }
 
 export const useAuthStore = defineStore("auth", {
   state: (): {
     authenticated: boolean;
-    user: Omit<User, "code" | "codeExp"> | null;
+    user: UserWithInstance | null;
   } => ({
     authenticated: false,
     user: null,
@@ -24,6 +27,7 @@ export const useAuthStore = defineStore("auth", {
     logout() {
       const tokenCookie = useCookie("token");
       this.authenticated = false;
+      this.user = null;
       tokenCookie.value = null;
     },
   },

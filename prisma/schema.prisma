@@ -11,23 +11,25 @@ datasource db {
 }
 
 model Instance {
-  id          Int           @id @default(autoincrement())
-  host        String        @unique
-  enabled     Boolean       @default(false)
-  bot_name    String?
-  bot_pass    String?
-  nsfw        Boolean       @default(false)
-  fediseer    FediseerUsage @default(BLACKLIST_ONLY)
-  communities Community[]
-  allowedBy   Instance[]    @relation("InstanceAllows")
-  allowed     Instance[]    @relation("InstanceAllows")
-  users       User[]
+  id               Int               @id @default(autoincrement())
+  host             String            @unique
+  enabled          Boolean           @default(false)
+  bot_name         String?
+  bot_pass         String?
+  auto_add         Boolean           @default(false)
+  nsfw             NSFW              @default(BLOCK)
+  fediseer         FediseerUsage     @default(BLACKLIST_ONLY)
+  communities      Community[]
+  allowedBy        Instance[]        @relation("InstanceAllows")
+  allowed          Instance[]        @relation("InstanceAllows")
+  users            User[]
+  communityFollows CommunityFollow[]
 }
 
 model User {
   id         Int      @id @default(autoincrement())
   username   String
-  instance   Instance @relation(fields: [instanceId], references: [id])
+  instance   Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId Int
   code       String
   codeExp    DateTime
@@ -36,17 +38,43 @@ model User {
 }
 
 model Community {
-  id         Int      @id @default(autoincrement())
+  id         Int               @id @default(autoincrement())
   name       String
-  instance   Instance @relation(fields: [instanceId], references: [id])
+  instance   Instance          @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId Int
+  follows    CommunityFollow[]
 
   @@unique([name, instanceId])
+}
+
+model CommunityFollow {
+  id          Int                   @id @default(autoincrement())
+  instance    Instance              @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId  Int
+  community   Community             @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  communityId Int
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  status      CommunityFollowStatus @default(IN_PROGRESS)
+
+  @@unique([instanceId, communityId])
 }
 
 enum FediseerUsage {
   NONE
   BLACKLIST_ONLY
   WHITELIST_ONLY
-  FULL
+}
+
+enum NSFW {
+  ALLOW
+  BLOCK
+  ONLY
+}
+
+enum CommunityFollowStatus {
+  DONE
+  IN_PROGRESS
+  ERROR
+  NOT_ALLOWED
 }
