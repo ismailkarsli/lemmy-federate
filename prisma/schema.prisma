@@ -77,4 +77,5 @@ enum CommunityFollowStatus {
   IN_PROGRESS
   ERROR
   NOT_ALLOWED
+  NOT_AVAILABLE
 }

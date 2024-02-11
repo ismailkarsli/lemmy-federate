@@ -9,6 +9,15 @@ const savedSnackbar = ref({
 const showPassword = ref(false);
 const allowedInstance = ref<number | null>(null);
 
+const filteredAllInstances = computed(() => {
+  if (instance) {
+    return allInstances.value?.instances.filter(
+      (i) => !instance.value?.allowed.some((a) => a.id === i.id)
+    );
+  }
+  return [];
+});
+
 const submit = async () => {
   try {
     await $fetch("/api/instance", {
@@ -230,26 +239,19 @@ const deleteAllowed = async (id: number) => {
         <v-app-bar-title>Allowed instances</v-app-bar-title>
       </v-col>
       <v-col cols="12">
-        <v-alert variant="tonal" density="compact" type="warning" prominent>
-          Leave empty to allow all. If you add instances here, the options above
-          will be ignored and only the allowed instances here will be able to
-          federate.
-        </v-alert>
-      </v-col>
-      <v-col cols="12">
         <v-autocomplete
           label="Search an instance"
           v-model="allowedInstance"
-          :items="allInstances?.instances"
+          :items="filteredAllInstances"
           item-title="host"
           item-value="id"
         />
       </v-col>
       <v-col cols="12">
         <v-row>
-          <v-col v-for="i in instance.allowed" :key="i.id">
+          <v-col v-for="i in instance.allowed" :key="i.id" class="flex-grow-0">
             <v-chip class="mr-2" color="primary" label>
-              {{ instance.host }}
+              {{ i.host }}
               <template v-slot:close>
                 <v-icon @click.prevent="deleteAllowed(i.id)">mdi-close</v-icon>
               </template>

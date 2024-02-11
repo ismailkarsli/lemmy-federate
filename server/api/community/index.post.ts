@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { LemmyHttp } from "lemmy-js-client";
+import { conditionalFollowWithAllInstances } from "~/server/utils";
 
 const prisma = new PrismaClient();
 
@@ -69,14 +70,14 @@ export default defineEventHandler(async function (event) {
       },
     },
     update: {},
+    include: {
+      instance: true,
+    },
   });
 
-  /**
-   * TODO: Run an initial federation here
-   */
+  conditionalFollowWithAllInstances(addedCommunity);
 
   return {
     message: "Community added successfully",
-    community: addedCommunity,
   };
 });
