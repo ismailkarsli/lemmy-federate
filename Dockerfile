@@ -20,4 +20,4 @@ COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules ./node_modules
 
 EXPOSE 3000
-CMD ["migrate-and-start.sh"]
+CMD ["./migrate-and-start.sh"]
