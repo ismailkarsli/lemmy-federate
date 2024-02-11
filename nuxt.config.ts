@@ -14,7 +14,7 @@ export default defineNuxtConfig({
       });
     },
     "@pinia/nuxt",
-    //...
+    "nuxt-scheduler",
   ],
   vite: {
     vue: {
@@ -22,5 +22,8 @@ export default defineNuxtConfig({
         transformAssetUrls,
       },
     },
+  },
+  typescript: {
+    shim: false,
   },
 });

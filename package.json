@@ -25,6 +25,7 @@
   "devDependencies": {
     "@types/jsonwebtoken": "^9.0.5",
     "@types/ms": "^0.7.34",
+    "nuxt-scheduler": "^0.1.9",
     "prisma": "^5.9.1",
     "vite-plugin-vuetify": "^2.0.1",
     "vuetify": "^3.5.2"

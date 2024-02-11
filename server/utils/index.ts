@@ -54,8 +54,9 @@ export const sendAuthCode = async (
 };
 
 /**
- * @param client Authenticated LemmyHttp bot client
- * @param community Target community
+ * Follows the community if it's applicable and returns the status.
+ * @param communityFollow
+ * @returns The status of the follow operation.
  */
 export const conditionalFollow = async (
   communityFollow: CommunityFollow & {
@@ -164,64 +165,11 @@ export const conditionalFollow = async (
   return CommunityFollowStatus.IN_PROGRESS;
 };
 
-async function createCommunityFollowRecords({
-  instanceIds,
-  communityIds,
-}: {
-  instanceIds?: number[];
-  communityIds?: number[];
-}) {
-  const instances = await prisma.instance.findMany({
-    where: {
-      id: {
-        in: instanceIds,
-      },
-    },
-  });
-  const communities = await prisma.community.findMany({
-    where: {
-      id: {
-        in: communityIds,
-      },
-    },
-  });
-
-  for (const instance of instances) {
-    for (const community of communities) {
-      await prisma.communityFollow.upsert({
-        where: {
-          instanceId_communityId: {
-            instanceId: instance.id,
-            communityId: community.id,
-          },
-        },
-        update: {},
-        create: {
-          instance: {
-            connect: {
-              id: instance.id,
-            },
-          },
-          community: {
-            connect: {
-              id: community.id,
-            },
-          },
-        },
-      });
-    }
-  }
-}
-
 export const conditionalFollowWithAllInstances = async (
   community: Community & {
     instance: Instance;
   }
 ) => {
-  await createCommunityFollowRecords({
-    communityIds: [community.id],
-  });
-
   const communityFollows = await prisma.communityFollow.findMany({
     where: {
       communityId: community.id,
@@ -256,6 +204,39 @@ export const conditionalFollowWithAllInstances = async (
     }
   }
 };
+
+export async function resetSubscriptions(instance: Instance) {
+  try {
+    if (!(instance.bot_name && instance.bot_pass)) {
+      throw new Error("Bot name and password are required");
+    }
+    const client = new LemmyHttpFixed(`https://${instance.host}`);
+    await client.login({
+      username_or_email: instance.bot_name,
+      password: instance.bot_pass,
+    });
+    let page = 0;
+    while (true) {
+      const subscriptions = await client.listCommunities({
+        type_: "Subscribed",
+        limit: 50,
+        page: ++page,
+      });
+      if (subscriptions.communities.length === 0) {
+        break;
+      }
+
+      for (const subscription of subscriptions.communities) {
+        await client.followCommunity({
+          community_id: subscription.community.id,
+          follow: false,
+        });
+      }
+    }
+  } catch (e) {
+    console.error("error", e);
+  }
+}
 
 // On some functions auth token is not included in the request like /community/follow or /private_message
 class LemmyHttpFixed extends LemmyHttp {

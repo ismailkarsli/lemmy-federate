@@ -29,6 +29,7 @@ const { data, pending } = useFetch("/api/instance/all", {
               <th class="text-left">Instance</th>
               <th class="text-left">Status</th>
               <th class="text-left">NSFW</th>
+              <th class="text-left">Allow list</th>
             </tr>
           </thead>
           <tbody v-if="!pending">
@@ -66,6 +67,28 @@ const { data, pending } = useFetch("/api/instance/all", {
                   class="mr-2"
                   >Allow only NSFW
                 </v-chip>
+              </td>
+              <td>
+                <v-menu v-if="instance.allowed.length" location="bottom">
+                  <template v-slot:activator="{ props }">
+                    <v-chip color="warning" class="mr-2" v-bind="props">
+                      Allowing {{ instance.allowed.length }} instances
+                    </v-chip>
+                  </template>
+
+                  <v-card min-width="200">
+                    <v-list density="compact">
+                      <v-list-item v-for="i in instance.allowed" :key="i.id">
+                        <v-list-item-title>
+                          {{ i.host }}
+                        </v-list-item-title>
+                      </v-list-item>
+                    </v-list>
+                  </v-card>
+                </v-menu>
+                <v-chip v-else color="success" class="mr-2"
+                  >All instances</v-chip
+                >
               </td>
             </tr>
           </tbody>

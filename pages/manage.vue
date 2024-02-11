@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const { data: instance, pending, refresh } = useFetch("/api/instance");
 const { data: allInstances } = useFetch("/api/instance/all");
-const savedSnackbar = ref({
+const snackbar = ref({
   value: false,
   success: false,
   message: "",
@@ -27,14 +27,35 @@ const submit = async () => {
       },
       body: JSON.stringify(instance.value),
     });
-    savedSnackbar.value = {
+    snackbar.value = {
       value: true,
       success: true,
       message: "Instance settings saved",
     };
   } catch (error) {
     if (isFetchError(error)) {
-      savedSnackbar.value = {
+      snackbar.value = {
+        value: true,
+        success: false,
+        message: error.data.message || error.message,
+      };
+    } else throw error;
+  }
+};
+
+const resetSubscriptions = async () => {
+  try {
+    const res = await $fetch("/api/instance/reset-subscriptions", {
+      method: "GET",
+    });
+    snackbar.value = {
+      value: true,
+      success: true,
+      message: res.message,
+    };
+  } catch (error) {
+    if (isFetchError(error)) {
+      snackbar.value = {
         value: true,
         success: false,
         message: error.data.message || error.message,
@@ -57,7 +78,7 @@ watchEffect(async () => {
       });
       allowedInstance.value = null;
       await refresh();
-      savedSnackbar.value = {
+      snackbar.value = {
         value: true,
         success: true,
         message: res.message,
@@ -65,7 +86,7 @@ watchEffect(async () => {
     }
   } catch (error) {
     if (isFetchError(error)) {
-      savedSnackbar.value = {
+      snackbar.value = {
         value: true,
         success: false,
         message: error.data.message || error.message,
@@ -86,14 +107,14 @@ const deleteAllowed = async (id: number) => {
       }),
     });
     await refresh();
-    savedSnackbar.value = {
+    snackbar.value = {
       value: true,
       success: true,
       message: data.message,
     };
   } catch (error) {
     if (isFetchError(error)) {
-      savedSnackbar.value = {
+      snackbar.value = {
         value: true,
         success: false,
         message: error.data.message || error.message,
@@ -127,7 +148,7 @@ const deleteAllowed = async (id: number) => {
           hide-details
         />
         <v-checkbox
-          label="Automatically add new communities"
+          label="Automatically add all communities"
           v-model="instance.auto_add"
           hide-details
         />
@@ -198,38 +219,49 @@ const deleteAllowed = async (id: number) => {
         <v-col cols="12">
           <v-btn type="submit" color="primary">Save</v-btn>
           <!-- client only coz: https://github.com/vuetifyjs/vuetify/issues/15323 -->
-          <client-only>
-            <v-tooltip location="bottom" open-on-hover>
-              <template v-slot:activator="{ props }">
-                <v-btn
-                  class="ml-4"
-                  append-icon="mdi-information"
-                  v-bind="props"
-                  color="error"
-                >
-                  Reset Subscriptions
-                </v-btn>
-              </template>
-              <div>
-                <p class="text-center">
+          <v-menu location="bottom">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                class="ml-4"
+                append-icon="mdi-information"
+                v-bind="props"
+                color="error"
+              >
+                Reset Subscriptions
+              </v-btn>
+            </template>
+
+            <v-card min-width="300">
+              <v-card-text>
+                <p>
                   This will remove <b>all subscriptions</b> of the bot account.
                 </p>
-                <p class="text-center">
+                <p>
                   This is useful when you change the instance settings<br />
                   or disabled the tool.
                 </p>
-              </div>
-            </v-tooltip>
-          </client-only>
+              </v-card-text>
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn variant="text">Cancel</v-btn>
+                <v-btn
+                  color="primary"
+                  variant="text"
+                  @click="resetSubscriptions"
+                  >Save</v-btn
+                >
+              </v-card-actions>
+            </v-card>
+          </v-menu>
         </v-col>
       </v-row>
       <v-snackbar
-        v-model="savedSnackbar.value"
-        :color="savedSnackbar.success ? 'primary' : 'error'"
+        v-model="snackbar.value"
+        :color="snackbar.success ? 'primary' : 'error'"
       >
-        {{ savedSnackbar.message }}
+        {{ snackbar.message }}
         <template v-slot:actions>
-          <v-btn icon="mdi-close" @click="savedSnackbar.value = false" />
+          <v-btn icon="mdi-close" @click="snackbar.value = false" />
         </template>
       </v-snackbar>
     </v-form>
