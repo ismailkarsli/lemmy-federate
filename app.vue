@@ -14,6 +14,25 @@ onMounted(async () => {
     });
   }
 });
+
+useHead({
+  title: "Lemmy Federate",
+  meta: [
+    {
+      name: "description",
+      content:
+        "Lemmy Federate is a tool to federate new communities in the Lemmyverse.",
+    },
+  ],
+});
+useSeoMeta({
+  title: "Lemmy Federate",
+  ogTitle: "Lemmy Federate",
+  description:
+    "Lemmy Federate is a tool to federate new communities in the Lemmyverse.",
+  ogDescription:
+    "Lemmy Federate is a tool to federate new communities in the Lemmyverse.",
+});
 </script>
 
 <template>
