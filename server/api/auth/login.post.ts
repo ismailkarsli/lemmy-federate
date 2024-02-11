@@ -6,6 +6,8 @@ import jwt from "jsonwebtoken";
 import ms from "ms";
 
 const SECRET_KEY = process.env.SECRET_KEY;
+const BLACKLISTED_INSTANCES =
+  process.env.BLACKLISTED_INSTANCES?.split(",") || [];
 if (!SECRET_KEY) {
   throw new Error("SECRET_KEY is required");
 }
@@ -30,6 +32,13 @@ export default defineEventHandler(async function (
     throw createError({
       statusCode: 400,
       message: "Username and instance are required",
+    });
+  }
+
+  if (BLACKLISTED_INSTANCES.includes(body.instance)) {
+    throw createError({
+      statusCode: 403,
+      message: "This instance is blacklisted",
     });
   }
 
