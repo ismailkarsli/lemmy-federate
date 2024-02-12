@@ -94,14 +94,9 @@ export const conditionalFollow = async (
     password: instance.bot_pass,
   });
 
-  /**
-   * Check if the target instance is blocked by the source instance.
-   */
-  const federationStatus = await getFederatedInstances(instance.host);
-  const isBlocked = federationStatus.federated_instances?.blocked.find(
-    (i) => i.domain === community.instance.host
-  );
-  if (isBlocked) return CommunityFollowStatus.NOT_ALLOWED;
+  if (!(await areInstancesFederated(instance.host, community.instance.host))) {
+    return CommunityFollowStatus.NOT_ALLOWED;
+  }
 
   const { community_view } = await client.getCommunity({
     name: `${community.name}@${community.instance.host}`,
@@ -320,4 +315,41 @@ const getFederatedInstances = async (instance: string) => {
     ttl: ms("1 day") / 1000,
   });
   return res;
+};
+
+/**
+ * Checks if two instances are federated with each other.
+ * @param source source instance
+ * @param target target instance
+ * @returns boolean
+ */
+const areInstancesFederated = async (source: string, target: string) => {
+  if (source === target) return true;
+  const { federated_instances: src_list } = await getFederatedInstances(source);
+  const { federated_instances: trg_list } = await getFederatedInstances(target);
+  if (!(src_list && trg_list)) {
+    throw new Error("Couldn't fetch federation list");
+  }
+
+  /**
+   * if instance is using allow list, then we should check from there
+   * else use block list
+   */
+  if (
+    src_list.allowed.length
+      ? !src_list.allowed.some((i) => i.domain === target)
+      : src_list.blocked.some((i) => i.domain === target)
+  ) {
+    return false;
+  }
+
+  if (
+    trg_list.allowed.length
+      ? !trg_list.allowed.some((i) => i.domain === source)
+      : trg_list.blocked.some((i) => i.domain === source)
+  ) {
+    return false;
+  }
+
+  return true;
 };
