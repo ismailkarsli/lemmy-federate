@@ -25,8 +25,7 @@ const communitiesWithProgress = computed(() => {
     const finished = [],
       inProgress = [],
       error = [],
-      notAllowed = [],
-      notAvailable = [];
+      notAllowed = [];
 
     for (const follow of item.follows) {
       switch (follow.status) {
@@ -42,9 +41,6 @@ const communitiesWithProgress = computed(() => {
         case CommunityFollowStatus.NOT_ALLOWED:
           notAllowed.push(follow);
           break;
-        case CommunityFollowStatus.NOT_AVAILABLE:
-          notAvailable.push(follow);
-          break;
       }
     }
     return {
@@ -55,7 +51,6 @@ const communitiesWithProgress = computed(() => {
         inProgress,
         error,
         notAllowed,
-        notAvailable,
       },
     };
   });
@@ -236,29 +231,6 @@ const submit = async () => {
                       <v-list density="compact">
                         <v-list-item
                           v-for="follow in item.progress.error"
-                          :key="follow.id"
-                        >
-                          <v-list-item-title>
-                            {{ follow.instance.host }}
-                          </v-list-item-title>
-                        </v-list-item>
-                      </v-list>
-                    </v-card>
-                  </v-menu>
-                  <v-menu
-                    v-if="item.progress.notAvailable.length"
-                    location="bottom"
-                  >
-                    <template v-slot:activator="{ props }">
-                      <v-chip color="error" class="mr-2" v-bind="props">
-                        {{ item.progress.notAvailable.length }} not available
-                      </v-chip>
-                    </template>
-
-                    <v-card min-width="200">
-                      <v-list density="compact">
-                        <v-list-item
-                          v-for="follow in item.progress.notAvailable"
                           :key="follow.id"
                         >
                           <v-list-item-title>
