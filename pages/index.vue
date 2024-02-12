@@ -152,7 +152,7 @@ const submit = async () => {
         </v-form>
       </v-col>
       <v-col cols="12">
-        <v-table fixed-header height="300px">
+        <v-table fixed-header height="600px">
           <thead>
             <tr>
               <th class="text-left">Community</th>

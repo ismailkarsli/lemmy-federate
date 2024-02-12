@@ -23,7 +23,7 @@ const { data, pending } = useFetch("/api/instance/all", {
         </v-card>
       </v-col>
       <v-col cols="12">
-        <v-table fixed-header height="300px">
+        <v-table fixed-header height="600px">
           <thead>
             <tr>
               <th class="text-left">Instance</th>

@@ -198,14 +198,14 @@ const deleteAllowed = async (id: number) => {
             />
           </v-row>
         </v-col>
-        <v-col cols="6">
+        <v-col cols="12" md="6">
           <v-text-field
             label="Bot username"
             v-model="instance.bot_name"
             hide-details
           />
         </v-col>
-        <v-col cols="6">
+        <v-col cols="12" md="6">
           <v-text-field
             :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
             :type="showPassword ? 'text' : 'password'"

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { useDisplay } from "vuetify";
+
 const authStore = useAuthStore();
 // save the auth state to local storage
 
@@ -14,6 +16,8 @@ onMounted(async () => {
     });
   }
 });
+
+const { mobile } = useDisplay();
 
 useHead({
   title: "Lemmy Federate",
@@ -40,15 +44,18 @@ useSeoMeta({
     <v-layout class="rounded rounded-md">
       <v-app-bar title="Lemmy Federate">
         <template v-slot:append>
-          <v-btn to="/" class="mx-2">Communities</v-btn>
-          <v-btn to="/instances" class="mx-2">Instances</v-btn>
+          <v-btn to="/" class="mx-2">
+            <v-icon v-if="mobile">mdi-account-group</v-icon>
+            <span v-else>Communities</span>
+          </v-btn>
+          <v-btn to="/instances" class="mx-2">
+            <v-icon v-if="mobile">mdi-server-network</v-icon>
+            <span v-else>Instances</span>
+          </v-btn>
           <TheHeaderAuth />
         </template>
       </v-app-bar>
-      <v-main
-        style="min-height: 300px; max-width: 800px; margin: 0 auto"
-        class="my-4"
-      >
+      <v-main style="min-height: 300px" class="my-4">
         <NuxtPage />
       </v-main>
     </v-layout>
