@@ -38,6 +38,12 @@ export default defineEventHandler(async function (event) {
       message: "Instance is not registered on the server.",
     });
   }
+  if (!instance.enabled) {
+    throw createError({
+      status: 400,
+      message: "Instance is disabled on the server.",
+    });
+  }
 
   try {
     const lemmyClient = await getHttpClient(host);
