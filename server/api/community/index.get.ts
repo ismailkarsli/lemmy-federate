@@ -28,6 +28,9 @@ export default defineEventHandler(async function (event) {
       },
       skip,
       take,
+      orderBy: {
+        createdAt: "desc",
+      },
     }),
     prisma.community.count(),
   ]);

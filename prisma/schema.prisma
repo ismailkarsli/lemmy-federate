@@ -31,6 +31,8 @@ model User {
   username   String
   instance   Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId Int
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
   code       String
   codeExp    DateTime
 
@@ -42,6 +44,8 @@ model Community {
   name       String
   instance   Instance          @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId Int
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @default(now()) @updatedAt
   follows    CommunityFollow[]
 
   @@unique([name, instanceId])
@@ -54,7 +58,7 @@ model CommunityFollow {
   community   Community             @relation(fields: [communityId], references: [id], onDelete: Cascade)
   communityId Int
   createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @updatedAt
+  updatedAt   DateTime              @default(now()) @updatedAt
   status      CommunityFollowStatus @default(IN_PROGRESS)
 
   @@unique([instanceId, communityId])
