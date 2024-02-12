@@ -19,6 +19,7 @@ export const getGuarantees = async (instance: string) => {
     throw createError({
       statusCode: 500,
       message: "Failed to fetch guarantees from Fediseer",
+      data: e,
     });
   }
 };
@@ -44,6 +45,7 @@ export const getCensuresGiven = async (instance: string) => {
     throw createError({
       statusCode: 500,
       message: "Failed to fetch censures from Fediseer",
+      data: e,
     });
   }
 };
@@ -69,6 +71,7 @@ export const getEndorsements = async (instance: string) => {
     throw createError({
       statusCode: 500,
       message: "Failed to fetch endorsements from Fediseer",
+      data: e,
     });
   }
 };
