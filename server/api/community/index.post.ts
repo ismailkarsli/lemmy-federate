@@ -1,6 +1,8 @@
 import { PrismaClient } from "@prisma/client";
-import { LemmyHttp } from "lemmy-js-client";
-import { conditionalFollowWithAllInstances } from "~/server/utils";
+import {
+  conditionalFollowWithAllInstances,
+  getHttpClient,
+} from "~/server/utils";
 
 const prisma = new PrismaClient();
 
@@ -38,7 +40,7 @@ export default defineEventHandler(async function (event) {
   }
 
   try {
-    const lemmyClient = new LemmyHttp("https://" + host);
+    const lemmyClient = await getHttpClient(host);
     const communityViewResponse = await lemmyClient.getCommunity({ name });
     const community = communityViewResponse?.community_view.community;
     if (!community) {

@@ -12,7 +12,7 @@ function startScheduler() {
   const scheduler = useScheduler();
 
   scheduler.run(updateFollows).everyHours(3);
-  scheduler.run(addCommunities).everyDays(7);
+  scheduler.run(addCommunities).everyDays(1);
 }
 
 async function updateFollows() {

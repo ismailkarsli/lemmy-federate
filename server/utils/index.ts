@@ -7,7 +7,13 @@ import {
   NSFW,
   PrismaClient,
 } from "@prisma/client";
-import { LemmyHttp, Login, LoginResponse } from "lemmy-js-client";
+import {
+  GetFederatedInstancesResponse,
+  LemmyHttp,
+  Login,
+  LoginResponse,
+} from "lemmy-js-client";
+import ms from "ms";
 import { randomInt } from "node:crypto";
 import { getCensuresGiven, getEndorsements } from "~/lib/fediseer";
 
@@ -30,8 +36,7 @@ export const sendAuthCode = async (
   instance: string,
   code: string
 ) => {
-  const lemmyClient = new LemmyHttpFixed(`https://${BOT_INSTANCE}`);
-  const loginRes = await lemmyClient.login({
+  const lemmyClient = await getHttpClient(BOT_INSTANCE, {
     username_or_email: BOT_USERNAME,
     password: BOT_PASSWORD,
   });
@@ -84,8 +89,7 @@ export const conditionalFollow = async (
   if (!(instance.bot_name && instance.bot_pass) || !instance.enabled) {
     return CommunityFollowStatus.NOT_AVAILABLE;
   }
-  const client = new LemmyHttpFixed(`https://${instance.host}`);
-  await client.login({
+  const client = await getHttpClient(instance.host, {
     username_or_email: instance.bot_name,
     password: instance.bot_pass,
   });
@@ -93,7 +97,7 @@ export const conditionalFollow = async (
   /**
    * Check if the target instance is blocked by the source instance.
    */
-  const federationStatus = await client.getFederatedInstances();
+  const federationStatus = await getFederatedInstances(instance.host);
   const isBlocked = federationStatus.federated_instances?.blocked.find(
     (i) => i.domain === community.instance.host
   );
@@ -210,8 +214,7 @@ export async function resetSubscriptions(instance: Instance) {
     if (!(instance.bot_name && instance.bot_pass)) {
       throw new Error("Bot name and password are required");
     }
-    const client = new LemmyHttpFixed(`https://${instance.host}`);
-    await client.login({
+    const client = await getHttpClient(instance.host, {
       username_or_email: instance.bot_name,
       password: instance.bot_pass,
     });
@@ -233,13 +236,21 @@ export async function resetSubscriptions(instance: Instance) {
         });
       }
     }
+    await prisma.communityFollow.updateMany({
+      where: {
+        instanceId: instance.id,
+      },
+      data: {
+        status: CommunityFollowStatus.IN_PROGRESS,
+      },
+    });
   } catch (e) {
     console.error("error", e);
   }
 }
 
 // On some functions auth token is not included in the request like /community/follow or /private_message
-class LemmyHttpFixed extends LemmyHttp {
+export class LemmyHttpExtended extends LemmyHttp {
   private jwt?: string;
   constructor(
     baseUrl: string,
@@ -256,7 +267,7 @@ class LemmyHttpFixed extends LemmyHttp {
         ...init,
         headers: {
           ...init?.headers,
-          Authorization: `Bearer ${this.jwt}`,
+          Authorization: this.jwt ? `Bearer ${this.jwt}` : "",
         },
       });
     };
@@ -270,3 +281,43 @@ class LemmyHttpFixed extends LemmyHttp {
     return res;
   }
 }
+
+const clientCacheMap = new Map<
+  string,
+  {
+    client: LemmyHttpExtended;
+    expiration: Date;
+  }
+>();
+export const getHttpClient = async (instance: string, loginForm?: Login) => {
+  const key = loginForm?.username_or_email
+    ? `${instance}-${loginForm.username_or_email}`
+    : instance;
+  const cached = clientCacheMap.get(key);
+  if (cached && cached.expiration > new Date()) {
+    return cached.client;
+  }
+
+  const client = new LemmyHttpExtended(`https://${instance}`);
+  if (loginForm) {
+    await client.login(loginForm);
+  }
+  clientCacheMap.set(key, {
+    client,
+    expiration: new Date(Date.now() + ms("2 hours")),
+  });
+  return client;
+};
+
+const getFederatedInstances = async (instance: string) => {
+  const storage = useStorage("redis");
+  const key = `federated_instances:${instance}`;
+  const cached = await storage.getItem<GetFederatedInstancesResponse>(key);
+  if (cached) return cached;
+  const client = await getHttpClient(instance);
+  const res = await client.getFederatedInstances();
+  await storage.setItem<GetFederatedInstancesResponse>(key, res, {
+    ttl: ms("1 day") / 1000,
+  });
+  return res;
+};

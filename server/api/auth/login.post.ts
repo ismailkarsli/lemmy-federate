@@ -1,7 +1,6 @@
 import { Instance, PrismaClient, User } from "@prisma/client";
 import { getGuarantees } from "@/lib/fediseer";
-import { LemmyHttp } from "lemmy-js-client";
-import { randomNumber, sendAuthCode } from "~/server/utils";
+import { getHttpClient, randomNumber, sendAuthCode } from "~/server/utils";
 import jwt from "jsonwebtoken";
 import ms from "ms";
 
@@ -66,7 +65,7 @@ export default defineEventHandler(async function (
     });
   }
 
-  const lemmyClient = new LemmyHttp(`https://${body.instance}`);
+  const lemmyClient = await getHttpClient(body.instance);
   const siteView = await lemmyClient.getSite();
   const isAdmin = siteView.admins.some(
     ({ person }) =>
