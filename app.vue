@@ -56,7 +56,9 @@ useSeoMeta({
         </template>
       </v-app-bar>
       <v-main style="min-height: 300px" class="my-4">
-        <NuxtPage />
+        <div style="max-width: 800px; margin: 0 auto">
+          <NuxtPage />
+        </div>
       </v-main>
     </v-layout>
   </NuxtLayout>
