@@ -1,4 +1,5 @@
 import type { User, Instance } from "@prisma/client";
+import ms from "ms";
 import { defineStore } from "pinia";
 
 export type UserWithInstance = Omit<User, "code" | "codeExp"> & {
@@ -19,7 +20,9 @@ export const useAuthStore = defineStore("auth", {
   }),
   actions: {
     authenticate({ token, user }: UserPayloadInterface) {
-      const tokenCookie = useCookie("token");
+      const tokenCookie = useCookie("token", {
+        expires: new Date(Date.now() + ms("8 weeks")),
+      });
       tokenCookie.value = token;
       this.authenticated = true;
       this.user = user;
