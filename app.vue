@@ -44,14 +44,22 @@ useSeoMeta({
     <v-layout class="rounded rounded-md">
       <v-app-bar title="Lemmy Federate">
         <template v-slot:append>
-          <v-btn to="/" class="mx-2">
+          <v-btn to="/" class="mx-1">
             <v-icon v-if="mobile">mdi-account-group</v-icon>
             <span v-else>Communities</span>
           </v-btn>
-          <v-btn to="/instances" class="mx-2">
+          <v-btn to="/instances" class="mx-1">
             <v-icon v-if="mobile">mdi-server-network</v-icon>
             <span v-else>Instances</span>
           </v-btn>
+          <NuxtLink
+            href="https://github.com/ismailkarsli/lemmy-federate"
+            class="github-link"
+            target="_blank"
+            title="Source code"
+          >
+            <v-btn class="mx-1" icon="mdi-github" />
+          </NuxtLink>
           <TheHeaderAuth />
         </template>
       </v-app-bar>
@@ -63,3 +71,9 @@ useSeoMeta({
     </v-layout>
   </NuxtLayout>
 </template>
+
+<style scoped>
+.github-link {
+  color: white;
+}
+</style>

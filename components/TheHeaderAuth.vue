@@ -58,7 +58,12 @@ function back() {
 <template>
   <v-menu v-model="menu" :close-on-content-click="false" location="bottom">
     <template v-slot:activator="{ props }">
-      <v-btn class="mx-2" v-bind="props" icon="mdi-account" />
+      <v-btn
+        class="mx-1"
+        v-bind="props"
+        icon="mdi-account"
+        title="Manage instance"
+      />
     </template>
 
     <v-list v-if="authStore.authenticated">
