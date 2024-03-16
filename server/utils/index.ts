@@ -157,6 +157,7 @@ export const conditionalFollow = async (
     return CommunityFollowStatus.ERROR;
   }
 
+  // follow if not following already. return in progress state.
   if (community_view.subscribed !== "Subscribed") {
     await client.followCommunity({
       community_id: community_view.community.id,
