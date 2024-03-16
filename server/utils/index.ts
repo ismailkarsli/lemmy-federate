@@ -157,10 +157,12 @@ export const conditionalFollow = async (
     return CommunityFollowStatus.ERROR;
   }
 
-  await client.followCommunity({
-    community_id: community_view.community.id,
-    follow: true,
-  });
+  if (community_view.subscribed !== "Subscribed") {
+    await client.followCommunity({
+      community_id: community_view.community.id,
+      follow: true,
+    });
+  }
   return CommunityFollowStatus.IN_PROGRESS;
 };
 
