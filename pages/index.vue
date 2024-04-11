@@ -180,7 +180,7 @@ const submit = async () => {
                   >
                     <template v-slot:activator="{ props }">
                       <v-chip color="success" class="mr-2" v-bind="props">
-                        {{ item.progress.finished.length }} finished
+                        {{ item.progress.finished.length }} completed
                       </v-chip>
                     </template>
 
