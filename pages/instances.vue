@@ -27,11 +27,11 @@ const { data, pending } = useFetch("/api/instance/all", {
         <v-table fixed-header height="600px">
           <thead>
             <tr>
-              <th class="text-left">Instance</th>
-              <th class="text-left">Status</th>
-              <th class="text-left">NSFW</th>
-              <th class="text-left">Allow list</th>
-              <th class="text-left">
+              <th class="text-left text-no-wrap">Instance</th>
+              <th class="text-left text-no-wrap">Status</th>
+              <th class="text-left text-no-wrap">NSFW</th>
+              <th class="text-left text-no-wrap">Allow list</th>
+              <th class="text-left text-no-wrap">
                 Auto add communities
                 <info-tooltip
                   text="Fetch and add all new communities periodically"
