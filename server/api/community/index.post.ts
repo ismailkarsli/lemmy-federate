@@ -35,13 +35,13 @@ export default defineEventHandler(async function (event) {
   if (!instance) {
     throw createError({
       status: 400,
-      message: "Instance is not registered on the server.",
+      message: "Instance is not registered.",
     });
   }
   if (!instance.enabled) {
     throw createError({
       status: 400,
-      message: "Instance is disabled on the server.",
+      message: "Instance is disabled. Please contact your admin.",
     });
   }
 
