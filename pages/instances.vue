@@ -18,7 +18,8 @@ const { data, pending } = useFetch("/api/instance/all", {
         <v-card variant="text">
           <p>
             If you want to add your instance to the list, you can login from top
-            right. Your instance must be guaranteed on the Fediseer.
+            right. Your instance must be guaranteed on the Fediseer. If you are
+            a user, you can ask your instance admin to add your instance.
           </p>
         </v-card>
       </v-col>
@@ -30,6 +31,12 @@ const { data, pending } = useFetch("/api/instance/all", {
               <th class="text-left">Status</th>
               <th class="text-left">NSFW</th>
               <th class="text-left">Allow list</th>
+              <th class="text-left">
+                Auto add communities
+                <info-tooltip
+                  text="Fetch and add all new communities periodically"
+                />
+              </th>
             </tr>
           </thead>
           <tbody v-if="!pending">
@@ -90,14 +97,19 @@ const { data, pending } = useFetch("/api/instance/all", {
                   >All instances</v-chip
                 >
               </td>
+              <td>
+                <v-chip v-if="instance.auto_add" color="success" class="mr-2">
+                  Enabled
+                </v-chip>
+                <v-chip v-else color="error" class="mr-2"> Disabled </v-chip>
+              </td>
             </tr>
           </tbody>
           <tbody v-else>
-            <tr colspan="2">
-              <v-progress-linear
-                indeterminate
-                color="primary"
-              ></v-progress-linear>
+            <tr>
+              <td colspan="5" class="h-0 pa-0">
+                <v-progress-linear indeterminate color="primary" />
+              </td>
             </tr>
           </tbody>
         </v-table>

@@ -13,6 +13,7 @@ export default defineEventHandler(async function (event) {
         host: true,
         enabled: true,
         nsfw: true,
+        auto_add: true,
         allowed: {
           select: {
             id: true,
@@ -22,6 +23,14 @@ export default defineEventHandler(async function (event) {
       },
       skip,
       take,
+      orderBy: [
+        {
+          enabled: "desc",
+        },
+        {
+          id: "asc",
+        },
+      ],
     }),
     prisma.instance.count(),
   ]);

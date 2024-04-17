@@ -148,7 +148,7 @@ const deleteAllowed = async (id: number) => {
           hide-details
         />
         <v-checkbox
-          label="Automatically add all communities"
+          label="Automatically add all local communities periodically"
           v-model="instance.auto_add"
           hide-details
         />
@@ -240,6 +240,7 @@ const deleteAllowed = async (id: number) => {
                   This is useful when you change the instance settings<br />
                   or disabled the tool.
                 </p>
+                <p>If the tool is enabled, then it will re-subscribe later.</p>
               </v-card-text>
               <v-card-actions>
                 <v-spacer></v-spacer>
@@ -268,7 +269,12 @@ const deleteAllowed = async (id: number) => {
     <v-divider class="my-4" />
     <v-row>
       <v-col cols="12">
-        <v-app-bar-title>Allowed instances</v-app-bar-title>
+        <v-app-bar-title>
+          Allowed instances
+          <info-tooltip
+            text="If you add at lease one instance, then all others will be ignored. So this list is explicit."
+          />
+        </v-app-bar-title>
       </v-col>
       <v-col cols="12">
         <v-autocomplete

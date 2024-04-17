@@ -268,11 +268,10 @@ const submit = async () => {
             </tr>
           </tbody>
           <tbody v-else>
-            <tr colspan="2">
-              <v-progress-linear
-                indeterminate
-                color="primary"
-              ></v-progress-linear>
+            <tr>
+              <td colspan="2" class="h-0 pa-0">
+                <v-progress-linear indeterminate color="primary" />
+              </td>
             </tr>
           </tbody>
         </v-table>
