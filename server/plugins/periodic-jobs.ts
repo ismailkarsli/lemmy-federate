@@ -11,8 +11,8 @@ export default defineNitroPlugin(() => {
 function startScheduler() {
   const scheduler = useScheduler();
 
-  scheduler.run(updateFollows).everyDays(7);
-  scheduler.run(addCommunities).everyDays(7);
+  scheduler.run(updateFollows).daily();
+  scheduler.run(addCommunities).hourly();
 }
 
 async function updateFollows() {
