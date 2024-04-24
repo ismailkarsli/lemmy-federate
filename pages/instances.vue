@@ -29,15 +29,15 @@ const { data, pending } = useFetch("/api/instance/all", {
             <tr>
               <th class="text-left text-no-wrap">Instance</th>
               <th class="text-left text-no-wrap">Status</th>
-              <th class="text-left text-no-wrap">NSFW</th>
-              <th class="text-left text-no-wrap">Fediseer usage</th>
-              <th class="text-left text-no-wrap">Allow list</th>
               <th class="text-left text-no-wrap">
-                Auto add communities
+                Auto add
                 <info-tooltip
                   text="Fetch and add all new communities periodically"
                 />
               </th>
+              <th class="text-left text-no-wrap">NSFW</th>
+              <th class="text-left text-no-wrap">Fediseer usage</th>
+              <th class="text-left text-no-wrap">Allow list</th>
             </tr>
           </thead>
           <tbody v-if="!pending">
@@ -52,6 +52,12 @@ const { data, pending } = useFetch("/api/instance/all", {
               </td>
               <td>
                 <v-chip v-if="instance.enabled" color="success" class="mr-2">
+                  Enabled
+                </v-chip>
+                <v-chip v-else color="error" class="mr-2"> Disabled </v-chip>
+              </td>
+              <td>
+                <v-chip v-if="instance.auto_add" color="success" class="mr-2">
                   Enabled
                 </v-chip>
                 <v-chip v-else color="error" class="mr-2"> Disabled </v-chip>
@@ -97,12 +103,6 @@ const { data, pending } = useFetch("/api/instance/all", {
                   </v-card>
                 </v-menu>
                 <v-chip v-else color="grey" class="mr-2">All instances</v-chip>
-              </td>
-              <td>
-                <v-chip v-if="instance.auto_add" color="success" class="mr-2">
-                  Enabled
-                </v-chip>
-                <v-chip v-else color="error" class="mr-2"> Disabled </v-chip>
               </td>
             </tr>
           </tbody>
