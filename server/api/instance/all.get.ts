@@ -14,6 +14,7 @@ export default defineEventHandler(async function (event) {
         enabled: true,
         nsfw: true,
         auto_add: true,
+        fediseer: true,
         allowed: {
           select: {
             id: true,

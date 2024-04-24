@@ -30,6 +30,7 @@ const { data, pending } = useFetch("/api/instance/all", {
               <th class="text-left text-no-wrap">Instance</th>
               <th class="text-left text-no-wrap">Status</th>
               <th class="text-left text-no-wrap">NSFW</th>
+              <th class="text-left text-no-wrap">Fediseer usage</th>
               <th class="text-left text-no-wrap">Allow list</th>
               <th class="text-left text-no-wrap">
                 Auto add communities
@@ -56,29 +57,31 @@ const { data, pending } = useFetch("/api/instance/all", {
                 <v-chip v-else color="error" class="mr-2"> Disabled </v-chip>
               </td>
               <td>
-                <v-chip
-                  v-if="instance.nsfw === 'ALLOW'"
-                  color="success"
-                  class="mr-2"
-                  >Allow
+                <v-chip color="grey" class="mr-2">
+                  {{
+                    instance.nsfw === "ALLOW"
+                      ? "Allow"
+                      : instance.nsfw === "BLOCK"
+                      ? "Don't allow"
+                      : "Allow only NSFW"
+                  }}
                 </v-chip>
-                <v-chip
-                  v-else-if="instance.nsfw === 'BLOCK'"
-                  color="warning"
-                  class="mr-2"
-                  >Don't allow
-                </v-chip>
-                <v-chip
-                  v-else-if="instance.nsfw === 'ONLY'"
-                  color="error"
-                  class="mr-2"
-                  >Allow only NSFW
+              </td>
+              <td>
+                <v-chip color="grey" class="mr-2">
+                  {{
+                    instance.fediseer === "NONE"
+                      ? "Don't use"
+                      : instance.fediseer === "BLACKLIST_ONLY"
+                      ? "Don't allow censured"
+                      : "Allow only endorsed"
+                  }}
                 </v-chip>
               </td>
               <td>
                 <v-menu v-if="instance.allowed.length" location="bottom">
                   <template v-slot:activator="{ props }">
-                    <v-chip color="warning" class="mr-2" v-bind="props">
+                    <v-chip color="grey" class="mr-2" v-bind="props">
                       Allowing {{ instance.allowed.length }} instances
                     </v-chip>
                   </template>
@@ -93,9 +96,7 @@ const { data, pending } = useFetch("/api/instance/all", {
                     </v-list>
                   </v-card>
                 </v-menu>
-                <v-chip v-else color="success" class="mr-2"
-                  >All instances</v-chip
-                >
+                <v-chip v-else color="grey" class="mr-2">All instances</v-chip>
               </td>
               <td>
                 <v-chip v-if="instance.auto_add" color="success" class="mr-2">
