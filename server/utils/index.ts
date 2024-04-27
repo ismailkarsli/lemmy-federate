@@ -13,6 +13,7 @@ import {
   Login,
   LoginResponse,
 } from "lemmy-js-client";
+import type { LemmyErrorType } from "lemmy-js-client";
 import ms from "ms";
 import { randomInt } from "node:crypto";
 import { getCensuresGiven, getEndorsements } from "~/lib/fediseer";
@@ -228,12 +229,21 @@ export async function resetSubscriptions(instance: Instance) {
       }
 
       for (const subscription of subscriptions.communities) {
-        await client.followCommunity({
-          community_id: subscription.community.id,
-          follow: false,
-        });
+        try {
+          await client.followCommunity({
+            community_id: subscription.community.id,
+            follow: false,
+          });
+        } catch (e) {
+          if ((e as LemmyErrorType)?.error === "rate_limit_error") {
+            await sleep(ms("1 minute"));
+            continue;
+          }
+          throw e;
+        }
       }
     }
+    // make all follows "in progress"
     await prisma.communityFollow.updateMany({
       where: {
         instanceId: instance.id,
@@ -356,3 +366,5 @@ const areInstancesFederated = async (source: string, target: string) => {
 
   return true;
 };
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
