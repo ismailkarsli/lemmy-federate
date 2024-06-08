@@ -18,7 +18,7 @@ export default defineEventHandler(async function (event) {
     });
   }
 
-  const [name, host] = symbol.split("@");
+  const [name, host] = symbol.toLowerCase().split("@");
   if (!name || !host) {
     throw createError({
       status: 400,
@@ -77,7 +77,10 @@ export default defineEventHandler(async function (event) {
         },
       },
     },
-    update: {},
+    update: {
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    },
     include: {
       instance: true,
     },

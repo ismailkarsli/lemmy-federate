@@ -85,6 +85,10 @@ const submit = async () => {
     loading.value = false;
   }
 };
+
+onMounted(() => {
+  setInterval(() => refresh(), 15000);
+});
 </script>
 
 <template>
@@ -114,6 +118,16 @@ const submit = async () => {
                 follows your community from all remote instances until at least
                 1 other person follows it.
               </p>
+              <p class="mb-4">
+                There are currently {{ data?.stats.instanceCount }} instances
+                and {{ data?.stats.communityCount }} communities added to this
+                tool. In the instance/community matrix,
+                {{ data?.stats.completed }} are federated,
+                {{ data?.stats.inprogress }}
+                are waiting to be federated. As a note, these stats only work
+                correctly after Lemmy 0.19.4.
+              </p>
+              <p class="mb-4"></p>
             </div>
           </v-expand-transition>
         </v-card>
@@ -137,7 +151,7 @@ const submit = async () => {
                 color="primary"
                 :loading="loading"
               >
-                Add Community
+                Submit Community
               </v-btn>
             </template>
           </v-text-field>
@@ -154,7 +168,19 @@ const submit = async () => {
               <th class="text-left">Status</th>
             </tr>
           </thead>
-          <tbody v-if="!pending">
+          <tbody>
+            <tr>
+              <td colspan="2" class="h-0 pa-0 position-relative">
+                <v-progress-linear
+                  :active="pending"
+                  indeterminate
+                  absolute
+                  color="primary"
+                />
+              </td>
+            </tr>
+          </tbody>
+          <tbody>
             <tr v-for="item in communitiesWithProgress" :key="item.name">
               <td>
                 <a
@@ -267,19 +293,12 @@ const submit = async () => {
               </td>
             </tr>
           </tbody>
-          <tbody v-else>
-            <tr>
-              <td colspan="2" class="h-0 pa-0">
-                <v-progress-linear indeterminate color="primary" />
-              </td>
-            </tr>
-          </tbody>
         </v-table>
         <!-- it errors with SSR for some reason :/ -->
         <client-only>
           <v-pagination
             v-model="page"
-            :length="Math.ceil((data?.total || 0) / perPage)"
+            :length="Math.ceil((data?.stats.communityCount || 0) / perPage)"
           ></v-pagination>
         </client-only>
       </v-col>

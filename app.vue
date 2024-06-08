@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { useDisplay } from "vuetify";
-
 const authStore = useAuthStore();
 // save the auth state to local storage
 
@@ -17,7 +15,7 @@ onMounted(async () => {
   }
 });
 
-const { mobile } = useDisplay();
+const { isMobile } = useDevice();
 
 useHead({
   title: "Lemmy Federate",
@@ -45,11 +43,11 @@ useSeoMeta({
       <v-app-bar title="Lemmy Federate">
         <template v-slot:append>
           <v-btn to="/" class="mx-1">
-            <v-icon v-if="mobile">mdi-account-group</v-icon>
+            <v-icon v-if="isMobile">mdi-account-group</v-icon>
             <span v-else>Communities</span>
           </v-btn>
           <v-btn to="/instances" class="mx-1">
-            <v-icon v-if="mobile">mdi-server-network</v-icon>
+            <v-icon v-if="isMobile">mdi-server-network</v-icon>
             <span v-else>Instances</span>
           </v-btn>
           <NuxtLink
@@ -64,7 +62,7 @@ useSeoMeta({
         </template>
       </v-app-bar>
       <v-main style="min-height: 300px" class="my-4">
-        <div style="max-width: 800px; margin: 0 auto">
+        <div style="max-width: 1200px; margin: 0 auto">
           <NuxtPage />
         </div>
       </v-main>

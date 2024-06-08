@@ -11,7 +11,7 @@ export default defineNitroPlugin(() => {
 function startScheduler() {
   const scheduler = useScheduler();
 
-  scheduler.run(updateFollows).daily();
+  scheduler.run(updateFollows).hourly();
   scheduler.run(addCommunities).hourly();
 }
 
@@ -101,13 +101,13 @@ async function addCommunities() {
         await prisma.community.upsert({
           where: {
             name_instanceId: {
-              name: c.name,
+              name: c.name.toLowerCase(),
               instanceId,
             },
           },
           update: {},
           create: {
-            name: c.name,
+            name: c.name.toLowerCase(),
             instanceId,
           },
         });
