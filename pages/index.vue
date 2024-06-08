@@ -87,7 +87,10 @@ const submit = async () => {
 };
 
 onMounted(() => {
-  setInterval(() => refresh(), 15000);
+  setInterval(() => {
+    // if we're in page 1, refresh every 15 seconds
+    if (page.value === 1) refresh();
+  }, 15000);
 });
 </script>
 
