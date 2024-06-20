@@ -271,7 +271,10 @@ export class LemmyHttpExtended extends LemmyHttp {
   ) {
     const fetchToUse = options?.fetchFunction || fetch;
     const fetchFunction: typeof fetch = async (url, init) => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(), ms("30 seconds"));
       return fetchToUse(url, {
+        signal: controller.signal,
         ...init,
         headers: {
           ...init?.headers,
