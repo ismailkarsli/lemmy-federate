@@ -29,7 +29,6 @@ export default defineNuxtConfig({
       });
     },
     "@pinia/nuxt",
-    "nuxt-scheduler",
     "@nuxtjs/device",
   ],
   vite: {

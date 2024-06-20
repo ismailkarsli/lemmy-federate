@@ -1,32 +1,36 @@
-import { useScheduler } from "#scheduler";
-import { PrismaClient } from "@prisma/client";
-import { conditionalFollow } from "@/server/utils";
+import { Prisma, PrismaClient } from "@prisma/client";
+import { conditionalFollow, sleep } from "@/server/utils";
+import ms from "ms";
 
 const prisma = new PrismaClient();
 
-export default defineNitroPlugin(() => {
-  startScheduler();
+export default defineNitroPlugin(async () => {
+  loop(addCommunities, ms("1 minute"));
+  loop(updateFollows, ms("1 hour"));
 });
 
-function startScheduler() {
-  const scheduler = useScheduler();
-
-  scheduler.run(updateFollows).hourly();
-  scheduler.run(addCommunities).hourly();
-}
+const loop = async (callback: () => void, timeout = 0) => {
+  while (true) {
+    await callback();
+    await sleep(timeout);
+  }
+};
 
 async function updateFollows() {
-  const recordCount = await prisma.communityFollow.count();
+  const filter = {
+    status: {
+      in: ["NOT_AVAILABLE", "IN_PROGRESS", "ERROR"],
+    },
+  } satisfies Prisma.CommunityFollowWhereInput;
+  const recordCount = await prisma.communityFollow.count({
+    where: filter,
+  });
   console.info("Started updating", recordCount, "community follows");
   for (let i = 0; i < recordCount; i += 100) {
     const communityFollows = await prisma.communityFollow.findMany({
       skip: i,
       take: 100,
-      where: {
-        status: {
-          in: ["NOT_AVAILABLE", "IN_PROGRESS", "ERROR"],
-        },
-      },
+      where: filter,
       include: {
         instance: {
           include: {
@@ -40,7 +44,6 @@ async function updateFollows() {
         },
       },
     });
-
     await Promise.all(
       communityFollows.map(async (cf) => {
         try {
@@ -54,7 +57,12 @@ async function updateFollows() {
             },
           });
         } catch (e) {
-          console.error("Error while following community", cf.instance.host, e);
+          console.error(
+            "Error while following community",
+            cf.community.name,
+            cf.instance.host,
+            e
+          );
         }
       })
     );
@@ -63,7 +71,7 @@ async function updateFollows() {
 }
 
 async function addCommunities() {
-  console.info("Started adding communities automatically");
+  console.info("Adding communities");
   const instances = await prisma.instance.findMany({
     where: {
       enabled: true,
