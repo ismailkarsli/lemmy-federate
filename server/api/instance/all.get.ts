@@ -12,15 +12,7 @@ export default defineEventHandler(async function (event) {
         id: true,
         host: true,
         enabled: true,
-        nsfw: true,
         auto_add: true,
-        fediseer: true,
-        allowed: {
-          select: {
-            id: true,
-            host: true,
-          },
-        },
       },
       skip,
       take,

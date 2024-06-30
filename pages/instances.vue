@@ -35,9 +35,6 @@ const { data, pending } = useFetch("/api/instance/all", {
                   text="Fetch and add all new communities periodically"
                 />
               </th>
-              <th class="text-left text-no-wrap">NSFW</th>
-              <th class="text-left text-no-wrap">Fediseer usage</th>
-              <th class="text-left text-no-wrap">Allow list</th>
             </tr>
           </thead>
           <tbody v-if="!pending">
@@ -61,48 +58,6 @@ const { data, pending } = useFetch("/api/instance/all", {
                   Enabled
                 </v-chip>
                 <v-chip v-else color="error" class="mr-2"> Disabled </v-chip>
-              </td>
-              <td>
-                <v-chip color="grey" class="mr-2">
-                  {{
-                    instance.nsfw === "ALLOW"
-                      ? "Allow"
-                      : instance.nsfw === "BLOCK"
-                      ? "Don't allow"
-                      : "Allow only NSFW"
-                  }}
-                </v-chip>
-              </td>
-              <td>
-                <v-chip color="grey" class="mr-2">
-                  {{
-                    instance.fediseer === "NONE"
-                      ? "Don't use"
-                      : instance.fediseer === "BLACKLIST_ONLY"
-                      ? "Don't allow censured"
-                      : "Allow only endorsed"
-                  }}
-                </v-chip>
-              </td>
-              <td>
-                <v-menu v-if="instance.allowed.length" location="bottom">
-                  <template v-slot:activator="{ props }">
-                    <v-chip color="grey" class="mr-2" v-bind="props">
-                      Allowing {{ instance.allowed.length }} instances
-                    </v-chip>
-                  </template>
-
-                  <v-card min-width="200">
-                    <v-list density="compact">
-                      <v-list-item v-for="i in instance.allowed" :key="i.id">
-                        <v-list-item-title>
-                          {{ i.host }}
-                        </v-list-item-title>
-                      </v-list-item>
-                    </v-list>
-                  </v-card>
-                </v-menu>
-                <v-chip v-else color="grey" class="mr-2">All instances</v-chip>
               </td>
             </tr>
           </tbody>
