@@ -1,4 +1,4 @@
-import { PrismaClient } from "@prisma/client";
+import { CommunityFollowStatus, PrismaClient } from "@prisma/client";
 import {
   conditionalFollowWithAllInstances,
   getHttpClient,
@@ -83,6 +83,15 @@ export default defineEventHandler(async function (event) {
     },
     include: {
       instance: true,
+    },
+  });
+
+  await prisma.communityFollow.updateMany({
+    where: {
+      community: addedCommunity,
+    },
+    data: {
+      status: CommunityFollowStatus.IN_PROGRESS,
     },
   });
 
