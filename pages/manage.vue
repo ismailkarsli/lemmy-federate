@@ -148,7 +148,7 @@ const deleteAllowed = async (id: number) => {
           hide-details
         />
         <v-checkbox
-          label="Automatically add all local communities periodically"
+          label="Auto add local communities"
           v-model="instance.auto_add"
           hide-details
         />
