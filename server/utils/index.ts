@@ -207,6 +207,10 @@ export const conditionalFollowWithAllInstances = async (
         `Error while following community ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
         e
       );
+      await prisma.communityFollow.update({
+        where: { id: cf.id },
+        data: { status: CommunityFollowStatus.ERROR },
+      });
     }
   }
 };

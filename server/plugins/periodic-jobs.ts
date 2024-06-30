@@ -1,4 +1,4 @@
-import { Prisma, PrismaClient } from "@prisma/client";
+import { CommunityFollowStatus, Prisma, PrismaClient } from "@prisma/client";
 import { conditionalFollow, sleep } from "@/server/utils";
 import ms from "ms";
 
@@ -62,6 +62,10 @@ async function updateFollows() {
             `Error while following community periodically ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
             e
           );
+          await prisma.communityFollow.update({
+            where: { id: cf.id },
+            data: { status: CommunityFollowStatus.ERROR },
+          });
         }
       })
     );
