@@ -121,20 +121,45 @@ onMounted(() => {
                 follows your community from all remote instances until at least
                 1 other person follows it.
               </p>
-              <p class="mb-4">
-                There are currently {{ data?.stats.instanceCount }} instances
-                and {{ data?.stats.communityCount }} communities added to this
-                tool. In the instance/community matrix,
-                {{ data?.stats.completed }} are federated,
-                {{ data?.stats.inprogress }}
-                are waiting to be federated. As a note, these stats only work
-                correctly after Lemmy 0.19.4.
-              </p>
               <p class="mb-4"></p>
             </div>
           </v-expand-transition>
         </v-card>
       </v-col>
+
+      <v-col cols="12">
+        <v-row dense>
+          <v-col cols="12" md="6" lg="3">
+            <v-card
+              class="mx-auto"
+              subtitle="Instances"
+              :title="data?.stats.instanceCount"
+            ></v-card>
+          </v-col>
+          <v-col cols="12" md="6" lg="3">
+            <v-card
+              class="mx-auto"
+              subtitle="Communities"
+              :title="data?.stats.communityCount"
+            ></v-card>
+          </v-col>
+          <v-col cols="12" md="6" lg="3">
+            <v-card
+              class="mx-auto"
+              subtitle="Federated by users"
+              :title="data?.stats.completed"
+            ></v-card>
+          </v-col>
+          <v-col cols="12" md="6" lg="3">
+            <v-card
+              class="mx-auto"
+              subtitle="Federated by bots"
+              :title="data?.stats.inprogress"
+            ></v-card>
+          </v-col>
+        </v-row>
+      </v-col>
+
       <v-col rows="12">
         <v-form class="rounded rounded-md" @submit.prevent="submit">
           <v-text-field
@@ -154,7 +179,7 @@ onMounted(() => {
                 color="primary"
                 :loading="loading"
               >
-                Submit Community
+                Submit
               </v-btn>
             </template>
           </v-text-field>
@@ -209,7 +234,7 @@ onMounted(() => {
                   >
                     <template v-slot:activator="{ props }">
                       <v-chip color="success" class="mr-2" v-bind="props">
-                        {{ item.progress.finished.length }} completed
+                        {{ item.progress.finished.length }} federated by user
                       </v-chip>
                     </template>
 
@@ -232,7 +257,7 @@ onMounted(() => {
                   >
                     <template v-slot:activator="{ props }">
                       <v-chip color="warning" class="mr-2" v-bind="props">
-                        {{ item.progress.inProgress.length }} in progress
+                        {{ item.progress.inProgress.length }} federated by bot
                       </v-chip>
                     </template>
 
