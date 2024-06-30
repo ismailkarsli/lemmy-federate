@@ -59,9 +59,7 @@ async function updateFollows() {
           });
         } catch (e) {
           console.error(
-            "Error while following community",
-            cf.community.name,
-            cf.instance.host,
+            `Error while following community periodically ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
             e
           );
         }

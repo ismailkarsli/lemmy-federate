@@ -203,7 +203,10 @@ export const conditionalFollowWithAllInstances = async (
         },
       });
     } catch (e) {
-      console.error("Error while following community", cf.instance.host, e);
+      console.error(
+        `Error while following community ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
+        e
+      );
     }
   }
 };
