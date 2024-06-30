@@ -27,5 +27,13 @@ export default defineEventHandler(async function (event) {
     },
   });
 
+  if (body.enabled === false) {
+    await prisma.community.deleteMany({
+      where: {
+        instance,
+      },
+    });
+  }
+
   return instance;
 });
