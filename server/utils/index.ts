@@ -17,6 +17,7 @@ import type { LemmyErrorType } from "lemmy-js-client";
 import ms from "ms";
 import { randomInt } from "node:crypto";
 import { getCensuresGiven, getEndorsements } from "~/lib/fediseer";
+import pThrottle from "p-throttle";
 
 const BOT_INSTANCE = process.env.BOT_INSTANCE;
 const BOT_USERNAME = process.env.BOT_USERNAME;
@@ -278,10 +279,7 @@ export class LemmyHttpExtended extends LemmyHttp {
   ) {
     const fetchToUse = options?.fetchFunction || fetch;
     const fetchFunction: typeof fetch = async (url, init) => {
-      const controller = new AbortController();
-      setTimeout(() => controller.abort(), ms("30 seconds"));
       return fetchToUse(url, {
-        signal: controller.signal,
         ...init,
         headers: {
           ...init?.headers,
@@ -316,13 +314,22 @@ export const getHttpClient = async (instance: string, loginForm?: Login) => {
     return cached.client;
   }
 
-  const client = new LemmyHttpExtended(`https://${instance}`);
-  if (loginForm) {
-    await client.login(loginForm);
-  }
+  let client = new LemmyHttpExtended(`https://${instance}`);
+  const {
+    site_view: { local_site_rate_limit: rateLimits },
+  } = await client.getSite();
+  const throttle = pThrottle({
+    interval: rateLimits.message_per_second || 60,
+    limit: rateLimits.message || 999,
+    strict: true,
+  });
+  client = new LemmyHttpExtended(`https://${instance}`, {
+    fetchFunction: throttle(fetch),
+  });
+  if (loginForm) await client.login(loginForm);
   clientCacheMap.set(key, {
     client,
-    expiration: new Date(Date.now() + ms("2 hours")),
+    expiration: new Date(Date.now() + ms("6 hours")),
   });
   return client;
 };
