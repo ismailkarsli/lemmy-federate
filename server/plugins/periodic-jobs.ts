@@ -40,7 +40,15 @@ async function updateFollows() {
         },
         community: {
           include: {
-            instance: true,
+            instance: {
+              include: {
+                allowed: {
+                  select: {
+                    id: true,
+                  },
+                },
+              },
+            },
           },
         },
       },

@@ -71,21 +71,25 @@ export const conditionalFollow = async (
       allowed: Instance[];
     };
     community: Community & {
-      instance: Instance;
+      instance: Instance & { allowed: { id: number }[] };
     };
   }
 ): Promise<CommunityFollowStatus> => {
-  /**
-   * If the instance has at least one allowed instance, check if the target instance is allowed.
-   */
   const { instance, community } = communityFollow;
+  /**
+   * If the home or target instances have at least one allowed instance, check if they allow each other.
+   */
   if (instance.allowed.length) {
-    const isAllowed = instance.allowed.find(
+    const isAllowed = instance.allowed.some(
       (i) => i.id === community.instanceId
     );
-    if (!isAllowed) {
-      return CommunityFollowStatus.NOT_ALLOWED;
-    }
+    if (!isAllowed) return CommunityFollowStatus.NOT_ALLOWED;
+  }
+  if (community.instance.allowed.length) {
+    const isAllowed = community.instance.allowed.some(
+      (i) => i.id === instance.id
+    );
+    if (!isAllowed) return CommunityFollowStatus.NOT_ALLOWED;
   }
 
   if (!(instance.bot_name && instance.bot_pass) || !instance.enabled) {
@@ -186,31 +190,34 @@ export const conditionalFollowWithAllInstances = async (
       },
       community: {
         include: {
-          instance: true,
+          instance: {
+            include: {
+              allowed: {
+                select: {
+                  id: true,
+                },
+              },
+            },
+          },
         },
       },
     },
   });
 
   for (const cf of communityFollows) {
+    let status: CommunityFollowStatus = CommunityFollowStatus.IN_PROGRESS;
     try {
-      const status = await conditionalFollow(cf);
-      await prisma.communityFollow.update({
-        where: {
-          id: cf.id,
-        },
-        data: {
-          status,
-        },
-      });
+      status = await conditionalFollow(cf);
     } catch (e) {
+      status = CommunityFollowStatus.ERROR;
       console.error(
         `Error while following community ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
         e
       );
+    } finally {
       await prisma.communityFollow.update({
         where: { id: cf.id },
-        data: { status: CommunityFollowStatus.ERROR },
+        data: { status },
       });
     }
   }
