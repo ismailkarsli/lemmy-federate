@@ -1,3 +1,4 @@
+import { randomInt } from "node:crypto";
 import {
   Community,
   CommunityFollow,
@@ -15,9 +16,8 @@ import {
 } from "lemmy-js-client";
 import type { LemmyErrorType } from "lemmy-js-client";
 import ms from "ms";
-import { randomInt } from "node:crypto";
-import { getCensuresGiven, getEndorsements } from "~/lib/fediseer";
 import pThrottle from "p-throttle";
+import { getCensuresGiven, getEndorsements } from "~/lib/fediseer";
 
 const BOT_INSTANCE = process.env.BOT_INSTANCE;
 const BOT_USERNAME = process.env.BOT_USERNAME;
@@ -85,12 +85,14 @@ export const conditionalFollow = async (
     );
     if (!isAllowed) return CommunityFollowStatus.NOT_ALLOWED;
   }
+  /* disable home instance check until an option for it added to admin page.
   if (community.instance.allowed.length) {
     const isAllowed = community.instance.allowed.some(
       (i) => i.id === instance.id
     );
     if (!isAllowed) return CommunityFollowStatus.NOT_ALLOWED;
   }
+   */
 
   if (!(instance.bot_name && instance.bot_pass) || !instance.enabled) {
     return CommunityFollowStatus.NOT_AVAILABLE;
