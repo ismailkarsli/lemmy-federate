@@ -225,6 +225,47 @@ export const conditionalFollowWithAllInstances = async (
   }
 };
 
+export const unfollowWithAllInstances = async (community: Community) => {
+  const communityFollows = await prisma.communityFollow.findMany({
+    where: {
+      communityId: community.id,
+    },
+    include: {
+      instance: true,
+      community: {
+        include: {
+          instance: true,
+        },
+      },
+    },
+  });
+
+  for (const cf of communityFollows) {
+    if (!(cf.instance.bot_name && cf.instance.bot_pass)) continue;
+
+    try {
+      const client = await getHttpClient(cf.instance.host, {
+        username_or_email: cf.instance.bot_name,
+        password: cf.instance.bot_pass,
+      });
+
+      const { community_view } = await client.getCommunity({
+        name: `${cf.community.name}@${cf.community.instance.host}`,
+      });
+
+      await client.followCommunity({
+        community_id: community_view.community.id,
+        follow: false,
+      });
+    } catch (e) {
+      console.error(
+        `Error while unfollowing community ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
+        e
+      );
+    }
+  }
+};
+
 export async function resetSubscriptions(instance: Instance) {
   try {
     if (!(instance.bot_name && instance.bot_pass)) {

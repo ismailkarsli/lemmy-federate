@@ -1,6 +1,11 @@
 import { CommunityFollowStatus, Prisma, PrismaClient } from "@prisma/client";
-import { conditionalFollow, sleep } from "@/server/utils";
+import {
+  conditionalFollow,
+  sleep,
+  unfollowWithAllInstances,
+} from "@/server/utils";
 import ms from "ms";
+import type { LemmyErrorType, Login } from "lemmy-js-client";
 
 const prisma = new PrismaClient();
 
@@ -8,6 +13,7 @@ export default defineNitroPlugin(async () => {
   loop(updateFollows, ms("1 day"));
   loop(addCommunities, ms("1 minute")); // fetch newest communities directly from instances
   loop(addCommunitiesFromLemmyverse, ms("1 day"));
+  loop(clearRemovedCommunities, ms("1 day"));
 });
 
 const loop = async (callback: () => void, timeout = 0) => {
@@ -191,4 +197,58 @@ async function addCommunitiesFromLemmyverse() {
   }
 
   console.info("Finished adding communities from Lemmyverse");
+}
+
+async function clearRemovedCommunities() {
+  console.info("Clearing removed communities");
+  const communities = await prisma.community.findMany({
+    include: {
+      instance: true,
+    },
+  });
+
+  let count = 0;
+  for (const community of communities) {
+    let remove = false;
+    try {
+      const loginForm: Login | undefined =
+        community.instance.bot_name && community.instance.bot_pass
+          ? {
+              username_or_email: community.instance.bot_name,
+              password: community.instance.bot_pass,
+            }
+          : undefined;
+      const client = await getHttpClient(community.instance.host, loginForm);
+      const { community_view } = await client.getCommunity({
+        name: community.name,
+      });
+      // if the community is deleted/removed by user/admin or is local only, delete it
+      if (
+        community_view.community.removed ||
+        community_view.community.deleted ||
+        community_view.community.visibility === "LocalOnly"
+      ) {
+        remove = true;
+      }
+    } catch (e) {
+      // remove if we get "couldnt_find_community" error
+      if (
+        e instanceof Error &&
+        e.message ===
+          ("couldnt_find_community" satisfies LemmyErrorType["error"])
+      ) {
+        remove = true;
+      }
+    }
+    if (remove) {
+      await unfollowWithAllInstances(community);
+      await prisma.community.delete({
+        where: {
+          id: community.id,
+        },
+      });
+      count++;
+    }
+  }
+  console.info(`Cleared ${count} communities`);
 }
