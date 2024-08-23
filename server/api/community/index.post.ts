@@ -55,6 +55,9 @@ export default defineEventHandler(async function (event) {
     if (community.deleted || community.removed) {
       throw "Community is deleted or removed on the instance.";
     }
+    if (community.visibility === "LocalOnly") {
+      throw "Community is local only on the instance.";
+    }
   } catch (error) {
     throw createError({
       status: 400,

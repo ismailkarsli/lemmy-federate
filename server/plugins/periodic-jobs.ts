@@ -113,6 +113,7 @@ async function addCommunities() {
       });
 
       for (const c of communities) {
+        if (c.community.visibility === "LocalOnly") continue;
         const exists = await prisma.community.count({
           where: {
             name: c.community.name.toLowerCase(),
