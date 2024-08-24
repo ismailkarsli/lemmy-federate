@@ -3,16 +3,9 @@ import ms from "ms";
 type FediseerResponse = {
   domains: string[];
 };
-// Storing error to avoid spamming the API
-type CachedData =
-  | {
-      domains: string[];
-      updatedAt: string;
-    }
-  | {
-      error: string;
-      updatedAt: string;
-    };
+type CachedData = FediseerResponse & {
+  updatedAt: string;
+};
 
 class Cache {
   static async get(cacheKey: string) {
@@ -27,10 +20,7 @@ class Cache {
     return null;
   }
 
-  static async set(
-    cacheKey: string,
-    data: FediseerResponse | { error: string }
-  ) {
+  static async set(cacheKey: string, data: FediseerResponse) {
     const storage = useStorage("redis");
     await storage.setItem(cacheKey, {
       ...data,
@@ -43,10 +33,8 @@ export const getGuarantees = async (instance: string) => {
   const cacheKey = `fediseer_guarantees:${instance}`;
   try {
     const cached = await Cache.get(cacheKey);
-    if (cached) {
-      if ("domains" in cached) return cached;
-      else throw new Error(cached.error);
-    }
+    if (cached) return cached;
+
     const guarantees = await $fetch<FediseerResponse>(
       `https://fediseer.com/api/v1/guarantees/${instance}`,
       {
@@ -58,9 +46,6 @@ export const getGuarantees = async (instance: string) => {
     await Cache.set(cacheKey, guarantees);
     return guarantees;
   } catch (e) {
-    if (e instanceof Error) {
-      Cache.set(cacheKey, { error: e.message });
-    }
     throw createError({
       statusCode: 500,
       message: "Failed to fetch guarantees from Fediseer",
@@ -73,10 +58,7 @@ export const getCensuresGiven = async (instance: string) => {
   const cacheKey = `fediseer_censures_given:${instance}`;
   try {
     const cached = await Cache.get(cacheKey);
-    if (cached) {
-      if ("domains" in cached) return cached;
-      else throw new Error(cached.error);
-    }
+    if (cached) return cached;
     const censures = await $fetch<FediseerResponse>(
       `https://fediseer.com/api/v1/censures_given/${instance}`,
       {
@@ -88,9 +70,6 @@ export const getCensuresGiven = async (instance: string) => {
     await Cache.set(cacheKey, censures);
     return censures;
   } catch (e) {
-    if (e instanceof Error) {
-      Cache.set(cacheKey, { error: e.message });
-    }
     throw createError({
       statusCode: 500,
       message: "Failed to fetch censures from Fediseer",
@@ -103,10 +82,7 @@ export const getEndorsements = async (instance: string) => {
   const cacheKey = `fediseer_endorsements:${instance}`;
   try {
     const cached = await Cache.get(cacheKey);
-    if (cached) {
-      if ("domains" in cached) return cached;
-      else throw new Error(cached.error);
-    }
+    if (cached) return cached;
     const endorsements = await $fetch<FediseerResponse>(
       `https://fediseer.com/api/v1/endorsements/${instance}`,
       {
@@ -118,9 +94,6 @@ export const getEndorsements = async (instance: string) => {
     await Cache.set(cacheKey, endorsements);
     return endorsements;
   } catch (e) {
-    if (e instanceof Error) {
-      Cache.set(cacheKey, { error: e.message });
-    }
     throw createError({
       statusCode: 500,
       message: "Failed to fetch endorsements from Fediseer",
