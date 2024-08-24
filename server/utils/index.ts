@@ -97,23 +97,8 @@ export const conditionalFollow = async (
   if (!(instance.bot_name && instance.bot_pass) || !instance.enabled) {
     return CommunityFollowStatus.NOT_AVAILABLE;
   }
-  const client = await getHttpClient(instance.host, {
-    username_or_email: instance.bot_name,
-    password: instance.bot_pass,
-  });
 
   if (!(await areInstancesFederated(instance.host, community.instance.host))) {
-    return CommunityFollowStatus.NOT_ALLOWED;
-  }
-
-  const { community_view } = await client.getCommunity({
-    name: `${community.name}@${community.instance.host}`,
-  });
-
-  /**
-   * Check if the community is deleted or removed.
-   */
-  if (community_view.community.deleted || community_view.community.removed) {
     return CommunityFollowStatus.NOT_ALLOWED;
   }
 
@@ -132,43 +117,64 @@ export const conditionalFollow = async (
     }
   }
 
+  const localClient = await getHttpClient(community.instance.host);
+  const { community_view: localCommunity } = await localClient.getCommunity({
+    name: `${community.name}@${community.instance.host}`,
+  });
+
+  /**
+   * Check if the community is deleted or removed.
+   */
+  if (localCommunity.community.deleted || localCommunity.community.removed) {
+    return CommunityFollowStatus.NOT_ALLOWED;
+  }
+
   /**
    * Check if the community is
    * - NSFW and the instance is not allowing NSFW content.
    * - not NSFW and the instance is only allowing NSFW content.
    */
   if (
-    community_view.community.nsfw
+    localCommunity.community.nsfw
       ? instance.nsfw === NSFW.BLOCK
       : instance.nsfw === NSFW.ONLY
   ) {
     return CommunityFollowStatus.NOT_ALLOWED;
   }
 
-  const localSubscribers = community_view.counts.subscribers_local ?? 0;
+  const remoteClient = await getHttpClient(instance.host, {
+    username_or_email: instance.bot_name,
+    password: instance.bot_pass,
+  });
+  const { community_view: remoteCommunity } = await remoteClient.getCommunity({
+    name: `${community.name}@${community.instance.host}`,
+  });
+  const localSubscribers = remoteCommunity.counts.subscribers_local ?? 0;
 
   // Community has other subscribers than the bot
-  if (localSubscribers > (community_view.subscribed === "Subscribed" ? 1 : 0)) {
-    await client.followCommunity({
-      community_id: community_view.community.id,
+  if (
+    localSubscribers > (remoteCommunity.subscribed === "Subscribed" ? 1 : 0)
+  ) {
+    await remoteClient.followCommunity({
+      community_id: remoteCommunity.community.id,
       follow: false,
     });
     return CommunityFollowStatus.DONE;
   }
 
   // if stuck in "Pending" state, unfollow and return error. This way we can retry in next run.
-  if (community_view.subscribed === "Pending") {
-    await client.followCommunity({
-      community_id: community_view.community.id,
+  if (remoteCommunity.subscribed === "Pending") {
+    await remoteClient.followCommunity({
+      community_id: remoteCommunity.community.id,
       follow: false,
     });
     return CommunityFollowStatus.ERROR;
   }
 
   // follow if not following already. return in progress state.
-  if (community_view.subscribed !== "Subscribed") {
-    await client.followCommunity({
-      community_id: community_view.community.id,
+  if (remoteCommunity.subscribed !== "Subscribed") {
+    await remoteClient.followCommunity({
+      community_id: remoteCommunity.community.id,
       follow: true,
     });
   }
