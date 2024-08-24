@@ -323,7 +323,8 @@ export async function resetSubscriptions(instance: Instance) {
 
 // On some functions auth token is not included in the request like /community/follow or /private_message
 export class LemmyHttpExtended extends LemmyHttp {
-  private jwt?: string;
+  public jwt?: string;
+  private rateLimitedAt: Date | null = null;
   constructor(
     baseUrl: string,
     options?: {
@@ -335,13 +336,42 @@ export class LemmyHttpExtended extends LemmyHttp {
   ) {
     const fetchToUse = options?.fetchFunction || fetch;
     const fetchFunction: typeof fetch = async (url, init) => {
-      return fetchToUse(url, {
-        ...init,
-        headers: {
-          ...init?.headers,
-          Authorization: this.jwt ? `Bearer ${this.jwt}` : "",
-        },
-      });
+      // if we get rate limited, ignore next requests for 5 minutes and throw error with "skipped_rate_limit_error" message
+      if (
+        this.rateLimitedAt &&
+        this.rateLimitedAt.getTime() + ms("5 minute") > Date.now()
+      ) {
+        throw new Error("skipped_rate_limit_error");
+      }
+      try {
+        return await fetchToUse(url, {
+          ...init,
+          headers: {
+            ...init?.headers,
+            Authorization: this.jwt ? `Bearer ${this.jwt}` : "",
+          },
+        }).then((res) => {
+          if (!res.ok) return Promise.reject(res);
+          return res;
+        });
+      } catch (e) {
+        if (e instanceof Response) {
+          // why is Lemmy not sending 429 status code 🤨
+          // if the instance is down, it will return 503 status code if using Cloudflare
+          if (e.status === 503 || e.status === 429) {
+            this.rateLimitedAt = new Date();
+            throw new Error("rate_limit_error");
+          }
+          const body = (await e.json()) as LemmyErrorType;
+          if (body?.error === "rate_limit_error") {
+            this.rateLimitedAt = new Date();
+          }
+          throw new Error(
+            ("message" in body ? body.message : body.error) || e.statusText
+          );
+        }
+        throw e;
+      }
     };
 
     super(baseUrl, { ...options, fetchFunction });
@@ -367,6 +397,7 @@ export const getHttpClient = async (instance: string, loginForm?: Login) => {
     : instance;
   const cached = clientCacheMap.get(key);
   if (cached && cached.expiration > new Date()) {
+    if (!cached.client.jwt && loginForm) await cached.client.login(loginForm);
     return cached.client;
   }
 
@@ -382,11 +413,11 @@ export const getHttpClient = async (instance: string, loginForm?: Login) => {
   client = new LemmyHttpExtended(`https://${instance}`, {
     fetchFunction: throttle(fetch),
   });
-  if (loginForm) await client.login(loginForm);
   clientCacheMap.set(key, {
     client,
     expiration: new Date(Date.now() + ms("6 hours")),
   });
+  if (loginForm) await client.login(loginForm);
   return client;
 };
 

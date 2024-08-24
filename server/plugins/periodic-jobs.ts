@@ -73,6 +73,9 @@ async function updateFollows() {
             },
           });
         } catch (e) {
+          if (e instanceof Error && e.message === "skipped_rate_limit_error") {
+            return;
+          }
           console.error(
             `Error while following community periodically ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
             e
