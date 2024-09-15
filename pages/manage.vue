@@ -2,125 +2,125 @@
 const { data: instance, pending, refresh } = useFetch("/api/instance");
 const { data: allInstances } = useFetch("/api/instance/all");
 const snackbar = ref({
-  value: false,
-  success: false,
-  message: "",
+	value: false,
+	success: false,
+	message: "",
 });
 const showPassword = ref(false);
 const allowedInstance = ref<number | null>(null);
 
 const filteredAllInstances = computed(() => {
-  if (instance) {
-    return allInstances.value?.instances.filter(
-      (i) => !instance.value?.allowed.some((a) => a.id === i.id)
-    );
-  }
-  return [];
+	if (instance) {
+		return allInstances.value?.instances.filter(
+			(i) => !instance.value?.allowed.some((a) => a.id === i.id),
+		);
+	}
+	return [];
 });
 
 const submit = async () => {
-  try {
-    await $fetch("/api/instance", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(instance.value),
-    });
-    snackbar.value = {
-      value: true,
-      success: true,
-      message: "Instance settings saved",
-    };
-  } catch (error) {
-    if (isFetchError(error)) {
-      snackbar.value = {
-        value: true,
-        success: false,
-        message: error.data.message || error.message,
-      };
-    } else throw error;
-  }
+	try {
+		await $fetch("/api/instance", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify(instance.value),
+		});
+		snackbar.value = {
+			value: true,
+			success: true,
+			message: "Instance settings saved",
+		};
+	} catch (error) {
+		if (isFetchError(error)) {
+			snackbar.value = {
+				value: true,
+				success: false,
+				message: error.data.message || error.message,
+			};
+		} else throw error;
+	}
 };
 
 const resetSubscriptions = async () => {
-  try {
-    const res = await $fetch("/api/instance/reset-subscriptions", {
-      method: "GET",
-    });
-    snackbar.value = {
-      value: true,
-      success: true,
-      message: res.message,
-    };
-  } catch (error) {
-    if (isFetchError(error)) {
-      snackbar.value = {
-        value: true,
-        success: false,
-        message: error.data.message || error.message,
-      };
-    } else throw error;
-  }
+	try {
+		const res = await $fetch("/api/instance/reset-subscriptions", {
+			method: "GET",
+		});
+		snackbar.value = {
+			value: true,
+			success: true,
+			message: res.message,
+		};
+	} catch (error) {
+		if (isFetchError(error)) {
+			snackbar.value = {
+				value: true,
+				success: false,
+				message: error.data.message || error.message,
+			};
+		} else throw error;
+	}
 };
 
 watchEffect(async () => {
-  try {
-    if (allowedInstance.value) {
-      const res = await $fetch(`/api/instance/allowed`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          instanceId: allowedInstance.value,
-        }),
-      });
-      allowedInstance.value = null;
-      await refresh();
-      snackbar.value = {
-        value: true,
-        success: true,
-        message: res.message,
-      };
-    }
-  } catch (error) {
-    if (isFetchError(error)) {
-      snackbar.value = {
-        value: true,
-        success: false,
-        message: error.data.message || error.message,
-      };
-    } else throw error;
-  }
+	try {
+		if (allowedInstance.value) {
+			const res = await $fetch("/api/instance/allowed", {
+				method: "PUT",
+				headers: {
+					"Content-Type": "application/json",
+				},
+				body: JSON.stringify({
+					instanceId: allowedInstance.value,
+				}),
+			});
+			allowedInstance.value = null;
+			await refresh();
+			snackbar.value = {
+				value: true,
+				success: true,
+				message: res.message,
+			};
+		}
+	} catch (error) {
+		if (isFetchError(error)) {
+			snackbar.value = {
+				value: true,
+				success: false,
+				message: error.data.message || error.message,
+			};
+		} else throw error;
+	}
 });
 
 const deleteAllowed = async (id: number) => {
-  try {
-    const data = await $fetch(`/api/instance/allowed`, {
-      method: "DELETE",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        instanceId: id,
-      }),
-    });
-    await refresh();
-    snackbar.value = {
-      value: true,
-      success: true,
-      message: data.message,
-    };
-  } catch (error) {
-    if (isFetchError(error)) {
-      snackbar.value = {
-        value: true,
-        success: false,
-        message: error.data.message || error.message,
-      };
-    } else throw error;
-  }
+	try {
+		const data = await $fetch("/api/instance/allowed", {
+			method: "DELETE",
+			headers: {
+				"Content-Type": "application/json",
+			},
+			body: JSON.stringify({
+				instanceId: id,
+			}),
+		});
+		await refresh();
+		snackbar.value = {
+			value: true,
+			success: true,
+			message: data.message,
+		};
+	} catch (error) {
+		if (isFetchError(error)) {
+			snackbar.value = {
+				value: true,
+				success: false,
+				message: error.data.message || error.message,
+			};
+		} else throw error;
+	}
 };
 </script>
 

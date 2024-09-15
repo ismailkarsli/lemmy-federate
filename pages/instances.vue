@@ -4,10 +4,10 @@ const skip = computed(() => (page.value - 1) * perPage);
 const perPage = 10;
 
 const { data, pending } = useFetch("/api/instance/all", {
-  query: {
-    skip,
-    take: perPage,
-  },
+	query: {
+		skip,
+		take: perPage,
+	},
 });
 </script>
 

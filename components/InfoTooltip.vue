@@ -2,7 +2,7 @@
 import { ref } from "vue";
 
 const props = defineProps<{
-  text: string;
+	text: string;
 }>();
 
 const show = ref(false);

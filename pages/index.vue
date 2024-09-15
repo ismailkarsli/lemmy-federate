@@ -4,9 +4,9 @@ import { CommunityFollowStatus } from "@prisma/client";
 const community = ref("");
 const loading = ref(false);
 const alert = ref<{
-  active: boolean;
-  type: "error" | "success" | "warning" | "info";
-  message: string;
+	active: boolean;
+	type: "error" | "success" | "warning" | "info";
+	message: string;
 }>();
 const readMore = ref(false);
 const page = ref(1);
@@ -14,83 +14,83 @@ const skip = computed(() => (page.value - 1) * perPage);
 const perPage = 10;
 
 const { data, pending, refresh } = useFetch("/api/community", {
-  query: {
-    skip,
-    take: perPage,
-  },
+	query: {
+		skip,
+		take: perPage,
+	},
 });
 
 const communitiesWithProgress = computed(() => {
-  return data.value?.communities.map((item) => {
-    const finished = [],
-      inProgress = [],
-      error = [],
-      notAllowed = [];
+	return data.value?.communities.map((item) => {
+		const finished = [];
+		const inProgress = [];
+		const error = [];
+		const notAllowed = [];
 
-    for (const follow of item.follows) {
-      switch (follow.status) {
-        case CommunityFollowStatus.DONE:
-          finished.push(follow);
-          break;
-        case CommunityFollowStatus.IN_PROGRESS:
-          inProgress.push(follow);
-          break;
-        case CommunityFollowStatus.ERROR:
-          error.push(follow);
-          break;
-        case CommunityFollowStatus.NOT_ALLOWED:
-          notAllowed.push(follow);
-          break;
-      }
-    }
-    return {
-      ...item,
-      progress: {
-        count: item.follows.length,
-        finished,
-        inProgress,
-        error,
-        notAllowed,
-      },
-    };
-  });
+		for (const follow of item.follows) {
+			switch (follow.status) {
+				case CommunityFollowStatus.DONE:
+					finished.push(follow);
+					break;
+				case CommunityFollowStatus.IN_PROGRESS:
+					inProgress.push(follow);
+					break;
+				case CommunityFollowStatus.ERROR:
+					error.push(follow);
+					break;
+				case CommunityFollowStatus.NOT_ALLOWED:
+					notAllowed.push(follow);
+					break;
+			}
+		}
+		return {
+			...item,
+			progress: {
+				count: item.follows.length,
+				finished,
+				inProgress,
+				error,
+				notAllowed,
+			},
+		};
+	});
 });
 
 const submit = async () => {
-  try {
-    loading.value = true;
-    const data = await $fetch("/api/community", {
-      method: "POST",
-      body: {
-        community: community.value,
-      },
-    });
+	try {
+		loading.value = true;
+		const data = await $fetch("/api/community", {
+			method: "POST",
+			body: {
+				community: community.value,
+			},
+		});
 
-    alert.value = {
-      active: true,
-      type: "success",
-      message: data.message,
-    };
-    community.value = "";
-    await refresh();
-  } catch (error) {
-    if (isFetchError(error)) {
-      alert.value = {
-        active: true,
-        type: "error",
-        message: error.data.message || error.message,
-      };
-    } else throw error;
-  } finally {
-    loading.value = false;
-  }
+		alert.value = {
+			active: true,
+			type: "success",
+			message: data.message,
+		};
+		community.value = "";
+		await refresh();
+	} catch (error) {
+		if (isFetchError(error)) {
+			alert.value = {
+				active: true,
+				type: "error",
+				message: error.data.message || error.message,
+			};
+		} else throw error;
+	} finally {
+		loading.value = false;
+	}
 };
 
 onMounted(() => {
-  setInterval(() => {
-    // if we're in page 1, refresh every 15 seconds
-    if (page.value === 1) refresh();
-  }, 15000);
+	setInterval(() => {
+		// if we're in page 1, refresh every 15 seconds
+		if (page.value === 1) refresh();
+	}, 15000);
 });
 </script>
 

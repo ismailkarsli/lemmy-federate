@@ -4,11 +4,11 @@ const authStore = useAuthStore();
 const loading = ref(false);
 const menu = ref(false);
 const alert = ref<{
-  type: "error" | "success" | "warning" | "info";
-  message: string;
+	type: "error" | "success" | "warning" | "info";
+	message: string;
 }>({
-  type: "warning",
-  message: "A code will be sent to your account",
+	type: "warning",
+	message: "A code will be sent to your account",
 });
 const codePrompt = ref(false);
 
@@ -17,41 +17,41 @@ const instance = ref("");
 const code = ref("");
 
 const submit = async () => {
-  try {
-    loading.value = true;
-    const data = await $fetch("/api/auth/login", {
-      method: "POST",
-      body: {
-        username: username.value,
-        instance: instance.value,
-        code: code.value,
-      },
-    });
+	try {
+		loading.value = true;
+		const data = await $fetch("/api/auth/login", {
+			method: "POST",
+			body: {
+				username: username.value,
+				instance: instance.value,
+				code: code.value,
+			},
+		});
 
-    if ("message" in data) {
-      alert.value = {
-        type: "success",
-        message: data.message,
-      };
-      codePrompt.value = true;
-      return;
-    }
+		if ("message" in data) {
+			alert.value = {
+				type: "success",
+				message: data.message,
+			};
+			codePrompt.value = true;
+			return;
+		}
 
-    authStore.authenticate(data);
-  } catch (error) {
-    if (isFetchError(error)) {
-      alert.value = {
-        type: "error",
-        message: error.data.message || error.message,
-      };
-    } else throw error;
-  } finally {
-    loading.value = false;
-  }
+		authStore.authenticate(data);
+	} catch (error) {
+		if (isFetchError(error)) {
+			alert.value = {
+				type: "error",
+				message: error.data.message || error.message,
+			};
+		} else throw error;
+	} finally {
+		loading.value = false;
+	}
 };
 function back() {
-  codePrompt.value = false;
-  code.value = "";
+	codePrompt.value = false;
+	code.value = "";
 }
 </script>
 

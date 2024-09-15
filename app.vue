@@ -3,37 +3,37 @@ const authStore = useAuthStore();
 // save the auth state to local storage
 
 onMounted(async () => {
-  // load the auth state from local storage
-  if (process.client) {
-    const authState = localStorage.getItem("auth-store");
-    if (authState) {
-      authStore.$patch(JSON.parse(authState));
-    }
-    authStore.$subscribe((_mutation, state) => {
-      localStorage.setItem("auth-store", JSON.stringify(state));
-    });
-  }
+	// load the auth state from local storage
+	if (process.client) {
+		const authState = localStorage.getItem("auth-store");
+		if (authState) {
+			authStore.$patch(JSON.parse(authState));
+		}
+		authStore.$subscribe((_mutation, state) => {
+			localStorage.setItem("auth-store", JSON.stringify(state));
+		});
+	}
 });
 
 const { isMobile } = useDevice();
 
 useHead({
-  title: "Lemmy Federate",
-  meta: [
-    {
-      name: "description",
-      content:
-        "Lemmy Federate is a tool to federate new communities in the Lemmyverse.",
-    },
-  ],
+	title: "Lemmy Federate",
+	meta: [
+		{
+			name: "description",
+			content:
+				"Lemmy Federate is a tool to federate new communities in the Lemmyverse.",
+		},
+	],
 });
 useSeoMeta({
-  title: "Lemmy Federate",
-  ogTitle: "Lemmy Federate",
-  description:
-    "Lemmy Federate is a tool to federate new communities in the Lemmyverse.",
-  ogDescription:
-    "Lemmy Federate is a tool to federate new communities in the Lemmyverse.",
+	title: "Lemmy Federate",
+	ogTitle: "Lemmy Federate",
+	description:
+		"Lemmy Federate is a tool to federate new communities in the Lemmyverse.",
+	ogDescription:
+		"Lemmy Federate is a tool to federate new communities in the Lemmyverse.",
 });
 </script>
 
