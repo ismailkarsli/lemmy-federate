@@ -11,4 +11,6 @@ I was using Nuxt but it was too bloated for me. I switched to the stack below. I
 - tRPC
 - Vue 3
 - Vuetify
+- Pinia
 - Tanstack Query
+- Typia
