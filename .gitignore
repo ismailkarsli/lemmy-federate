@@ -1,11 +1,3 @@
-# Nuxt dev/build outputs
-.output
-.data
-.nuxt
-.nitro
-.cache
-dist
-
 # Node dependencies
 node_modules
 
@@ -25,4 +17,5 @@ logs
 
 # vscode
 .vscode/*
-!.vscode/example-settings.json
+!.vscode/settings.example.json
+!.vscode/launch.example.json

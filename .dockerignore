@@ -1,6 +1,4 @@
 .git
-.nuxt
-.output
 node_modules
 tmp
 Dockerfile
