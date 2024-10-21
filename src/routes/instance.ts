@@ -1,7 +1,7 @@
 import { type Instance, PrismaClient } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import typia from "typia";
-import { resetSubscriptions } from "../lib/lemmy";
+import { resetSubscriptions } from "../lib/lemmy2";
 import { protectedProcedure, publicProcedure, router } from "../trpc";
 
 interface FindArgs {

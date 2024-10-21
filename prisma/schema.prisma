@@ -17,7 +17,6 @@ model Instance {
   bot_name         String?
   bot_pass         String?
   auto_add         Boolean           @default(false)
-  software         Software
   nsfw             NSFW              @default(BLOCK)
   fediseer         FediseerUsage     @default(BLACKLIST_ONLY)
   communities      Community[]
@@ -83,9 +82,4 @@ enum CommunityFollowStatus {
   ERROR
   NOT_ALLOWED
   NOT_AVAILABLE
-}
-
-enum Software {
-  LEMMY
-  MBIN
 }

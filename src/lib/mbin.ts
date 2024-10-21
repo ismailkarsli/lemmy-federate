@@ -1,6 +1,7 @@
 import ky from "ky";
+import { type Community, LemmyClient, type User } from "./lemmy";
 
-type User = {
+type MbinUser = {
 	userId: number;
 	username: string;
 	createdAt: string;
@@ -8,11 +9,40 @@ type User = {
 	isAdmin: boolean;
 };
 
-// remote user: @username@instance
-// local user: username
-export const getUser = async (host: string, username: string) => {
-	const user = await ky<User>(
-		`https://${host}/api/users/name/${username}`,
-	).json();
-	return user;
+type MbinFederatedInstances = {
+	instances: { domain: string; software: string; version: string }[];
 };
+
+export class MbinClient extends LemmyClient {
+	async getUser(username: string): Promise<User> {
+		const user = await ky<MbinUser>(
+			`https://${this.host}/api/users/name/${username}`,
+		).json();
+		return {
+			username: user.username,
+			isAdmin: user.isAdmin,
+			isBanned: false,
+			isBot: user.isBot,
+		};
+	}
+
+	async getCommunity(name: string): Promise<Community> {
+		throw new Error("MbinClient.getCommunity is not implemented");
+	}
+
+	async followCommunity(community_id: number, follow: boolean) {
+		throw new Error("MbinClient.followCommunity is not implemented");
+	}
+
+	async checkFederationWith(host: string): Promise<boolean> {
+		if (!this.federatedInstances) {
+			const federated = await ky<MbinFederatedInstances>(
+				`https://${this.host}/api/federated`,
+			).json();
+			this.federatedInstances = new Set(
+				federated.instances.map((i) => i.domain),
+			);
+		}
+		return this.federatedInstances.has(host);
+	}
+}

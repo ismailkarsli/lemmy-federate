@@ -4,12 +4,7 @@ import {
 	PrismaClient,
 } from "@prisma/client";
 import type { LemmyErrorType, Login } from "lemmy-js-client";
-import {
-	conditionalFollow,
-	conditionalFollowWithAllInstances,
-	getHttpClient,
-	unfollowWithAllInstances,
-} from "../src/lib/lemmy";
+import { conditionalFollow } from "../src/lib/federation-utils";
 
 const prisma = new PrismaClient();
 

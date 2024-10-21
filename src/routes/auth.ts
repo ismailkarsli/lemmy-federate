@@ -3,10 +3,11 @@ import { TRPCError } from "@trpc/server";
 import jwt from "jsonwebtoken";
 import ms from "ms";
 import typia from "typia";
+import { getClient } from "../lib/federation-utils";
+import { sendAuthCode } from "../lib/federation-utils";
 import { getGuarantees } from "../lib/fediseer";
-import { getHttpClient, sendAuthCode } from "../lib/lemmy";
-import { getUser } from "../lib/mbin";
-import { getInstanceSoftware, randomNumber } from "../lib/utils";
+import { MbinClient } from "../lib/mbin";
+import { randomNumber } from "../lib/utils";
 import { publicProcedure, router } from "../trpc";
 
 const prisma = new PrismaClient();
@@ -47,34 +48,21 @@ export const authRouter = router({
 				});
 			}
 
-			const software = await getInstanceSoftware(host);
-			if (software.name === "lemmy") {
-				const lemmyClient = await getHttpClient(host);
-				const siteView = await lemmyClient.getSite();
-				const isAdmin = siteView.admins.some(
-					({ person }) =>
-						person.name === body.username && !person.banned && !person.deleted,
-				);
-				if (!isAdmin) {
-					throw new TRPCError({
-						code: "FORBIDDEN",
-						message: "You are not an admin on this instance",
-					});
-				}
-			} else {
-				const user = await getUser(host, body.username);
-				if (!user.isAdmin) {
-					throw new TRPCError({
-						code: "FORBIDDEN",
-						message: "You are not an admin on this instance",
-					});
-				}
+			const client = await getClient(host);
+			const user_ = await client.getUser(body.username);
+			const canLogin = user_.isAdmin && !user_.isBanned;
+			if (!canLogin) {
+				throw new TRPCError({
+					code: "FORBIDDEN",
+					message: "You are not an admin on this instance",
+				});
 			}
 
 			/**
 			 * Only allow instances that have guarantees in Fediseer
+			 * Disabled for Mbin for now
 			 */
-			if (software.name === "lemmy") {
+			if (!(client instanceof MbinClient)) {
 				const guarantees = await getGuarantees(host);
 				if (!guarantees?.domains?.length) {
 					throw new TRPCError({
@@ -86,12 +74,7 @@ export const authRouter = router({
 
 			let instance = await prisma.instance.findFirst({ where: { host: host } });
 			if (!instance) {
-				instance = await prisma.instance.create({
-					data: {
-						host,
-						software: software.name === "lemmy" ? "LEMMY" : "MBIN",
-					},
-				});
+				instance = await prisma.instance.create({ data: { host } });
 			}
 
 			if (body.code) {
@@ -102,9 +85,7 @@ export const authRouter = router({
 							instanceId: instance.id,
 						},
 						code: body.code,
-						codeExp: {
-							gte: new Date(),
-						},
+						codeExp: { gte: new Date() },
 					},
 					include: {
 						instance: true,

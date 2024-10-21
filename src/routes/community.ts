@@ -1,7 +1,10 @@
 import { CommunityFollowStatus, PrismaClient } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import typia from "typia";
-import { conditionalFollowWithAllInstances, getHttpClient } from "../lib/lemmy";
+import {
+	conditionalFollowWithAllInstances,
+	getClient,
+} from "../lib/federation-utils";
 import { publicProcedure, router } from "../trpc";
 
 const prisma = new PrismaClient();
@@ -53,22 +56,21 @@ export const communityRouter = router({
 			}
 
 			try {
-				const lemmyClient = await getHttpClient(host);
-				const communityViewResponse = await lemmyClient.getCommunity({ name });
-				const community = communityViewResponse?.community_view.community;
+				const lemmyClient = await getClient(host);
+				const community = await lemmyClient.getCommunity(name);
 				if (!community) {
 					throw new TRPCError({
 						code: "BAD_REQUEST",
 						message: "Community not found on the instance.",
 					});
 				}
-				if (community.deleted || community.removed) {
+				if (community.isDeleted || community.isRemoved) {
 					throw new TRPCError({
 						code: "BAD_REQUEST",
 						message: "Community is deleted or removed on the instance.",
 					});
 				}
-				if (community.visibility === "LocalOnly") {
+				if (!community.public) {
 					throw new TRPCError({
 						code: "BAD_REQUEST",
 						message: "Community is local only on the instance.",
