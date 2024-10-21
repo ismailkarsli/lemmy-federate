@@ -4,7 +4,9 @@ import jwt from "jsonwebtoken";
 import ms from "ms";
 import typia from "typia";
 import { getGuarantees } from "../lib/fediseer";
-import { getHttpClient, randomNumber, sendAuthCode } from "../lib/lemmy";
+import { getHttpClient, sendAuthCode } from "../lib/lemmy";
+import { getUser } from "../lib/mbin";
+import { getInstanceSoftware, randomNumber } from "../lib/utils";
 import { publicProcedure, router } from "../trpc";
 
 const prisma = new PrismaClient();
@@ -45,33 +47,51 @@ export const authRouter = router({
 				});
 			}
 
+			const software = await getInstanceSoftware(host);
+			if (software.name === "lemmy") {
+				const lemmyClient = await getHttpClient(host);
+				const siteView = await lemmyClient.getSite();
+				const isAdmin = siteView.admins.some(
+					({ person }) =>
+						person.name === body.username && !person.banned && !person.deleted,
+				);
+				if (!isAdmin) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "You are not an admin on this instance",
+					});
+				}
+			} else {
+				const user = await getUser(host, body.username);
+				if (!user.isAdmin) {
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "You are not an admin on this instance",
+					});
+				}
+			}
+
 			/**
 			 * Only allow instances that have guarantees in Fediseer
 			 */
-			const guarantees = await getGuarantees(host);
-			if (!guarantees?.domains?.length) {
-				throw new TRPCError({
-					code: "CONFLICT",
-					message: "No guarantees found for this instance",
-				});
-			}
-
-			const lemmyClient = await getHttpClient(host);
-			const siteView = await lemmyClient.getSite();
-			const isAdmin = siteView.admins.some(
-				({ person }) =>
-					person.name === body.username && !person.banned && !person.deleted,
-			);
-			if (!isAdmin) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "You are not an admin on this instance",
-				});
+			if (software.name === "lemmy") {
+				const guarantees = await getGuarantees(host);
+				if (!guarantees?.domains?.length) {
+					throw new TRPCError({
+						code: "CONFLICT",
+						message: "No guarantees found for this instance",
+					});
+				}
 			}
 
 			let instance = await prisma.instance.findFirst({ where: { host: host } });
 			if (!instance) {
-				instance = await prisma.instance.create({ data: { host } });
+				instance = await prisma.instance.create({
+					data: {
+						host,
+						software: software.name === "lemmy" ? "LEMMY" : "MBIN",
+					},
+				});
 			}
 
 			if (body.code) {
