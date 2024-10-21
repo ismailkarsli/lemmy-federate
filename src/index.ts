@@ -23,7 +23,10 @@ export type AppRouter = typeof appRouter;
 app.use(
 	"/api/*",
 	cors({
-		origin: ["http://localhost:3000", "http://localhost:5173"],
+		origin:
+			process.env.NODE_ENV === "production"
+				? "https://lemmy-federate.com"
+				: ["http://localhost:3000", "http://localhost:5173"],
 		credentials: true,
 	}),
 );

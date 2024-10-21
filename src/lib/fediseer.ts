@@ -53,7 +53,7 @@ export const getGuarantees = async (instance: string) => {
 		return guarantees;
 	} catch (e) {
 		throw new TRPCError({
-			code: "INTERNAL_SERVER_ERROR",
+			code: "NOT_FOUND",
 			message: "Failed to fetch guarantees from Fediseer",
 		});
 	}
@@ -74,7 +74,7 @@ export const getCensuresGiven = async (instance: string) => {
 		return censures;
 	} catch (e) {
 		throw new TRPCError({
-			code: "INTERNAL_SERVER_ERROR",
+			code: "NOT_FOUND",
 			message: "Failed to fetch censures from Fediseer",
 		});
 	}
@@ -93,7 +93,7 @@ export const getEndorsements = async (instance: string) => {
 		return endorsements;
 	} catch (e) {
 		throw new TRPCError({
-			code: "INTERNAL_SERVER_ERROR",
+			code: "NOT_FOUND",
 			message: "Failed to fetch endorsements from Fediseer",
 		});
 	}

@@ -32,7 +32,20 @@ export async function createContext({
 	const token = getCookie("token");
 	let user: JWTUser | null = null;
 	if (token) {
-		user = jwt.verify(token, SECRET_KEY) as JWTUser;
+		try {
+			user = jwt.verify(token, SECRET_KEY) as JWTUser;
+		} catch (e) {
+			setCookie("token", "", {
+				maxAge: -1,
+				httpOnly: true,
+				sameSite: "strict",
+				secure: req.headers.get("x-forwarded-proto") === "https",
+			});
+			throw new TRPCError({
+				code: "UNAUTHORIZED",
+				message: "Invalid token",
+			});
+		}
 	}
 
 	return {

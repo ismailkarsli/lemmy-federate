@@ -1,4 +1,3 @@
-import { randomInt } from "node:crypto";
 import {
 	type Community,
 	type CommunityFollow,
@@ -29,11 +28,6 @@ if (!BOT_INSTANCE || !BOT_USERNAME || !BOT_PASSWORD) {
 }
 
 const prisma = new PrismaClient();
-
-export const randomNumber = (length: number) => {
-	/// 100000 -> 999999
-	return randomInt(10 ** (length - 1), 10 ** length - 1);
-};
 
 export const sendAuthCode = async (
 	username: string,

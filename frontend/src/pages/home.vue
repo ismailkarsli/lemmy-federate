@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { CommunityFollowStatus } from "@prisma/client";
 import { keepPreviousData, useMutation, useQuery } from "@tanstack/vue-query";
 import { computed, ref } from "vue";
 import { trpc } from "../trpc";
@@ -35,16 +34,16 @@ const communitiesWithProgress = computed(() => {
 
     for (const follow of item.follows) {
       switch (follow.status) {
-        case CommunityFollowStatus.DONE:
+        case "DONE":
           finished.push(follow);
           break;
-        case CommunityFollowStatus.IN_PROGRESS:
+        case "IN_PROGRESS":
           inProgress.push(follow);
           break;
-        case CommunityFollowStatus.ERROR:
+        case "ERROR":
           error.push(follow);
           break;
-        case CommunityFollowStatus.NOT_ALLOWED:
+        case "NOT_ALLOWED":
           notAllowed.push(follow);
           break;
       }
