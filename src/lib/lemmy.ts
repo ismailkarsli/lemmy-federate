@@ -75,6 +75,7 @@ export class LemmyClient {
 	 * @returns Whetever the instance is federated with this instance
 	 */
 	async checkFederationWith(host: string) {
+		if (host === this.host) return true;
 		if (!this.federatedInstances) {
 			const client = await this.getHttpClient();
 			const res = await client.getFederatedInstances();

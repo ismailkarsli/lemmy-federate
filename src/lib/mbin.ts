@@ -35,6 +35,7 @@ export class MbinClient extends LemmyClient {
 	}
 
 	async checkFederationWith(host: string): Promise<boolean> {
+		if (host === this.host) return true;
 		if (!this.federatedInstances) {
 			const federated = await ky<MbinFederatedInstances>(
 				`https://${this.host}/api/federated`,

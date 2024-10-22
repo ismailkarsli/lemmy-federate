@@ -47,8 +47,8 @@ app.use(
 	}),
 );
 
-app.all("/assets/*", serveStatic({ root: "/frontend/dist" }));
-app.get("/favicon.ico", serveStatic({ path: "/frontend/dist/favicon.ico" }));
-app.all("*", serveStatic({ path: "/frontend/dist/index.html" }));
+app.all("/assets/*", serveStatic({ root: "/dist/frontend" }));
+app.get("/favicon.ico", serveStatic({ path: "/dist/frontend/favicon.ico" }));
+app.all("*", serveStatic({ path: "/dist/frontend/index.html" }));
 
 export default app;
