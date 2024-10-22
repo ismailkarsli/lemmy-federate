@@ -1,4 +1,9 @@
-import { LemmyHttp, type SubscribedType } from "lemmy-js-client";
+import {
+	LemmyHttp,
+	type Login,
+	type LoginResponse,
+	type SubscribedType,
+} from "lemmy-js-client";
 
 export type User = {
 	username: string;
@@ -13,7 +18,7 @@ export type Community = {
 	isDeleted: boolean;
 	isRemoved: boolean;
 	nsfw: boolean;
-	localSubscribers: number;
+	localSubscribers: number | null;
 	subscribed: SubscribedType;
 	public: boolean;
 };
@@ -23,7 +28,7 @@ export class LemmyClient {
 	protected username?: string;
 	protected password?: string;
 	protected federatedInstances?: Set<string>;
-	private httpClient?: LemmyHttp;
+	private httpClient?: LemmyHttpExtended;
 	constructor(host: string, username?: string, password?: string) {
 		this.host = host;
 		this.username = username;
@@ -84,11 +89,11 @@ export class LemmyClient {
 	}
 
 	/**
-	 * @returns Authenticated LemmyHttp client for the instance
+	 * @returns Authenticated LemmyHttpExtended client for the instance
 	 */
 	private async getHttpClient() {
 		if (!this.httpClient) {
-			this.httpClient = new LemmyHttp(`https://${this.host}`);
+			this.httpClient = new LemmyHttpExtended(`https://${this.host}`);
 			if (this.username && this.password) {
 				await this.httpClient.login({
 					username_or_email: this.username,
@@ -97,5 +102,38 @@ export class LemmyClient {
 			}
 		}
 		return this.httpClient;
+	}
+}
+
+// On some functions auth token is not included in the request like /community/follow or /private_message
+export class LemmyHttpExtended extends LemmyHttp {
+	public jwt?: string;
+	constructor(
+		baseUrl: string,
+		options?: {
+			fetchFunction?: typeof fetch;
+			headers?: {
+				[key: string]: string;
+			};
+		},
+	) {
+		const fetchToUse = options?.fetchFunction || fetch;
+		const fetchFunction: typeof fetch = async (url, init) => {
+			return await fetchToUse(url, {
+				...init,
+				headers: {
+					...init?.headers,
+					Authorization: this.jwt ? `Bearer ${this.jwt}` : "",
+				},
+			});
+		};
+
+		super(baseUrl, { ...options, fetchFunction });
+	}
+
+	async login(form: Login): Promise<LoginResponse> {
+		const res = await super.login(form);
+		this.jwt = res.jwt;
+		return res;
 	}
 }

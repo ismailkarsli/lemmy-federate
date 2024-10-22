@@ -4,7 +4,10 @@ import {
 	PrismaClient,
 } from "@prisma/client";
 import type { LemmyErrorType, Login } from "lemmy-js-client";
-import { conditionalFollow } from "../src/lib/federation-utils";
+import {
+	conditionalFollow,
+	unfollowWithAllInstances,
+} from "../src/lib/federation-utils";
 
 const prisma = new PrismaClient();
 
@@ -14,7 +17,13 @@ const prisma = new PrismaClient();
 async function updateFollows() {
 	const filter = {
 		status: {
-			in: ["NOT_AVAILABLE", "IN_PROGRESS", "ERROR"],
+			in: [
+				"NOT_AVAILABLE",
+				"FEDERATED_BY_BOT",
+				"WAITING",
+				"IN_PROGRESS",
+				"ERROR",
+			],
 		},
 	} satisfies Prisma.CommunityFollowWhereInput;
 	const recordCount = await prisma.communityFollow.count({

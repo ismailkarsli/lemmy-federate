@@ -8,10 +8,9 @@ import {
 	PrismaClient,
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import { LemmyHttp } from "lemmy-js-client";
 import ms from "ms";
 import { getCensuresGiven, getEndorsements } from "./fediseer";
-import { LemmyClient } from "./lemmy";
+import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { getInstanceSoftware } from "./utils";
 
@@ -156,10 +155,18 @@ export const conditionalFollow = async (
 	);
 	const localSubscribers = localCommunity.localSubscribers;
 
+	// We can't retrieve local subscriber count. Just follow until we can.
+	if (localSubscribers === null) {
+		if (localCommunity.subscribed === "NotSubscribed") {
+			await localClient.followCommunity(localCommunity.id, true);
+		}
+		return CommunityFollowStatus.IN_PROGRESS;
+	}
+
 	// Community has other subscribers than the bot
 	if (localSubscribers > (localCommunity.subscribed === "Subscribed" ? 1 : 0)) {
 		await localClient.followCommunity(localCommunity.id, false);
-		return CommunityFollowStatus.DONE;
+		return CommunityFollowStatus.FEDERATED_BY_USER;
 	}
 
 	// if stuck in "Pending" state, unfollow and return error. This way we can retry in next run.
@@ -172,7 +179,7 @@ export const conditionalFollow = async (
 	if (localCommunity.subscribed !== "Subscribed") {
 		await localClient.followCommunity(localCommunity.id, true);
 	}
-	return CommunityFollowStatus.IN_PROGRESS;
+	return CommunityFollowStatus.FEDERATED_BY_BOT;
 };
 
 export const conditionalFollowWithAllInstances = async (
@@ -207,7 +214,7 @@ export const conditionalFollowWithAllInstances = async (
 	});
 
 	for (const cf of communityFollows) {
-		let status: CommunityFollowStatus = CommunityFollowStatus.IN_PROGRESS;
+		let status: CommunityFollowStatus = CommunityFollowStatus.WAITING;
 		try {
 			status = await conditionalFollow(cf);
 		} catch (e) {
@@ -300,7 +307,7 @@ export async function resetSubscriptions(instance: Instance) {
 	// 			instanceId: instance.id,
 	// 		},
 	// 		data: {
-	// 			status: CommunityFollowStatus.IN_PROGRESS,
+	// 			status: CommunityFollowStatus.WAITING,
 	// 		},
 	// 	});
 	// } catch (e) {
@@ -314,7 +321,7 @@ const BOT_PASSWORD = process.env.BOT_PASSWORD;
 if (!BOT_INSTANCE || !BOT_USERNAME || !BOT_PASSWORD) {
 	throw new Error("BOT_INSTANCE, BOT_USERNAME, and BOT_PASSWORD are required");
 }
-let BOT_HTTP_CLIENT: LemmyHttp | undefined; // using standard LemmyHttp for bot
+let BOT_HTTP_CLIENT: LemmyHttpExtended | undefined; // using standard LemmyHttp for bot
 
 export const sendAuthCode = async (
 	username: string,
@@ -322,7 +329,7 @@ export const sendAuthCode = async (
 	code: string,
 ) => {
 	if (!BOT_HTTP_CLIENT) {
-		BOT_HTTP_CLIENT = new LemmyHttp(`https://${BOT_INSTANCE}`);
+		BOT_HTTP_CLIENT = new LemmyHttpExtended(`https://${BOT_INSTANCE}`);
 		await BOT_HTTP_CLIENT.login({
 			username_or_email: BOT_USERNAME,
 			password: BOT_PASSWORD,

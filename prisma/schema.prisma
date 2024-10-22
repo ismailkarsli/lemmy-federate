@@ -12,7 +12,7 @@ datasource db {
 
 model Instance {
   id               Int               @id @default(autoincrement())
-  host             String            @unique
+  host             String            @unique /// @format hostname
   enabled          Boolean           @default(false)
   bot_name         String?
   bot_pass         String?
@@ -77,9 +77,11 @@ enum NSFW {
 }
 
 enum CommunityFollowStatus {
-  DONE
-  IN_PROGRESS
-  ERROR
-  NOT_ALLOWED
-  NOT_AVAILABLE
+  FEDERATED_BY_USER /// A user is followed from remote instance. Bot can unsubscribe.
+  FEDERATED_BY_BOT /// Bot is subscribed and waiting for other users.
+  IN_PROGRESS /// Bot is subscribed but can't determine if it should unsubscribe because there is no local subscribe count.
+  WAITING /// Waiting to process. Default status.
+  ERROR /// Errored. Retry later.
+  NOT_ALLOWED /// One instance does not allow the other.
+  NOT_AVAILABLE /// instance is not enabled. Just skip.
 }

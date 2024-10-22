@@ -112,7 +112,7 @@ export const communityRouter = router({
 					community: addedCommunity,
 				},
 				data: {
-					status: CommunityFollowStatus.IN_PROGRESS,
+					status: CommunityFollowStatus.WAITING,
 				},
 			});
 
@@ -160,7 +160,7 @@ export const communityRouter = router({
 							enabled: true,
 						},
 					}),
-					prisma.$queryRaw`SELECT count(CASE WHEN cf.status = 'DONE' THEN 1 ELSE NULL end)::int as completed, count(CASE WHEN cf.status = 'IN_PROGRESS' THEN 1 ELSE NULL end)::int as inprogress from "CommunityFollow" cf`,
+					prisma.$queryRaw`SELECT count(CASE WHEN cf.status = 'FEDERATED_BY_USER' THEN 1 ELSE NULL end)::int as completed, count(CASE WHEN cf.status = 'FEDERATED_BY_BOT' THEN 1 ELSE NULL end)::int as inprogress from "CommunityFollow" cf`,
 				]);
 
 			return {

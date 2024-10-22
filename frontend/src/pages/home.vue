@@ -27,18 +27,26 @@ const { data, isPending, refetch } = useQuery({
 
 const communitiesWithProgress = computed(() => {
   return data.value?.communities.map((item) => {
-    const finished = [];
+    const federatedByUser = [];
+    const federatedByBot = [];
     const inProgress = [];
+    const waiting = [];
     const error = [];
     const notAllowed = [];
 
     for (const follow of item.follows) {
       switch (follow.status) {
-        case "DONE":
-          finished.push(follow);
+        case "FEDERATED_BY_USER":
+          federatedByUser.push(follow);
+          break;
+        case "FEDERATED_BY_BOT":
+          federatedByBot.push(follow);
           break;
         case "IN_PROGRESS":
           inProgress.push(follow);
+          break;
+        case "WAITING":
+          waiting.push(follow);
           break;
         case "ERROR":
           error.push(follow);
@@ -52,7 +60,9 @@ const communitiesWithProgress = computed(() => {
       ...item,
       progress: {
         count: item.follows.length,
-        finished,
+        federatedByUser,
+        federatedByBot,
+        waiting,
         inProgress,
         error,
         notAllowed,
@@ -224,19 +234,20 @@ const { mutate: submit } = useMutation({
                 </div>
                 <template v-else>
                   <v-menu
-                    v-if="item.progress.finished.length"
+                    v-if="item.progress.federatedByUser.length"
                     location="bottom"
                   >
                     <template v-slot:activator="{ props }">
                       <v-chip color="success" class="mr-2" v-bind="props">
-                        {{ item.progress.finished.length }} federated by user
+                        {{ item.progress.federatedByUser.length }} federated by
+                        user
                       </v-chip>
                     </template>
 
                     <v-card min-width="200">
                       <v-list density="compact">
                         <v-list-item
-                          v-for="follow in item.progress.finished"
+                          v-for="follow in item.progress.federatedByUser"
                           :key="follow.id"
                         >
                           <v-list-item-title>
@@ -247,19 +258,41 @@ const { mutate: submit } = useMutation({
                     </v-card>
                   </v-menu>
                   <v-menu
-                    v-if="item.progress.inProgress.length"
+                    v-if="item.progress.federatedByBot.length"
                     location="bottom"
                   >
                     <template v-slot:activator="{ props }">
                       <v-chip color="warning" class="mr-2" v-bind="props">
-                        {{ item.progress.inProgress.length }} federated by bot
+                        {{ item.progress.federatedByBot.length }} federated by
+                        bot
                       </v-chip>
                     </template>
 
                     <v-card min-width="200">
                       <v-list density="compact">
                         <v-list-item
-                          v-for="follow in item.progress.inProgress"
+                          v-for="follow in item.progress.federatedByBot"
+                          :key="follow.id"
+                        >
+                          <v-list-item-title>
+                            {{ follow.instance.host }}
+                          </v-list-item-title>
+                        </v-list-item>
+                      </v-list>
+                    </v-card>
+                  </v-menu>
+                  <v-menu v-if="item.progress.waiting.length" location="bottom">
+                    <template v-slot:activator="{ props }">
+                      <v-chip color="yellow" class="mr-2" v-bind="props">
+                        {{ item.progress.waiting.length }} waiting to be
+                        processed
+                      </v-chip>
+                    </template>
+
+                    <v-card min-width="200">
+                      <v-list density="compact">
+                        <v-list-item
+                          v-for="follow in item.progress.waiting"
                           :key="follow.id"
                         >
                           <v-list-item-title>
