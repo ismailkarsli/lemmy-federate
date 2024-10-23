@@ -5,11 +5,13 @@ import { cors } from "hono/cors";
 import typia from "typia";
 import { createContext, router } from "./trpc";
 
+import { startJobs } from "../scripts/start-jobs";
 import { authRouter } from "./routes/auth";
 import { communityRouter } from "./routes/community";
 import { instanceRouter } from "./routes/instance";
 
 const APP_URL = typia.assert<string>(process.env.APP_URL);
+const NODE_ENV = typia.assert<string>(process.env.NODE_ENV);
 
 const app = new Hono();
 
@@ -27,7 +29,7 @@ app.use(
 	"/api/*",
 	cors({
 		origin:
-			process.env.NODE_ENV === "production"
+			NODE_ENV === "production"
 				? APP_URL
 				: [APP_URL, "http://localhost:3000", "http://localhost:5173"],
 		credentials: true,
@@ -49,6 +51,8 @@ app.use(
 		},
 	}),
 );
+
+if (NODE_ENV === "production") startJobs();
 
 app.all("/assets/*", serveStatic({ root: "/dist/frontend" }));
 app.get("/favicon.ico", serveStatic({ path: "/dist/frontend/favicon.ico" }));
