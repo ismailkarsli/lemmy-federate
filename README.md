@@ -1,6 +1,6 @@
 # Lemmy Federate
 
-Lemmy Federate is a tool to federate Lemmy communities automatically between instances.
+Lemmy Federate is a tool to federate Lemmy/Mbin communities automatically between instances.
 
 ## Tech stack
 

@@ -111,8 +111,7 @@ const { mutate: submit } = useMutation({
       <v-col cols="12">
         <v-card variant="text">
           <p class="mb-4">
-            Lemmy Federate is a tool to federate new communities in the
-            Lemmyverse.
+            Lemmy Federate is a tool to help new Lemmy/Mbin communities grow.
             <button
               @click="readMore = !readMore"
               variant="text"
@@ -125,7 +124,7 @@ const { mutate: submit } = useMutation({
           <v-expand-transition>
             <div v-show="readMore">
               <p class="mb-4">
-                Communities in Lemmy are <b>not federated</b> by default. So
+                Communities in Lemmy/Mbin are <b>not federated</b> by default. So
                 when you create a new community, it will only be available to
                 your instance. At least 1 person from all other instances must
                 follow it in order to make it available. This tool does that. It
