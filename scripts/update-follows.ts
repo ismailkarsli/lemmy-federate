@@ -3,6 +3,7 @@ import {
 	type Prisma,
 	PrismaClient,
 } from "@prisma/client";
+import { HTTPError, TimeoutError } from "ky";
 import { conditionalFollow } from "../src/lib/federation-utils";
 
 const prisma = new PrismaClient();
@@ -63,10 +64,19 @@ export async function updateFollows() {
 						},
 					});
 				} catch (e) {
-					console.error(
-						`Error while following community periodically ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
-						e,
-					);
+					if (
+						!(
+							e instanceof HTTPError &&
+							((e.response.status >= 500 && e.response.status < 600) ||
+								e.response.status === 429)
+						) &&
+						!(e instanceof TimeoutError)
+					) {
+						console.error(
+							`Error while following community periodically ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
+							e,
+						);
+					}
 					await prisma.communityFollow.update({
 						where: { id: cf.id },
 						data: { status: CommunityFollowStatus.ERROR },
