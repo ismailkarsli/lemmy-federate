@@ -1,5 +1,7 @@
 import {
+	type CommunityView,
 	LemmyHttp,
+	type ListCommunities,
 	type Login,
 	type LoginResponse,
 	type SubscribedType,
@@ -23,11 +25,22 @@ export type Community = {
 	public: boolean;
 };
 
+const lemmyCommunityToCommunity = (cv: CommunityView): Community => ({
+	id: cv.community.id,
+	name: cv.community.name,
+	isDeleted: cv.community.deleted,
+	isRemoved: cv.community.removed,
+	nsfw: cv.community.nsfw,
+	localSubscribers: cv.counts.subscribers_local ?? null,
+	subscribed: cv.subscribed,
+	public: cv.community.visibility === "Public",
+});
+
 export class LemmyClient {
 	public host: string;
-	protected username?: string;
-	protected password?: string;
 	protected federatedInstances?: Set<string>;
+	private username?: string;
+	private password?: string;
 	private httpClient?: LemmyHttpExtended;
 	constructor(host: string, username?: string, password?: string) {
 		this.host = host;
@@ -53,21 +66,18 @@ export class LemmyClient {
 	async getCommunity(name: string): Promise<Community> {
 		const client = await this.getHttpClient();
 		const community = await client.getCommunity({ name });
-		return {
-			id: community.community_view.community.id,
-			name: community.community_view.community.name,
-			isDeleted: community.community_view.community.deleted,
-			isRemoved: community.community_view.community.removed,
-			nsfw: community.community_view.community.nsfw,
-			localSubscribers: community.community_view.counts.subscribers_local,
-			subscribed: community.community_view.subscribed,
-			public: community.community_view.community.visibility === "Public",
-		};
+		return lemmyCommunityToCommunity(community.community_view);
 	}
 
 	async followCommunity(community_id: number, follow: boolean) {
 		const client = await this.getHttpClient();
 		await client.followCommunity({ community_id, follow });
+	}
+
+	async listCommunities(query: ListCommunities): Promise<Community[]> {
+		const client = await this.getHttpClient();
+		const communities = await client.listCommunities(query);
+		return communities.communities.map(lemmyCommunityToCommunity);
 	}
 
 	/**

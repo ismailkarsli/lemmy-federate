@@ -14,11 +14,12 @@ model Instance {
   id               Int               @id @default(autoincrement())
   host             String            @unique /// @format hostname
   enabled          Boolean           @default(false)
-  bot_name         String?
-  bot_pass         String?
-  auto_add         Boolean           @default(false)
   nsfw             NSFW              @default(BLOCK)
   fediseer         FediseerUsage     @default(BLACKLIST_ONLY)
+  auto_add         Boolean           @default(false)
+  software         Software
+  client_id        String?
+  client_secret    String?
   communities      Community[]
   allowedBy        Instance[]        @relation("InstanceAllows")
   allowed          Instance[]        @relation("InstanceAllows")
@@ -59,7 +60,7 @@ model CommunityFollow {
   communityId Int
   createdAt   DateTime              @default(now())
   updatedAt   DateTime              @default(now()) @updatedAt
-  status      CommunityFollowStatus @default(IN_PROGRESS)
+  status      CommunityFollowStatus @default(WAITING)
 
   @@unique([instanceId, communityId])
 }
@@ -84,4 +85,9 @@ enum CommunityFollowStatus {
   ERROR /// Errored. Retry later.
   NOT_ALLOWED /// One instance does not allow the other.
   NOT_AVAILABLE /// instance is not enabled. Just skip.
+}
+
+enum Software {
+  LEMMY
+  MBIN
 }

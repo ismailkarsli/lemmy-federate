@@ -5,6 +5,7 @@ import {
 	conditionalFollowWithAllInstances,
 	getClient,
 } from "../lib/federation-utils";
+import { getInstanceSoftware } from "../lib/utils";
 import { publicProcedure, router } from "../trpc";
 
 const prisma = new PrismaClient();
@@ -55,31 +56,24 @@ export const communityRouter = router({
 				});
 			}
 
-			try {
-				const lemmyClient = await getClient(host);
-				const community = await lemmyClient.getCommunity(name);
-				if (!community) {
-					throw new TRPCError({
-						code: "BAD_REQUEST",
-						message: "Community not found on the instance.",
-					});
-				}
-				if (community.isDeleted || community.isRemoved) {
-					throw new TRPCError({
-						code: "BAD_REQUEST",
-						message: "Community is deleted or removed on the instance.",
-					});
-				}
-				if (!community.public) {
-					throw new TRPCError({
-						code: "BAD_REQUEST",
-						message: "Community is local only on the instance.",
-					});
-				}
-			} catch (error) {
+			const client = getClient(instance);
+			const community = await client.getCommunity(name);
+			if (!community) {
 				throw new TRPCError({
 					code: "BAD_REQUEST",
-					message: `Community not found on the instance. ${error}`,
+					message: "Community not found on the instance.",
+				});
+			}
+			if (community.isDeleted || community.isRemoved) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Community is deleted or removed on the instance.",
+				});
+			}
+			if (!community.public) {
+				throw new TRPCError({
+					code: "BAD_REQUEST",
+					message: "Community is local only on the instance.",
 				});
 			}
 
@@ -160,7 +154,7 @@ export const communityRouter = router({
 							enabled: true,
 						},
 					}),
-					prisma.$queryRaw`SELECT count(CASE WHEN cf.status = 'FEDERATED_BY_USER' THEN 1 ELSE NULL end)::int as completed, count(CASE WHEN cf.status = 'FEDERATED_BY_BOT' THEN 1 ELSE NULL end)::int as inprogress from "CommunityFollow" cf`,
+					prisma.$queryRaw`SELECT count(CASE WHEN cf.status = 'FEDERATED_BY_USER' THEN 1 ELSE NULL end)::int as completed, count(CASE WHEN cf.status IN ('FEDERATED_BY_BOT', 'IN_PROGRESS') THEN 1 ELSE NULL end)::int as inprogress from "CommunityFollow" cf`,
 				]);
 
 			return {

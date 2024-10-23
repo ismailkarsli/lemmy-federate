@@ -7,7 +7,8 @@
 		"defaultBranch": "main"
 	},
 	"files": {
-		"ignoreUnknown": true
+		"ignoreUnknown": true,
+		"ignore": ["**/tsconfig.*.json"]
 	},
 	"formatter": {
 		"enabled": true

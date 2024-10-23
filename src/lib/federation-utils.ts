@@ -8,6 +8,7 @@ import {
 	PrismaClient,
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import type { LemmyErrorType } from "lemmy-js-client";
 import ms from "ms";
 import { getCensuresGiven, getEndorsements } from "./fediseer";
 import { LemmyClient, LemmyHttpExtended } from "./lemmy";
@@ -26,26 +27,26 @@ const clientCacheMap = new Map<
 		expiration: Date;
 	}
 >();
-export const getClient = async (
-	instance: string,
-	username?: string,
-	password?: string,
-) => {
-	const key = username ? `${instance}-${username}` : instance;
+export const getClient = ({
+	host,
+	software,
+	client_id,
+	client_secret,
+}: Pick<Instance, "host" | "client_id" | "client_secret" | "software">) => {
+	const key = client_id ? `${host}-${client_id}` : host;
 	const cached = clientCacheMap.get(key);
 	if (cached && cached.expiration > new Date()) {
 		return cached.client;
 	}
 
-	const software = await getInstanceSoftware(instance);
 	let client: LemmyClient | MbinClient;
-	if (software.name === "lemmy") {
-		client = new LemmyClient(instance, username, password);
-	} else if (software.name === "mbin") {
-		client = new MbinClient(instance, username, password);
-	} else {
-		throw new Error("Invalid software");
-	}
+	const id = client_id ?? undefined;
+	const secret = client_secret ?? undefined;
+	if (software === "LEMMY") {
+		client = new LemmyClient(host, id, secret);
+	} else if (software === "MBIN") {
+		client = new MbinClient(host, id, secret);
+	} else throw new Error("Invalid software");
 
 	clientCacheMap.set(key, {
 		client,
@@ -80,19 +81,17 @@ export const conditionalFollow = async (
 		if (!isAllowed) return CommunityFollowStatus.NOT_ALLOWED;
 	}
 
-	if (!(instance.bot_name && instance.bot_pass) || !instance.enabled) {
+	/**
+	 * If the instance is disabled or doesn't have bot credentials, return not available.
+	 */
+	if (!instance.enabled || !(instance.client_id && instance.client_secret)) {
 		return CommunityFollowStatus.NOT_AVAILABLE;
 	}
 
 	// client of the instance that will subscribe to the community
-	const localClient = await getClient(
-		instance.host,
-		instance.bot_name,
-		instance.bot_pass,
-	);
+	const localClient = getClient(instance);
 	// instance where the community is hosted
-	const remoteClient = await getClient(community.instance.host);
-
+	const remoteClient = getClient(community.instance);
 	/**
 	 * Check if both instances are federated with each other
 	 */
@@ -108,8 +107,12 @@ export const conditionalFollow = async (
 
 	/**
 	 * Check instance's Fediseer policy.
+	 * Disabled for Mbin.
 	 */
-	if (instance.fediseer === FediseerUsage.BLACKLIST_ONLY) {
+	if (
+		instance.fediseer === FediseerUsage.BLACKLIST_ONLY &&
+		!(localClient instanceof MbinClient)
+	) {
 		const censures = await getCensuresGiven(instance.host);
 		if (censures.domains.includes(community.instance.host)) {
 			return CommunityFollowStatus.NOT_ALLOWED;
@@ -164,7 +167,9 @@ export const conditionalFollow = async (
 	}
 
 	// Community has other subscribers than the bot
-	if (localSubscribers > (localCommunity.subscribed === "Subscribed" ? 1 : 0)) {
+	if (
+		localSubscribers > (localCommunity.subscribed !== "NotSubscribed" ? 1 : 0)
+	) {
 		await localClient.followCommunity(localCommunity.id, false);
 		return CommunityFollowStatus.FEDERATED_BY_USER;
 	}
@@ -248,14 +253,8 @@ export const unfollowWithAllInstances = async (community: Community) => {
 	});
 
 	for (const cf of communityFollows) {
-		if (!(cf.instance.bot_name && cf.instance.bot_pass)) continue;
-
 		try {
-			const client = await getClient(
-				cf.instance.host,
-				cf.instance.bot_name,
-				cf.instance.bot_pass,
-			);
+			const client = getClient(cf.instance);
 
 			const { id } = await client.getCommunity(
 				`${cf.community.name}@${cf.community.instance.host}`,
@@ -271,48 +270,45 @@ export const unfollowWithAllInstances = async (community: Community) => {
 };
 
 export async function resetSubscriptions(instance: Instance) {
-	// try {
-	// 	if (!(instance.bot_name && instance.bot_pass)) {
-	// 		throw new Error("Bot name and password are required");
-	// 	}
-	// 	const client = await getClient(instance.host);
-	// 	let page = 0;
-	// 	while (true) {
-	// 		const subscriptions = await client.listCommunities({
-	// 			type_: "Subscribed",
-	// 			limit: 50,
-	// 			page: ++page,
-	// 		});
-	// 		if (subscriptions.communities.length === 0) {
-	// 			break;
-	// 		}
-	// 		for (const subscription of subscriptions.communities) {
-	// 			try {
-	// 				await client.followCommunity({
-	// 					community_id: subscription.community.id,
-	// 					follow: false,
-	// 				});
-	// 			} catch (e) {
-	// 				if ((e as LemmyErrorType)?.error === "rate_limit_error") {
-	// 					await new Promise((resolve) => setTimeout(resolve, ms("1 minute")));
-	// 					continue;
-	// 				}
-	// 				throw e;
-	// 			}
-	// 		}
-	// 	}
-	// 	// make all follows "in progress"
-	// 	await prisma.communityFollow.updateMany({
-	// 		where: {
-	// 			instanceId: instance.id,
-	// 		},
-	// 		data: {
-	// 			status: CommunityFollowStatus.WAITING,
-	// 		},
-	// 	});
-	// } catch (e) {
-	// 	console.error("error", e);
-	// }
+	try {
+		if (!(instance.client_id && instance.client_secret)) {
+			throw new Error("Bot name and password are required");
+		}
+		const client = await getClient(instance);
+		let page = 0;
+		while (true) {
+			const subscriptions = await client.listCommunities({
+				type_: "Subscribed",
+				limit: 50,
+				page: ++page,
+			});
+			if (subscriptions.length === 0) {
+				break;
+			}
+			for (const subscription of subscriptions) {
+				try {
+					await client.followCommunity(subscription.id, false);
+				} catch (e) {
+					if ((e as LemmyErrorType)?.error === "rate_limit_error") {
+						await new Promise((resolve) => setTimeout(resolve, ms("1 minute")));
+						continue;
+					}
+					throw e;
+				}
+			}
+		}
+		// make all follows "WAITING"
+		await prisma.communityFollow.updateMany({
+			where: {
+				instanceId: instance.id,
+			},
+			data: {
+				status: CommunityFollowStatus.WAITING,
+			},
+		});
+	} catch (e) {
+		console.error("error", e);
+	}
 }
 
 const BOT_INSTANCE = process.env.BOT_INSTANCE;

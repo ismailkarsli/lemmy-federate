@@ -6,120 +6,120 @@ import { trpc } from "../trpc";
 
 const instance = ref<Awaited<ReturnType<typeof trpc.instance.get.query>>>();
 const { data, isPending, refetch } = useQuery({
-  queryKey: ["instance"],
-  queryFn: () => trpc.instance.get.query(),
+	queryKey: ["instance"],
+	queryFn: () => trpc.instance.get.query(),
 });
 watchEffect(async () => {
-  if (data.value) {
-    // clone object
-    instance.value = JSON.parse(JSON.stringify(data.value));
-  }
+	if (data.value) {
+		// clone object
+		instance.value = JSON.parse(JSON.stringify(data.value));
+	}
 });
 const { data: allInstances } = useQuery({
-  queryKey: ["allInstances"],
-  queryFn: () => trpc.instance.find.query(),
+	queryKey: ["allInstances"],
+	queryFn: () => trpc.instance.find.query(),
 });
 const snackbar = ref({
-  value: false,
-  success: false,
-  message: "",
+	value: false,
+	success: false,
+	message: "",
 });
 const showPassword = ref(false);
 const allowedInstance = ref<number | null>(null);
 
 const filteredAllInstances = computed(() => {
-  if (instance) {
-    return allInstances.value?.instances.filter(
-      (i) => !instance.value?.allowed.some((a) => a.id === i.id)
-    );
-  }
-  return [];
+	if (instance) {
+		return allInstances.value?.instances.filter(
+			(i) => !instance.value?.allowed.some((a) => a.id === i.id),
+		);
+	}
+	return [];
 });
 
 const { mutate: submit } = useMutation({
-  mutationKey: ["updateInstance"],
-  // biome-ignore lint/style/noNonNullAssertion: todo fix this
-  mutationFn: () => trpc.instance.update.mutate(instance.value!),
-  onSuccess() {
-    snackbar.value = {
-      value: true,
-      success: true,
-      message: "Instance settings saved",
-    };
-  },
-  onError(error) {
-    snackbar.value = {
-      value: true,
-      success: false,
-      message: error.message,
-    };
-  },
+	mutationKey: ["updateInstance"],
+	// biome-ignore lint/style/noNonNullAssertion: todo fix this
+	mutationFn: () => trpc.instance.update.mutate(instance.value!),
+	onSuccess() {
+		snackbar.value = {
+			value: true,
+			success: true,
+			message: "Instance settings saved",
+		};
+	},
+	onError(error) {
+		snackbar.value = {
+			value: true,
+			success: false,
+			message: error.message,
+		};
+	},
 });
 
 const { mutate: resetSubscriptions } = useMutation({
-  mutationKey: ["resetSubscriptions"],
-  mutationFn: () => trpc.instance.resetSubscriptions.query(),
-  onSuccess(data) {
-    snackbar.value = {
-      value: true,
-      success: true,
-      message: data.message,
-    };
-  },
-  onError(error) {
-    snackbar.value = {
-      value: true,
-      success: false,
-      message: error.message,
-    };
-  },
+	mutationKey: ["resetSubscriptions"],
+	mutationFn: () => trpc.instance.resetSubscriptions.query(),
+	onSuccess(data) {
+		snackbar.value = {
+			value: true,
+			success: true,
+			message: data.message,
+		};
+	},
+	onError(error) {
+		snackbar.value = {
+			value: true,
+			success: false,
+			message: error.message,
+		};
+	},
 });
 
 watchEffect(async () => {
-  try {
-    if (allowedInstance.value) {
-      const res = await trpc.instance.allowed.add.mutate({
-        instanceId: allowedInstance.value,
-      });
-      allowedInstance.value = null;
-      await refetch();
-      snackbar.value = {
-        value: true,
-        success: true,
-        message: res.message,
-      };
-    }
-  } catch (error) {
-    if (error instanceof Error) {
-      snackbar.value = {
-        value: true,
-        success: false,
-        message: error.message,
-      };
-    } else throw error;
-  }
+	try {
+		if (allowedInstance.value) {
+			const res = await trpc.instance.allowed.add.mutate({
+				instanceId: allowedInstance.value,
+			});
+			allowedInstance.value = null;
+			await refetch();
+			snackbar.value = {
+				value: true,
+				success: true,
+				message: res.message,
+			};
+		}
+	} catch (error) {
+		if (error instanceof Error) {
+			snackbar.value = {
+				value: true,
+				success: false,
+				message: error.message,
+			};
+		} else throw error;
+	}
 });
 
 const deleteAllowed = async (id: number) => {
-  try {
-    const data = await trpc.instance.allowed.delete.mutate({
-      instanceId: id,
-    });
-    await refetch();
-    snackbar.value = {
-      value: true,
-      success: true,
-      message: data.message,
-    };
-  } catch (error) {
-    if (error instanceof Error) {
-      snackbar.value = {
-        value: true,
-        success: false,
-        message: error.message,
-      };
-    } else throw error;
-  }
+	try {
+		const data = await trpc.instance.allowed.delete.mutate({
+			instanceId: id,
+		});
+		await refetch();
+		snackbar.value = {
+			value: true,
+			success: true,
+			message: data.message,
+		};
+	} catch (error) {
+		if (error instanceof Error) {
+			snackbar.value = {
+				value: true,
+				success: false,
+				message: error.message,
+			};
+		} else throw error;
+	}
 };
 </script>
 
@@ -199,8 +199,12 @@ const deleteAllowed = async (id: number) => {
         </v-col>
         <v-col cols="12" md="6">
           <v-text-field
-            label="Bot username"
-            v-model="instance.bot_name"
+            :label="
+              instance?.software === 'LEMMY'
+                ? 'Bot username'
+                : 'OAuth client id'
+            "
+            v-model="instance.client_id"
             hide-details
           />
         </v-col>
@@ -209,8 +213,12 @@ const deleteAllowed = async (id: number) => {
             :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
             :type="showPassword ? 'text' : 'password'"
             @click:append-inner="showPassword = !showPassword"
-            label="Bot password"
-            v-model="instance.bot_pass"
+            :label="
+              instance?.software === 'LEMMY'
+                ? 'Bot password'
+                : 'OAuth client secret'
+            "
+            v-model="instance.client_secret"
             hide-details
             autocomplete="off"
           />

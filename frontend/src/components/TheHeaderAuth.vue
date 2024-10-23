@@ -9,11 +9,11 @@ const authStore = useAuthStore();
 const loading = ref(false);
 const menu = ref(false);
 const alert = ref<{
-  type: "error" | "success" | "warning" | "info";
-  message: string;
+	type: "error" | "success" | "warning" | "info";
+	message: string;
 }>({
-  type: "warning",
-  message: "A code will be sent to your account",
+	type: "warning",
+	message: "A code will be sent to your account",
 });
 const codePrompt = ref(false);
 
@@ -22,41 +22,41 @@ const instance = ref("");
 const code = ref("");
 
 const { mutate: submit } = useMutation({
-  mutationKey: ["login"],
-  mutationFn: () =>
-    trpc.auth.login.mutate({
-      username: username.value,
-      instance: instance.value,
-      code: code.value,
-    }),
-  onMutate() {
-    loading.value = true;
-  },
-  onSettled() {
-    loading.value = false;
-  },
-  onSuccess(data) {
-    if ("message" in data) {
-      alert.value = {
-        type: "success",
-        message: data.message,
-      };
-      codePrompt.value = true;
-      return;
-    }
+	mutationKey: ["login"],
+	mutationFn: () =>
+		trpc.auth.login.mutate({
+			username: username.value,
+			instance: instance.value,
+			code: code.value,
+		}),
+	onMutate() {
+		loading.value = true;
+	},
+	onSettled() {
+		loading.value = false;
+	},
+	onSuccess(data) {
+		if ("message" in data) {
+			alert.value = {
+				type: "success",
+				message: data.message,
+			};
+			codePrompt.value = true;
+			return;
+		}
 
-    authStore.authenticate(data.user);
-  },
-  onError(error) {
-    alert.value = {
-      type: "error",
-      message: error.message,
-    };
-  },
+		authStore.authenticate(data.user);
+	},
+	onError(error) {
+		alert.value = {
+			type: "error",
+			message: error.message,
+		};
+	},
 });
 function back() {
-  codePrompt.value = false;
-  code.value = "";
+	codePrompt.value = false;
+	code.value = "";
 }
 </script>
 

@@ -6,9 +6,9 @@ import { trpc } from "../trpc";
 const community = ref("");
 const loading = ref(false);
 const alert = ref<{
-  active: boolean;
-  type: "error" | "success" | "warning" | "info";
-  message: string;
+	active: boolean;
+	type: "error" | "success" | "warning" | "info";
+	message: string;
 }>();
 const readMore = ref(false);
 const page = ref(1);
@@ -16,86 +16,85 @@ const skip = computed(() => (page.value - 1) * perPage);
 const perPage = 10;
 
 const { data, isPending, refetch } = useQuery({
-  queryKey: ["communities", page, perPage],
-  placeholderData: keepPreviousData,
-  queryFn: () =>
-    trpc.community.find.query({
-      skip: skip.value,
-      take: perPage,
-    }),
+	queryKey: ["communities", page, perPage],
+	placeholderData: keepPreviousData,
+	queryFn: () =>
+		trpc.community.find.query({
+			skip: skip.value,
+			take: perPage,
+		}),
 });
 
 const communitiesWithProgress = computed(() => {
-  return data.value?.communities.map((item) => {
-    const federatedByUser = [];
-    const federatedByBot = [];
-    const inProgress = [];
-    const waiting = [];
-    const error = [];
-    const notAllowed = [];
+	return data.value?.communities.map((item) => {
+		const federatedByUser = [];
+		const federatedByBot = [];
+		const inProgress = [];
+		const waiting = [];
+		const error = [];
+		const notAllowed = [];
 
-    for (const follow of item.follows) {
-      switch (follow.status) {
-        case "FEDERATED_BY_USER":
-          federatedByUser.push(follow);
-          break;
-        case "FEDERATED_BY_BOT":
-          federatedByBot.push(follow);
-          break;
-        case "IN_PROGRESS":
-          inProgress.push(follow);
-          break;
-        case "WAITING":
-          waiting.push(follow);
-          break;
-        case "ERROR":
-          error.push(follow);
-          break;
-        case "NOT_ALLOWED":
-          notAllowed.push(follow);
-          break;
-      }
-    }
-    return {
-      ...item,
-      progress: {
-        count: item.follows.length,
-        federatedByUser,
-        federatedByBot,
-        waiting,
-        inProgress,
-        error,
-        notAllowed,
-      },
-    };
-  });
+		for (const follow of item.follows) {
+			switch (follow.status) {
+				case "FEDERATED_BY_USER":
+					federatedByUser.push(follow);
+					break;
+				case "FEDERATED_BY_BOT":
+				case "IN_PROGRESS":
+					federatedByBot.push(follow);
+					inProgress.push(follow);
+					break;
+				case "WAITING":
+					waiting.push(follow);
+					break;
+				case "ERROR":
+					error.push(follow);
+					break;
+				case "NOT_ALLOWED":
+					notAllowed.push(follow);
+					break;
+			}
+		}
+		return {
+			...item,
+			progress: {
+				count: item.follows.length,
+				federatedByUser,
+				federatedByBot,
+				waiting,
+				inProgress,
+				error,
+				notAllowed,
+			},
+		};
+	});
 });
 
 const { mutate: submit } = useMutation({
-  mutationKey: ["addCommunity"],
-  mutationFn: () => trpc.community.add.mutate({ community: community.value }),
-  onMutate() {
-    loading.value = true;
-  },
-  onSettled() {
-    loading.value = false;
-  },
-  async onSuccess(data) {
-    alert.value = {
-      active: true,
-      type: "success",
-      message: data.message,
-    };
-    community.value = "";
-    await refetch();
-  },
-  async onError(error) {
-    alert.value = {
-      active: true,
-      type: "error",
-      message: error.message,
-    };
-  },
+	mutationKey: ["addCommunity"],
+	mutationFn: () => trpc.community.add.mutate({ community: community.value }),
+	onMutate() {
+		loading.value = true;
+	},
+	onSettled() {
+		loading.value = false;
+	},
+	async onSuccess(data) {
+		alert.value = {
+			active: true,
+			type: "success",
+			message: data.message,
+		};
+		community.value = "";
+		await refetch();
+	},
+	async onError(error) {
+		alert.value = {
+			active: true,
+			type: "error",
+			message: error.message,
+		};
+	},
 });
 </script>
 
@@ -275,7 +274,22 @@ const { mutate: submit } = useMutation({
                           :key="follow.id"
                         >
                           <v-list-item-title>
-                            {{ follow.instance.host }}
+                            <span class="mr-2">
+                              {{ follow.instance.host }}
+                            </span>
+                            <v-tooltip
+                              v-if="follow.status === 'IN_PROGRESS'"
+                              text="Does not provide local subscriber count."
+                            >
+                              <template v-slot:activator="{ props }">
+                                <v-icon
+                                  v-bind="props"
+                                  icon="mdi-alert"
+                                  size="small"
+                                  color="warning"
+                                ></v-icon>
+                              </template>
+                            </v-tooltip>
                           </v-list-item-title>
                         </v-list-item>
                       </v-list>

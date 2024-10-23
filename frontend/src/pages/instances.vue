@@ -9,13 +9,13 @@ const skip = computed(() => (page.value - 1) * perPage);
 const perPage = 10;
 
 const { data, isPending } = useQuery({
-  queryKey: ["instances", skip, perPage],
-  queryFn: () =>
-    trpc.instance.find.query({
-      skip: skip.value,
-      take: perPage,
-    }),
-  placeholderData: keepPreviousData,
+	queryKey: ["instances", skip, perPage],
+	queryFn: () =>
+		trpc.instance.find.query({
+			skip: skip.value,
+			take: perPage,
+		}),
+	placeholderData: keepPreviousData,
 });
 </script>
 

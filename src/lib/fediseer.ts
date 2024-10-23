@@ -45,9 +45,7 @@ export const getGuarantees = async (instance: string) => {
 
 		const guarantees = await ky<FediseerResponse>(
 			`https://fediseer.com/api/v1/guarantees/${instance}`,
-			{
-				searchParams: { domains: true },
-			},
+			{ searchParams: { domains: true } },
 		).json();
 		await cache.set(guarantees);
 		return guarantees;

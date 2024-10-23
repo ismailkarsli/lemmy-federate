@@ -22,11 +22,7 @@ export async function clearDeletedCommunities() {
 	for (const community of communities) {
 		let remove = false;
 		try {
-			const client = await getClient(
-				community.instance.host,
-				community.instance.bot_name || undefined,
-				community.instance.bot_pass || undefined,
-			);
+			const client = await getClient(community.instance);
 			const c = await client.getCommunity(community.name);
 			// if the community is deleted/removed by user/admin or is not public, delete it
 			if (c.isRemoved || c.isDeleted || !c.public) {

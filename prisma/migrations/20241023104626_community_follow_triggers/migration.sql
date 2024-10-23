@@ -1,4 +1,4 @@
--- add new "CommunityFollow" record if a new "Instance" or "Community" is created
+-- add new "CommunityFollow" record when a new "Instance" or "Community" is created
 CREATE OR REPLACE FUNCTION create_community_follow_on_instance() RETURNS TRIGGER AS $$ BEGIN
 INSERT INTO "CommunityFollow" ("communityId", "instanceId", "updatedAt")
 SELECT "Community"."id",

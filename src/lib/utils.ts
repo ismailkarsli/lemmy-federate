@@ -17,7 +17,9 @@ export const randomNumber = (length: number) => {
 	return randomInt(10 ** (length - 1), 10 ** length - 1);
 };
 
+const softwareCache = new Map<string, Software>();
 export async function getInstanceSoftware(host: string) {
+	if (softwareCache.has(host)) return softwareCache.get(host) as Software;
 	const nodeInfoLinks = await ky<NodeInfoLinks>(
 		`https://${host}/.well-known/nodeinfo`,
 	)
@@ -33,5 +35,6 @@ export async function getInstanceSoftware(host: string) {
 	const nodeInfo = await ky<NodeInfo>(preferredNodeInfoLink.href)
 		.json()
 		.then(typia.createAssert<NodeInfo>());
+	softwareCache.set(host, nodeInfo.software);
 	return nodeInfo.software;
 }

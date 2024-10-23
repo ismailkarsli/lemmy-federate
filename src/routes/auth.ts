@@ -3,11 +3,10 @@ import { TRPCError } from "@trpc/server";
 import jwt from "jsonwebtoken";
 import ms from "ms";
 import typia from "typia";
-import { getClient } from "../lib/federation-utils";
-import { sendAuthCode } from "../lib/federation-utils";
+import { getClient, sendAuthCode } from "../lib/federation-utils";
 import { getGuarantees } from "../lib/fediseer";
 import { MbinClient } from "../lib/mbin";
-import { randomNumber } from "../lib/utils";
+import { getInstanceSoftware, randomNumber } from "../lib/utils";
 import { publicProcedure, router } from "../trpc";
 
 const prisma = new PrismaClient();
@@ -48,7 +47,14 @@ export const authRouter = router({
 				});
 			}
 
-			const client = await getClient(host);
+			const softwareInfo = await getInstanceSoftware(host);
+			const software = softwareInfo.name === "lemmy" ? "LEMMY" : "MBIN";
+			const client = getClient({
+				host,
+				software,
+				client_id: null,
+				client_secret: null,
+			});
 			const user_ = await client.getUser(body.username);
 			const canLogin = user_.isAdmin && !user_.isBanned;
 			if (!canLogin) {
@@ -74,7 +80,24 @@ export const authRouter = router({
 
 			let instance = await prisma.instance.findFirst({ where: { host: host } });
 			if (!instance) {
-				instance = await prisma.instance.create({ data: { host } });
+				instance = await prisma.instance.create({ data: { host, software } });
+			}
+
+			/**
+			 * Create OAuth client for Mbin instances if not exists
+			 */
+			if (
+				software === "MBIN" &&
+				!(instance.client_id || instance.client_secret)
+			) {
+				const oauthClient = await MbinClient.getMbinOauthClient(host);
+				await prisma.instance.update({
+					where: { host },
+					data: {
+						client_id: oauthClient.identifier,
+						client_secret: oauthClient.secret,
+					},
+				});
 			}
 
 			if (body.code) {

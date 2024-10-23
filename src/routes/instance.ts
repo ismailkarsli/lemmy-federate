@@ -41,8 +41,8 @@ export const instanceRouter = router({
 					nsfw: input.nsfw,
 					auto_add: input.auto_add,
 					fediseer: input.fediseer,
-					bot_name: input.bot_name,
-					bot_pass: input.bot_pass,
+					client_id: input.client_id || null,
+					client_secret: input.client_secret || null,
 				},
 			});
 

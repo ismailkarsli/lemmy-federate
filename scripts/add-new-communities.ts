@@ -15,22 +15,15 @@ export async function addNewCommunities() {
 		where: {
 			enabled: true,
 			auto_add: true,
-			bot_name: { not: null },
-			bot_pass: { not: null },
+			AND: [{ client_id: { not: null } }, { client_secret: { not: null } }],
 		},
 	});
 
 	for (const instance of instances) {
 		try {
-			const client = await getClient(
-				instance.host,
-				// biome-ignore lint/style/noNonNullAssertion: we're querying non null instances
-				instance.bot_name!,
-				// biome-ignore lint/style/noNonNullAssertion: we're querying non null instances
-				instance.bot_pass!,
-			);
+			const client = await getClient(instance);
 
-			const { communities } = await client.listCommunities({
+			const communities = await client.listCommunities({
 				type_: "Local",
 				sort: "New",
 				page: 1,
@@ -38,17 +31,17 @@ export async function addNewCommunities() {
 			});
 
 			for (const c of communities) {
-				if (c.community.visibility === "LocalOnly") continue;
+				if (!c.public) continue;
 				const exists = await prisma.community.count({
 					where: {
-						name: c.community.name.toLowerCase(),
+						name: c.name.toLowerCase(),
 						instanceId: instance.id,
 					},
 				});
 				if (!exists) {
 					const addedCommunity = await prisma.community.create({
 						data: {
-							name: c.community.name.toLowerCase(),
+							name: c.name.toLowerCase(),
 							instanceId: instance.id,
 						},
 						include: {

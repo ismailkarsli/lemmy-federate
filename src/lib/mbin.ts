@@ -1,5 +1,11 @@
 import ky from "ky";
+import type { ListCommunities } from "lemmy-js-client";
+import typia from "typia";
 import { type Community, LemmyClient, type User } from "./lemmy";
+
+const CONTACT_EMAIL = typia.assert<string>(process.env.CONTACT_EMAIL);
+const APP_URL = typia.assert<string>(process.env.APP_URL);
+const BOT_SCOPES = ["read", "magazine", "user:profile"];
 
 type MbinUser = {
 	userId: number;
@@ -13,7 +19,48 @@ type MbinFederatedInstances = {
 	instances: { domain: string; software: string; version: string }[];
 };
 
+type MbinMagazine = {
+	magazineId: number;
+	name: string;
+	title: string;
+	description: string;
+	subscriptionsCount: number;
+	isAdult: boolean;
+	isUserSubscribed: boolean;
+};
+
+type MbinOauthClient = {
+	identifier: string;
+	secret: string;
+};
+
+const mbinMagazineToCommunity = (magazine: MbinMagazine): Community => ({
+	id: magazine.magazineId,
+	name: magazine.name,
+	nsfw: magazine.isAdult,
+	// TODO: add this when Mbin supports it: https://github.com/MbinOrg/mbin/issues/1196
+	localSubscribers: null,
+	subscribed: magazine.isUserSubscribed ? "Subscribed" : "NotSubscribed",
+	public: true,
+	isDeleted: false,
+	isRemoved: false,
+});
+
 export class MbinClient extends LemmyClient {
+	private oauthClientId?: string;
+	private oauthClientSecret?: string;
+	private token?: string;
+	private tokenExpires?: number;
+	constructor(
+		host: string,
+		oauthClientId?: string,
+		oauthClientSecret?: string,
+	) {
+		super(host);
+		this.oauthClientId = oauthClientId;
+		this.oauthClientSecret = oauthClientSecret;
+	}
+
 	async getUser(username: string): Promise<User> {
 		const user = await ky<MbinUser>(
 			`https://${this.host}/api/users/name/${username}`,
@@ -27,11 +74,52 @@ export class MbinClient extends LemmyClient {
 	}
 
 	async getCommunity(name: string): Promise<Community> {
-		throw new Error("MbinClient.getCommunity is not implemented");
+		const sName = name.includes("@") ? name : `${name}@${this.host}`;
+		const actors = (
+			await ky<{
+				apActors?: { type: "magazine"; object: MbinMagazine }[];
+			}>(`https://${this.host}/api/search`, {
+				searchParams: { q: sName, p: 1, perPage: 1 },
+				headers: { authorization: `Bearer ${await this.getBearerToken()}` },
+			}).json()
+		).apActors;
+		const magazine = actors?.find((a) => a.type === "magazine")?.object;
+		if (!magazine) throw new Error("Couldn't find magazine");
+		return mbinMagazineToCommunity(magazine);
 	}
 
 	async followCommunity(community_id: number, follow: boolean) {
-		throw new Error("MbinClient.followCommunity is not implemented");
+		const endpoint = follow ? "subscribe" : "unsubscribe";
+		await ky.put(
+			`https://${this.host}/api/magazine/${community_id}/${endpoint}`,
+			{ headers: { Authorization: `Bearer ${await this.getBearerToken()}` } },
+		);
+	}
+
+	async listCommunities(query: ListCommunities): Promise<Community[]> {
+		const endpoint =
+			query.type_ === "Subscribed" ? "magazine/subscribed" : "magazines";
+		let sort: "active" | "hot" | "newest" = "active";
+		if (query.sort?.startsWith("New")) {
+			sort = "newest";
+		} else if (query.sort === "Hot" || query.sort === "Scaled") {
+			sort = "hot";
+		} else {
+			sort = "active";
+		}
+		const magazines = await ky
+			.get<{ items: MbinMagazine[] }>(`https://${this.host}/api/${endpoint}`, {
+				searchParams: {
+					p: query.page || 1,
+					perPage: query.limit || 50,
+					hide_adult: query.show_nsfw ? "show" : "hide",
+					federation: query.type_ === "All" ? "all" : "local",
+					sort,
+				},
+			})
+			.json();
+
+		return magazines.items.map(mbinMagazineToCommunity);
 	}
 
 	async checkFederationWith(host: string): Promise<boolean> {
@@ -45,5 +133,46 @@ export class MbinClient extends LemmyClient {
 			);
 		}
 		return this.federatedInstances.has(host);
+	}
+
+	private async getBearerToken(): Promise<string> {
+		if (!this.oauthClientId || !this.oauthClientSecret) {
+			throw new Error("oauth client id and secret are required");
+		}
+		const body = new FormData();
+		body.append("grant_type", "client_credentials");
+		body.append("client_id", this.oauthClientId);
+		body.append("client_secret", this.oauthClientSecret);
+		body.append("scope", BOT_SCOPES.join(" "));
+		if (!this.token || !this.tokenExpires || this.tokenExpires < Date.now()) {
+			const res = await ky
+				.post<{ expires_in: number; access_token: string }>(
+					`https://${this.host}/token`,
+					{ body },
+				)
+				.json();
+			this.token = res.access_token;
+			this.tokenExpires = Date.now() + res.expires_in * 1000;
+		}
+		return this.token;
+	}
+
+	static async getMbinOauthClient(host: string): Promise<MbinOauthClient> {
+		const oauthClient = await ky
+			.post<MbinOauthClient>(`https://${host}/api/client`, {
+				json: {
+					name: "Lemmy Federate",
+					contactEmail: CONTACT_EMAIL,
+					description: APP_URL,
+					public: false,
+					username: "lemmy_federate_bot",
+					grants: ["client_credentials"],
+					scopes: BOT_SCOPES,
+				},
+			})
+			.json()
+			.then(typia.createAssert<MbinOauthClient>());
+
+		return oauthClient;
 	}
 }
