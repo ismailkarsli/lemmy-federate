@@ -5,7 +5,6 @@ import {
 	conditionalFollowWithAllInstances,
 	getClient,
 } from "../lib/federation-utils";
-import { getInstanceSoftware } from "../lib/utils";
 import { publicProcedure, router } from "../trpc";
 
 const prisma = new PrismaClient();
@@ -13,6 +12,7 @@ const prisma = new PrismaClient();
 interface FindArgs {
 	take?: number;
 	skip?: number;
+	instanceId?: number;
 }
 
 export const communityRouter = router({
@@ -144,9 +144,8 @@ export const communityRouter = router({
 						},
 						skip,
 						take,
-						orderBy: {
-							createdAt: "desc",
-						},
+						orderBy: { createdAt: "desc" },
+						where: { instanceId: input.instanceId },
 					}),
 					prisma.community.count(),
 					prisma.instance.count({

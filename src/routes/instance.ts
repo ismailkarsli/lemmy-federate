@@ -7,6 +7,7 @@ import { protectedProcedure, publicProcedure, router } from "../trpc";
 interface FindArgs {
 	take?: number;
 	skip?: number;
+	enabledOnly?: boolean;
 }
 const prisma = new PrismaClient();
 
@@ -43,6 +44,9 @@ export const instanceRouter = router({
 					fediseer: input.fediseer,
 					client_id: input.client_id || null,
 					client_secret: input.client_secret || null,
+					mode: input.mode,
+					software: input.software,
+					cross_software: input.cross_software,
 				},
 			});
 
@@ -75,14 +79,8 @@ export const instanceRouter = router({
 					},
 					skip,
 					take,
-					orderBy: [
-						{
-							enabled: "desc",
-						},
-						{
-							id: "asc",
-						},
-					],
+					orderBy: [{ enabled: "desc" }, { id: "asc" }],
+					where: input?.enabledOnly ? { enabled: true } : undefined,
 				}),
 				prisma.instance.count(),
 			]);

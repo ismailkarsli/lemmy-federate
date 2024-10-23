@@ -14,15 +14,22 @@ const readMore = ref(false);
 const page = ref(1);
 const skip = computed(() => (page.value - 1) * perPage);
 const perPage = 10;
+const instanceId = ref<number | null>(null);
 
 const { data, isPending, refetch } = useQuery({
-	queryKey: ["communities", page, perPage],
+	queryKey: ["communities", page, perPage, instanceId],
 	placeholderData: keepPreviousData,
 	queryFn: () =>
 		trpc.community.find.query({
 			skip: skip.value,
 			take: perPage,
+			instanceId: instanceId.value ?? undefined,
 		}),
+});
+
+const { data: instances } = useQuery({
+	queryKey: ["allInstances"],
+	queryFn: () => trpc.instance.find.query({ enabledOnly: true }),
 });
 
 const communitiesWithProgress = computed(() => {
@@ -164,8 +171,8 @@ const { mutate: submit } = useMutation({
         </v-row>
       </v-col>
 
-      <v-col rows="12">
-        <v-form class="rounded rounded-md" @submit.prevent="submit()">
+      <v-col cols="12">
+        <v-form @submit.prevent="submit()">
           <v-text-field
             v-model="community"
             label="Community"
@@ -178,6 +185,7 @@ const { mutate: submit } = useMutation({
           >
             <template #append>
               <v-btn
+              class="mr-3"
                 type="submit"
                 prepend-icon="mdi-plus"
                 color="primary"
@@ -185,8 +193,27 @@ const { mutate: submit } = useMutation({
               >
                 Submit
               </v-btn>
+              <v-menu location="bottom" :close-on-content-click="false">
+                <template v-slot:activator="{ props }">
+                  <v-btn icon="mdi-filter-variant" density="comfortable" v-bind="props" />
+                </template>
+                <v-card min-width="300" class="px-2 py-4">
+                  <v-autocomplete
+                    v-model="instanceId"
+                    clearable
+                    variant="filled"
+                    density="default"
+                    hide-details
+                    label="Filter by instance"
+                    :items="instances?.instances"
+                    item-title="host"
+                    item-value="id"
+                  />
+                </v-card>
+              </v-menu>
             </template>
           </v-text-field>
+
           <v-snackbar v-if="alert" v-model="alert.active" :color="alert.type">
             {{ alert.message }}
           </v-snackbar>
