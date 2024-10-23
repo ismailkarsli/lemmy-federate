@@ -193,7 +193,7 @@ const { mutate: submit } = useMutation({
               >
                 Submit
               </v-btn>
-              <v-menu location="bottom" :close-on-content-click="false">
+              <v-menu location="bottom left" :close-on-content-click="false">
                 <template v-slot:activator="{ props }">
                   <v-btn icon="mdi-filter-variant" density="comfortable" v-bind="props" />
                 </template>
