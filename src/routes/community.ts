@@ -147,7 +147,7 @@ export const communityRouter = router({
 						orderBy: { createdAt: "desc" },
 						where: { instanceId: input.instanceId },
 					}),
-					prisma.community.count(),
+					prisma.community.count({ where: { instanceId: input.instanceId } }),
 					prisma.instance.count({
 						where: {
 							enabled: true,
