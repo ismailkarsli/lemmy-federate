@@ -30,7 +30,7 @@ export const trpc = createTRPCClient<AppRouter>({
 	links: [
 		errorHandler,
 		httpBatchLink({
-			url: import.meta.env.VITE_API_URL,
+			url: import.meta.env.PROD ? "/api" : import.meta.env.VITE_API_URL,
 			fetch(url, init) {
 				return fetch(url, { ...init, credentials: "include" });
 			},

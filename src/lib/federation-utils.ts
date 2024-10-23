@@ -256,7 +256,7 @@ export const conditionalFollowWithAllInstances = async (
 						((e.response.status >= 500 && e.response.status < 600) ||
 							e.response.status === 429)
 					) &&
-					e instanceof TimeoutError
+					!(e instanceof TimeoutError)
 				) {
 					console.error(
 						`Error while following community ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
