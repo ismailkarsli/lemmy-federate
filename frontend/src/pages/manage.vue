@@ -151,6 +151,81 @@ const deleteAllowed = async (id: number) => {
           v-model="instance.auto_add"
           hide-details
         />
+        <v-checkbox v-model="instance.cross_software" hide-details>
+          <template v-slot:label>
+            Cross software
+            <info-tooltip>
+              <p>Only federate with instances that use the same software.</p>
+              <p>For
+              example, as a {{ instance.software === 'LEMMY' ? 'Lemmy': 'Mbin' }} instance, check this option to follow only
+              {{ instance.software === 'LEMMY' ? 'Lemmy': 'Mbin' }} instances.
+            </p>
+            </info-tooltip>
+          </template>
+        </v-checkbox>
+        <v-col cols="12">
+          <p>Federation mode</p>
+          <v-row>
+            <v-checkbox
+              label="Mutual"
+              v-model="instance.mode"
+              value="FULL"
+              hide-details
+            >
+              <template v-slot:label>
+                Mutual
+                <info-tooltip>
+                  <ul>
+                    <li>
+                      Your instance will follow other instance communities
+                    </li>
+                    <li>
+                      Other instances will follow your instance communities
+                    </li>
+                  </ul>
+                </info-tooltip>
+              </template>
+            </v-checkbox>
+            <v-checkbox v-model="instance.mode" value="SEED" hide-details>
+              <template v-slot:label>
+                Seed only
+                <info-tooltip>
+                  <ul>
+                    <li>
+                      Your instance <b>won't</b> follow other instance
+                      communities
+                    </li>
+                    <li>
+                      Other instances will follow your instance communities
+                    </li>
+                  </ul>
+                </info-tooltip>
+              </template>
+            </v-checkbox>
+            <!-- <v-checkbox
+              label="Leech only"
+              v-model="instance.mode"
+              value="LEECH"
+              hide-details
+            >
+              <template v-slot:label>
+                Leech only
+                <info-tooltip>
+                  <ul>
+                    <li>
+                      Your instance will follow other instance communities
+                    </li>
+                    <li>
+                      Other instances <b>won't</b> follow your instance
+                      communities
+                    </li>
+                  </ul>
+                </info-tooltip>
+              </template>
+            </v-checkbox> -->
+          </v-row>
+        </v-col>
+
         <v-col cols="12">
           <p>NSFW</p>
           <v-row>

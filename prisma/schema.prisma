@@ -20,6 +20,8 @@ model Instance {
   software         Software
   client_id        String?
   client_secret    String?
+  cross_software   Boolean           @default(false)
+  mode             Mode              @default(FULL)
   communities      Community[]
   allowedBy        Instance[]        @relation("InstanceAllows")
   allowed          Instance[]        @relation("InstanceAllows")
@@ -90,4 +92,10 @@ enum CommunityFollowStatus {
 enum Software {
   LEMMY
   MBIN
+}
+
+enum Mode {
+  FULL
+  SEED
+  LEECH
 }
