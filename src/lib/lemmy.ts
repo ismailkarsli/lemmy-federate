@@ -1,11 +1,14 @@
+import ky, { HTTPError } from "ky";
 import {
 	type CommunityView,
+	type LemmyErrorType,
 	LemmyHttp,
 	type ListCommunities,
 	type Login,
 	type LoginResponse,
 	type SubscribedType,
 } from "lemmy-js-client";
+import ms from "ms";
 
 export type User = {
 	username: string;
@@ -33,7 +36,7 @@ const lemmyCommunityToCommunity = (cv: CommunityView): Community => ({
 	nsfw: cv.community.nsfw,
 	localSubscribers: cv.counts.subscribers_local ?? null,
 	subscribed: cv.subscribed,
-	public: cv.community.visibility === "Public",
+	public: cv.community.visibility ? cv.community.visibility === "Public" : true,
 });
 
 export class LemmyClient {
@@ -42,6 +45,8 @@ export class LemmyClient {
 	private username?: string;
 	private password?: string;
 	private httpClient?: LemmyHttpExtended;
+	// if we get rate limited, we will wait until this time
+	private throttledTo?: number;
 	constructor(host: string, username?: string, password?: string) {
 		this.host = host;
 		this.username = username;
@@ -104,7 +109,56 @@ export class LemmyClient {
 	 */
 	private async getHttpClient() {
 		if (!this.httpClient) {
-			this.httpClient = new LemmyHttpExtended(`https://${this.host}`);
+			const api = ky.create({
+				timeout: ms("1 minute"),
+				retry: 0,
+				hooks: {
+					beforeError: [
+						async (error) => {
+							if (error.response.status === 400) {
+								const lemmyError =
+									(await error.response.json()) as LemmyErrorType;
+								if (lemmyError.error === "rate_limit_error") {
+									// Lemmy instances usually have 10 minute rate limit window
+									this.throttledTo = Date.now() + ms("15 minutes");
+									return new HTTPError(
+										new Response(error.response.body, {
+											status: 429,
+											statusText: "Too Many Requests",
+										}),
+										error.request,
+										error.options,
+									);
+								}
+							} else if (
+								error.response.status >= 500 &&
+								error.response.status < 600
+							) {
+								this.throttledTo = Date.now() + ms("30 minutes");
+							} else {
+								this.throttledTo = ms("5 minute");
+							}
+							return error;
+						},
+					],
+					beforeRequest: [
+						() => {
+							if (this.throttledTo) {
+								if (Date.now() < this.throttledTo) {
+									return new Response(null, {
+										status: 503,
+										statusText: "Service Unavailable",
+									});
+								}
+								this.throttledTo = undefined;
+							}
+						},
+					],
+				},
+			});
+			this.httpClient = new LemmyHttpExtended(`https://${this.host}`, {
+				fetchFunction: api,
+			});
 			if (this.username && this.password) {
 				await this.httpClient.login({
 					username_or_email: this.username,

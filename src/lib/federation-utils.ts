@@ -8,6 +8,7 @@ import {
 	PrismaClient,
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
+import { HTTPError, TimeoutError } from "ky";
 import type { LemmyErrorType } from "lemmy-js-client";
 import ms from "ms";
 import { getCensuresGiven, getEndorsements } from "./fediseer";
@@ -83,6 +84,13 @@ export const conditionalFollow = async (
 	}
 
 	/**
+	 * If the instance is disabled or doesn't have bot credentials, return not available.
+	 */
+	if (!instance.enabled || !(instance.client_id && instance.client_secret)) {
+		return CommunityFollowStatus.NOT_AVAILABLE;
+	}
+
+	/**
 	 * Check if federation modes of instances are compatible
 	 */
 	if (
@@ -101,13 +109,6 @@ export const conditionalFollow = async (
 		instance.software !== community.instance.software
 	) {
 		return CommunityFollowStatus.NOT_ALLOWED;
-	}
-
-	/**
-	 * If the instance is disabled or doesn't have bot credentials, return not available.
-	 */
-	if (!instance.enabled || !(instance.client_id && instance.client_secret)) {
-		return CommunityFollowStatus.NOT_AVAILABLE;
 	}
 
 	// client of the instance that will subscribe to the community
@@ -192,7 +193,9 @@ export const conditionalFollow = async (
 	if (
 		localSubscribers > (localCommunity.subscribed !== "NotSubscribed" ? 1 : 0)
 	) {
-		await localClient.followCommunity(localCommunity.id, false);
+		if (localCommunity.subscribed !== "NotSubscribed") {
+			await localClient.followCommunity(localCommunity.id, false);
+		}
 		return CommunityFollowStatus.FEDERATED_BY_USER;
 	}
 
@@ -240,23 +243,34 @@ export const conditionalFollowWithAllInstances = async (
 		},
 	});
 
-	for (const cf of communityFollows) {
-		let status: CommunityFollowStatus = CommunityFollowStatus.WAITING;
-		try {
-			status = await conditionalFollow(cf);
-		} catch (e) {
-			status = CommunityFollowStatus.ERROR;
-			console.error(
-				`Error while following community ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
-				e,
-			);
-		} finally {
-			await prisma.communityFollow.update({
-				where: { id: cf.id },
-				data: { status },
-			});
-		}
-	}
+	await Promise.all(
+		communityFollows.map(async (cf) => {
+			let status: CommunityFollowStatus = CommunityFollowStatus.WAITING;
+			try {
+				status = await conditionalFollow(cf);
+			} catch (e) {
+				status = CommunityFollowStatus.ERROR;
+				if (
+					!(
+						e instanceof HTTPError &&
+						((e.response.status >= 500 && e.response.status < 600) ||
+							e.response.status === 429)
+					) &&
+					e instanceof TimeoutError
+				) {
+					console.error(
+						`Error while following community ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
+						e,
+					);
+				}
+			} finally {
+				await prisma.communityFollow.update({
+					where: { id: cf.id },
+					data: { status },
+				});
+			}
+		}),
+	);
 };
 
 export const unfollowWithAllInstances = async (community: Community) => {

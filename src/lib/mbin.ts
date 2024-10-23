@@ -1,5 +1,6 @@
 import ky from "ky";
 import type { ListCommunities } from "lemmy-js-client";
+import ms from "ms";
 import typia from "typia";
 import { type Community, LemmyClient, type User } from "./lemmy";
 
@@ -34,6 +35,13 @@ type MbinOauthClient = {
 	secret: string;
 };
 
+const api = ky.create({
+	timeout: ms("5 minutes"),
+	retry: {
+		limit: 50,
+	},
+});
+
 const mbinMagazineToCommunity = (magazine: MbinMagazine): Community => ({
 	id: magazine.magazineId,
 	name: magazine.name,
@@ -62,7 +70,7 @@ export class MbinClient extends LemmyClient {
 	}
 
 	async getUser(username: string): Promise<User> {
-		const user = await ky<MbinUser>(
+		const user = await api<MbinUser>(
 			`https://${this.host}/api/users/name/${username}`,
 		).json();
 		return {
@@ -76,7 +84,7 @@ export class MbinClient extends LemmyClient {
 	async getCommunity(name: string): Promise<Community> {
 		const sName = name.includes("@") ? name : `${name}@${this.host}`;
 		const actors = (
-			await ky<{
+			await api<{
 				apActors?: { type: "magazine"; object: MbinMagazine }[];
 			}>(`https://${this.host}/api/search`, {
 				searchParams: { q: sName, p: 1, perPage: 1 },
@@ -90,7 +98,7 @@ export class MbinClient extends LemmyClient {
 
 	async followCommunity(community_id: number, follow: boolean) {
 		const endpoint = follow ? "subscribe" : "unsubscribe";
-		await ky.put(
+		await api.put(
 			`https://${this.host}/api/magazine/${community_id}/${endpoint}`,
 			{ headers: { Authorization: `Bearer ${await this.getBearerToken()}` } },
 		);
@@ -107,7 +115,7 @@ export class MbinClient extends LemmyClient {
 		} else {
 			sort = "active";
 		}
-		const magazines = await ky
+		const magazines = await api
 			.get<{ items: MbinMagazine[] }>(`https://${this.host}/api/${endpoint}`, {
 				searchParams: {
 					p: query.page || 1,
@@ -125,7 +133,7 @@ export class MbinClient extends LemmyClient {
 	async checkFederationWith(host: string): Promise<boolean> {
 		if (host === this.host) return true;
 		if (!this.federatedInstances) {
-			const federated = await ky<MbinFederatedInstances>(
+			const federated = await api<MbinFederatedInstances>(
 				`https://${this.host}/api/federated`,
 			).json();
 			this.federatedInstances = new Set(
@@ -145,7 +153,7 @@ export class MbinClient extends LemmyClient {
 		body.append("client_secret", this.oauthClientSecret);
 		body.append("scope", BOT_SCOPES.join(" "));
 		if (!this.token || !this.tokenExpires || this.tokenExpires < Date.now()) {
-			const res = await ky
+			const res = await api
 				.post<{ expires_in: number; access_token: string }>(
 					`https://${this.host}/token`,
 					{ body },
@@ -158,7 +166,7 @@ export class MbinClient extends LemmyClient {
 	}
 
 	static async getMbinOauthClient(host: string): Promise<MbinOauthClient> {
-		const oauthClient = await ky
+		const oauthClient = await api
 			.post<MbinOauthClient>(`https://${host}/api/client`, {
 				json: {
 					name: "Lemmy Federate",
