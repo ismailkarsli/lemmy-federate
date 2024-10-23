@@ -173,7 +173,7 @@ export class MbinClient extends LemmyClient {
 					contactEmail: CONTACT_EMAIL,
 					description: APP_URL,
 					public: false,
-					username: "lemmy_federate_bot",
+					username: "mbin_federate_bot",
 					grants: ["client_credentials"],
 					scopes: BOT_SCOPES,
 				},
