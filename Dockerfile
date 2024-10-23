@@ -1,7 +1,8 @@
-FROM oven/bun:1-alpine AS base
+# don't use alpine for now: https://github.com/oven-sh/bun/issues/13983, https://github.com/oven-sh/bun/issues/14292
+FROM oven/bun:1-slim AS base
 ENV NODE_ENV=production
 WORKDIR /app
-RUN apk add --no-cache tini
+RUN apt update && apt install -y tini && rm -rf /var/lib/apt/lists/*
 
 FROM base AS install
 COPY package.json bun.lockb bunfig.toml ./
@@ -13,9 +14,10 @@ COPY . .
 RUN bun run package
 
 FROM base AS release
-COPY --from=build /app/dist /app/dist
 COPY --from=build /app/docker-entrypoint.sh /docker-entrypoint.sh
+COPY --from=build /app/dist /app/dist
 COPY --from=build /app/prisma /app/prisma
-RUN bunx prisma --help 2>&1 >/dev/null # cache prisma cli to avoid re-downloading on startup
+COPY --from=build /app/node_modules /app/node_modules
+RUN bunx prisma --help >/dev/null # cache prisma cli to avoid re-downloading on startup
 EXPOSE 3000
-ENTRYPOINT [ "/sbin/tini", "--", "/docker-entrypoint.sh" ]
+ENTRYPOINT [ "/usr/bin/tini", "--", "/docker-entrypoint.sh" ]
