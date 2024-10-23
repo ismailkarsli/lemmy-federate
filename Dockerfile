@@ -14,5 +14,8 @@ RUN bun run package
 
 FROM base AS release
 COPY --from=build /app/dist /app/dist
+COPY --from=build /app/docker-entrypoint.sh /docker-entrypoint.sh
+COPY --from=build /app/prisma /app/prisma
+RUN bunx prisma --help 2>&1 >/dev/null # cache prisma cli to avoid re-downloading on startup
 EXPOSE 3000
-CMD [ "bun", "run", "./dist/index.js" ]
+ENTRYPOINT [ "/sbin/tini", "--", "/docker-entrypoint.sh" ]
