@@ -2,11 +2,14 @@ import { trpcServer } from "@hono/trpc-server";
 import { Hono } from "hono";
 import { serveStatic } from "hono/bun";
 import { cors } from "hono/cors";
+import typia from "typia";
 import { createContext, router } from "./trpc";
 
 import { authRouter } from "./routes/auth";
 import { communityRouter } from "./routes/community";
 import { instanceRouter } from "./routes/instance";
+
+const APP_URL = typia.assert<string>(process.env.APP_URL);
 
 const app = new Hono();
 
@@ -25,8 +28,8 @@ app.use(
 	cors({
 		origin:
 			process.env.NODE_ENV === "production"
-				? "https://lemmy-federate.com"
-				: ["http://localhost:3000", "http://localhost:5173"],
+				? APP_URL
+				: [APP_URL, "http://localhost:3000", "http://localhost:5173"],
 		credentials: true,
 	}),
 );
