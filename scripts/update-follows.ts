@@ -25,11 +25,11 @@ export async function updateFollows() {
 	});
 	console.info("Started updating", recordCount, "community follows");
 	for (let i = 0; i < recordCount; i += 100) {
+		// update oldest 100 community follows first
 		const communityFollows = await prisma.communityFollow.findMany({
-			skip: i,
 			take: 100,
 			where: filter,
-			orderBy: { communityId: "asc" },
+			orderBy: { updatedAt: "asc" },
 			include: {
 				instance: {
 					include: {
