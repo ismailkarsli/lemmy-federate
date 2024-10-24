@@ -9,6 +9,7 @@ import {
 	type LoginResponse,
 	type SubscribedType,
 } from "lemmy-js-client";
+import ms from "ms";
 import type { FilterNotEndingWith } from "../types/FilterNotEndingWith";
 
 export type User = {
@@ -116,7 +117,7 @@ export class LemmyClient {
 	private async getHttpClient() {
 		if (!this.httpClient) {
 			const api = ky.create({
-				timeout: false,
+				timeout: ms("10 minutes"),
 				retry: 1,
 				hooks: {
 					beforeRequest: [

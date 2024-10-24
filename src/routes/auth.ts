@@ -83,23 +83,6 @@ export const authRouter = router({
 				instance = await prisma.instance.create({ data: { host, software } });
 			}
 
-			/**
-			 * Create OAuth client for Mbin instances if not exists
-			 */
-			if (
-				software === "MBIN" &&
-				!(instance.client_id || instance.client_secret)
-			) {
-				const oauthClient = await MbinClient.getMbinOauthClient(host);
-				await prisma.instance.update({
-					where: { host },
-					data: {
-						client_id: oauthClient.identifier,
-						client_secret: oauthClient.secret,
-					},
-				});
-			}
-
 			if (body.code) {
 				const user = await prisma.user.findUnique({
 					where: {

@@ -2,6 +2,7 @@ import { type Instance, PrismaClient } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import typia from "typia";
 import { resetSubscriptions } from "../lib/federation-utils";
+import { MbinClient } from "../lib/mbin";
 import { protectedProcedure, publicProcedure, router } from "../trpc";
 
 interface FindArgs {
@@ -89,6 +90,34 @@ export const instanceRouter = router({
 				total,
 			};
 		}),
+	createOauthClient: protectedProcedure.mutation(async ({ ctx }) => {
+		const instance = await prisma.instance.findFirst({
+			where: { host: ctx.user.instance },
+		});
+		if (!instance) {
+			throw new TRPCError({
+				code: "NOT_FOUND",
+				message: "Instance not found",
+			});
+		}
+		if (instance.software !== "MBIN") {
+			throw new TRPCError({
+				code: "BAD_REQUEST",
+				message: "Only Mbin instances can create OAuth client",
+			});
+		}
+
+		const oauthClient = await MbinClient.getMbinOauthClient(instance.host);
+		await prisma.instance.update({
+			where: { id: instance.id },
+			data: {
+				client_id: oauthClient.identifier,
+				client_secret: oauthClient.secret,
+			},
+		});
+
+		return { message: "OAuth client successfuly created." };
+	}),
 	resetSubscriptions: protectedProcedure.query(async ({ ctx }) => {
 		const instance = await prisma.instance.findFirst({
 			where: {

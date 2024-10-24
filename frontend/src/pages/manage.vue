@@ -57,7 +57,7 @@ const { mutate: submit } = useMutation({
 });
 
 const { mutate: resetSubscriptions } = useMutation({
-	mutationKey: ["resetSubscriptions"],
+	mutationKey: ["instance", "resetSubscriptions"],
 	mutationFn: () => trpc.instance.resetSubscriptions.query(),
 	onSuccess(data) {
 		snackbar.value = {
@@ -65,6 +65,26 @@ const { mutate: resetSubscriptions } = useMutation({
 			success: true,
 			message: data.message,
 		};
+	},
+	onError(error) {
+		snackbar.value = {
+			value: true,
+			success: false,
+			message: error.message,
+		};
+	},
+});
+
+const { mutate: createOauthClient } = useMutation({
+	mutationKey: ["instance", "createOauthClient"],
+	mutationFn: () => trpc.instance.createOauthClient.mutate(),
+	onSuccess(data) {
+		snackbar.value = {
+			value: true,
+			success: true,
+			message: data.message,
+		};
+		refetch();
 	},
 	onError(error) {
 		snackbar.value = {
@@ -156,10 +176,13 @@ const deleteAllowed = async (id: number) => {
             Cross software
             <info-tooltip>
               <p>Only federate with instances that use the same software.</p>
-              <p>For
-              example, as a {{ instance.software === 'LEMMY' ? 'Lemmy': 'Mbin' }} instance, check this option to follow only
-              {{ instance.software === 'LEMMY' ? 'Lemmy': 'Mbin' }} instances.
-            </p>
+              <p>
+                For example, as a
+                {{ instance.software === "LEMMY" ? "Lemmy" : "Mbin" }} instance,
+                check this option to follow only
+                {{ instance.software === "LEMMY" ? "Lemmy" : "Mbin" }}
+                instances.
+              </p>
             </info-tooltip>
           </template>
         </v-checkbox>
@@ -300,6 +323,49 @@ const deleteAllowed = async (id: number) => {
         </v-col>
         <v-col cols="12">
           <v-btn type="submit" color="primary">Save</v-btn>
+          <v-menu v-if="instance.software === 'MBIN'" location="bottom">
+            <template v-slot:activator="{ props }">
+              <v-btn
+                class="ml-4"
+                append-icon="mdi-information"
+                v-bind="props"
+                color="blue"
+                type="button"
+              >
+                Create OAuth Client
+              </v-btn>
+            </template>
+
+            <v-card min-width="300">
+              <v-card-text>
+                <p>
+                  Lemmy Federate will try to create a OAuth client with default
+                  credentials.
+                </p>
+                <p>
+                  If your instance is limiting client creations to admins, then
+                  you <b>can't</b> use this option.
+                </p>
+                <p>
+                  You can also create your own OAuth client and use it instead.
+                </p>
+                <p>
+                  Make sure it has <b>client_credentials</b> grant type and
+                  <b>"read", "magazine", "user:profile"</b> scopes.
+                </p>
+              </v-card-text>
+              <v-card-actions>
+                <v-spacer></v-spacer>
+                <v-btn variant="text">Cancel</v-btn>
+                <v-btn
+                  color="primary"
+                  variant="text"
+                  @click="createOauthClient"
+                  >Create
+                </v-btn>
+              </v-card-actions>
+            </v-card>
+          </v-menu>
           <v-menu location="bottom">
             <template v-slot:activator="{ props }">
               <v-btn
