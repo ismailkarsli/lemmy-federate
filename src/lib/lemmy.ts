@@ -4,11 +4,12 @@ import {
 	type LemmyErrorType,
 	LemmyHttp,
 	type ListCommunities,
+	type LocalSiteRateLimit,
 	type Login,
 	type LoginResponse,
 	type SubscribedType,
 } from "lemmy-js-client";
-import ms from "ms";
+import type { FilterNotEndingWith } from "../types/FilterNotEndingWith";
 
 export type User = {
 	username: string;
@@ -28,6 +29,11 @@ export type Community = {
 	public: boolean;
 };
 
+type RateLimitKeys = Exclude<
+	FilterNotEndingWith<keyof LocalSiteRateLimit, "per_second">,
+	"local_site_id" | "published" | "updated"
+>;
+
 const lemmyCommunityToCommunity = (cv: CommunityView): Community => ({
 	id: cv.community.id,
 	name: cv.community.name,
@@ -45,8 +51,8 @@ export class LemmyClient {
 	private username?: string;
 	private password?: string;
 	private httpClient?: LemmyHttpExtended;
-	// if we get rate limited, we will wait until this time
-	private throttledTo?: number;
+	private baseRateLimits?: LocalSiteRateLimit;
+	private rateLimits?: { [key in RateLimitKeys]: number };
 	constructor(host: string, username?: string, password?: string) {
 		this.host = host;
 		this.username = username;
@@ -110,48 +116,55 @@ export class LemmyClient {
 	private async getHttpClient() {
 		if (!this.httpClient) {
 			const api = ky.create({
-				timeout: ms("1 minute"),
-				retry: 0,
+				timeout: false,
+				retry: 1,
 				hooks: {
+					beforeRequest: [
+						async (req) => {
+							if (!(this.baseRateLimits && this.rateLimits)) return;
+							const key = getRateLimitKey(req.url, req.method);
+							if (!key) return;
+							if (this.rateLimits[key] > 0) {
+								this.rateLimits[key] -= 1;
+								return;
+							}
+							// wait till new rate limit period start
+							const date = new Date();
+							const secs =
+								date.getSeconds() +
+								60 * (date.getMinutes() + 60 * date.getHours());
+							const wait = Math.ceil(
+								this.baseRateLimits[`${key}_per_second`] -
+									(secs % this.baseRateLimits[`${key}_per_second`]),
+							);
+							await new Promise((r) => setTimeout(r, wait * 1000));
+						},
+					],
 					beforeError: [
-						async (error) => {
-							if (error.response.status === 400) {
+						async (err) => {
+							if (err.response.status === 400) {
 								const lemmyError =
-									(await error.response.json()) as LemmyErrorType;
+									(await err.response.json()) as LemmyErrorType;
 								if (lemmyError.error === "rate_limit_error") {
-									// Lemmy instances usually have 10 minute rate limit window
-									this.throttledTo = Date.now() + ms("15 minutes");
+									// reset local limit
+									if (this.rateLimits) {
+										const key = getRateLimitKey(
+											err.request.url,
+											err.request.method,
+										);
+										if (key) this.rateLimits[key] = 0;
+									}
 									return new HTTPError(
-										new Response(error.response.body, {
+										new Response(err.response.body, {
 											status: 429,
 											statusText: "Too Many Requests",
 										}),
-										error.request,
-										error.options,
+										err.request,
+										err.options,
 									);
 								}
-							} else if (
-								error.response.status >= 500 &&
-								error.response.status < 600
-							) {
-								this.throttledTo = Date.now() + ms("30 minutes");
-							} else {
-								this.throttledTo = ms("5 minute");
 							}
-							return error;
-						},
-					],
-					beforeRequest: [
-						() => {
-							if (this.throttledTo) {
-								if (Date.now() < this.throttledTo) {
-									return new Response(null, {
-										status: 503,
-										statusText: "Service Unavailable",
-									});
-								}
-								this.throttledTo = undefined;
-							}
+							return err;
 						},
 					],
 				},
@@ -159,6 +172,12 @@ export class LemmyClient {
 			this.httpClient = new LemmyHttpExtended(`https://${this.host}`, {
 				fetchFunction: api,
 			});
+			if (!this.rateLimits) {
+				const rateLimits = await this.httpClient.getSite();
+				this.baseRateLimits = rateLimits.site_view.local_site_rate_limit;
+				this.rateLimits = structuredClone(this.baseRateLimits);
+				this.rateLimits.message -= 1; // we used one already :)
+			}
 			if (this.username && this.password) {
 				await this.httpClient.login({
 					username_or_email: this.username,
@@ -201,4 +220,54 @@ export class LemmyHttpExtended extends LemmyHttp {
 		this.jwt = res.jwt;
 		return res;
 	}
+}
+
+function getRateLimitKey(url: string, method: string): RateLimitKeys | null {
+	const { pathname } = new URL(url);
+	const p = pathname.replace("/api/v3", "");
+	const m = method;
+
+	// put these explicit ones on top
+	if (
+		(p === "/community" ||
+			p === "/user/register" ||
+			p === "/user/login" ||
+			p === "/user/password_reset") &&
+		m === "POST"
+	) {
+		return "register";
+	}
+	if ((p === "/post" || p === "/user/get_captcha") && m === "POST") {
+		return "post";
+	}
+	if (p === "/comment" && m === "POST") return "comment";
+	if (p === "/search") return "search";
+	if (p === "/user/export_settings" || p === "/user/import_settings") {
+		return "import_user_settings";
+	}
+
+	// put these on bottom
+	if (
+		p.startsWith("/site") ||
+		p === "/modlog" ||
+		p === "/resolve_object" ||
+		p.startsWith("/community") ||
+		p === "/federated_instances" ||
+		p === "/post" ||
+		p.startsWith("/comment") ||
+		p.startsWith("/private_message") ||
+		p.startsWith("/account") ||
+		p.startsWith("/user") ||
+		p.startsWith("/admin") ||
+		p.startsWith("/custom_emoji") ||
+		p.startsWith("/oauth_provider")
+	) {
+		return "message";
+	}
+
+	if (p.startsWith("/oauth/authenticate")) {
+		return "register";
+	}
+
+	return null;
 }
