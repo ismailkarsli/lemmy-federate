@@ -69,7 +69,10 @@ export class LemmyClient {
 		const user = await client.getPersonDetails({ username });
 		return {
 			username: user.person_view.person.name,
-			isAdmin: user.person_view.is_admin,
+			isAdmin:
+				user.person_view.is_admin ??
+				// @ts-expect-error In 0.18.x instances it is `admin`.
+				user.person_view.person.admin,
 			isBanned: user.person_view.person.banned,
 			isBot: user.person_view.person.bot_account,
 		};
