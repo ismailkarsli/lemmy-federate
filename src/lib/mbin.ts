@@ -28,6 +28,7 @@ type MbinMagazine = {
 	subscriptionsCount: number;
 	isAdult: boolean;
 	isUserSubscribed: boolean;
+	localSubscribers?: number | null;
 };
 
 type MbinOauthClient = {
@@ -46,8 +47,7 @@ const mbinMagazineToCommunity = (magazine: MbinMagazine): Community => ({
 	id: magazine.magazineId,
 	name: magazine.name,
 	nsfw: magazine.isAdult,
-	// TODO: add this when Mbin supports it: https://github.com/MbinOrg/mbin/issues/1196
-	localSubscribers: null,
+	localSubscribers: magazine.localSubscribers ?? null,
 	subscribed: magazine.isUserSubscribed ? "Subscribed" : "NotSubscribed",
 	public: true,
 	isDeleted: false,
