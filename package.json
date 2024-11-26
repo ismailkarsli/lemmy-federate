@@ -45,5 +45,10 @@
 		"vue-tsc": "^2.1.6",
 		"vuetify": "^3.7.1"
 	},
-	"trustedDependencies": ["@biomejs/biome"]
+	"trustedDependencies": [
+		"@biomejs/biome",
+		"@prisma/client",
+		"@prisma/engines",
+		"prisma"
+	]
 }
