@@ -125,12 +125,34 @@ export class LemmyClient {
 				hooks: {
 					beforeRequest: [
 						async (req) => {
-							if (!(this.baseRateLimits && this.rateLimits)) return;
+							// add `auth` field to query (GET/DELETE) or body (POST/PUT) for 0.18.x compatibility
+							const auth = req.headers.get("authorization")?.split(" ")?.at(1);
+							let newReq = req;
+							if (auth) {
+								if (req.method === "GET" || req.method === "DELETE") {
+									const url = new URL(req.url);
+									url.searchParams.append("auth", auth);
+									const newRequest = new Request(url, req);
+									newReq = newRequest;
+								}
+								if (req.method === "POST" || req.method === "PUT") {
+									const body: unknown = await req.clone().json();
+									if (body && typeof body === "object" && body !== null) {
+										// @ts-expect-error body is not typed
+										body.auth = auth || null;
+									}
+									newReq = new Request(req.url, {
+										...req,
+										body: JSON.stringify(body || {}),
+									});
+								}
+							}
+							if (!(this.baseRateLimits && this.rateLimits)) return newReq;
 							const key = getRateLimitKey(req.url, req.method);
-							if (!key) return;
+							if (!key) return newReq;
 							if (this.rateLimits[key] > 0) {
 								this.rateLimits[key] -= 1;
-								return;
+								return newReq;
 							}
 							// wait till new rate limit period start
 							const date = new Date();
@@ -142,6 +164,7 @@ export class LemmyClient {
 									(secs % this.baseRateLimits[`${key}_per_second`]),
 							);
 							await new Promise((r) => setTimeout(r, wait * 1000));
+							return newReq;
 						},
 					],
 					beforeError: [
