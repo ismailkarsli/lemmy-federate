@@ -141,10 +141,7 @@ export class LemmyClient {
 										// @ts-expect-error body is not typed
 										body.auth = auth || null;
 									}
-									newReq = new Request(req.url, {
-										...req,
-										body: JSON.stringify(body || {}),
-									});
+									newReq = new Request(req, { body: JSON.stringify(body) });
 								}
 							}
 							if (!(this.baseRateLimits && this.rateLimits)) return newReq;
