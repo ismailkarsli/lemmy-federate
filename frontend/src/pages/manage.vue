@@ -26,11 +26,14 @@ const snackbar = ref({
 });
 const showPassword = ref(false);
 const allowedInstance = ref<number | null>(null);
+const blockedInstance = ref<number | null>(null);
 
 const filteredAllInstances = computed(() => {
 	if (instance) {
 		return allInstances.value?.instances.filter(
-			(i) => !instance.value?.allowed.some((a) => a.id === i.id),
+			(i) =>
+				!instance.value?.allowed.some((a) => a.id === i.id) &&
+				!instance.value?.blocked.some((b) => b.id === i.id),
 		);
 	}
 	return [];
@@ -119,10 +122,55 @@ watchEffect(async () => {
 		} else throw error;
 	}
 });
+watchEffect(async () => {
+	try {
+		if (blockedInstance.value) {
+			const res = await trpc.instance.blocked.add.mutate({
+				instanceId: blockedInstance.value,
+			});
+			blockedInstance.value = null;
+			await refetch();
+			snackbar.value = {
+				value: true,
+				success: true,
+				message: res.message,
+			};
+		}
+	} catch (error) {
+		if (error instanceof Error) {
+			snackbar.value = {
+				value: true,
+				success: false,
+				message: error.message,
+			};
+		} else throw error;
+	}
+});
 
 const deleteAllowed = async (id: number) => {
 	try {
 		const data = await trpc.instance.allowed.delete.mutate({
+			instanceId: id,
+		});
+		await refetch();
+		snackbar.value = {
+			value: true,
+			success: true,
+			message: data.message,
+		};
+	} catch (error) {
+		if (error instanceof Error) {
+			snackbar.value = {
+				value: true,
+				success: false,
+				message: error.message,
+			};
+		} else throw error;
+	}
+};
+const deleteBlocked = async (id: number) => {
+	try {
+		const data = await trpc.instance.blocked.delete.mutate({
 			instanceId: id,
 		});
 		await refetch();
@@ -151,26 +199,14 @@ const deleteAllowed = async (id: number) => {
         {{ instance.host }}
       </v-chip>
     </v-app-bar-title>
-    <v-overlay
-      :model-value="isPending"
-      class="align-center justify-center"
-      scrim="rgba(0, 0, 0, 0.7)"
-    >
+    <v-overlay :model-value="isPending" class="align-center justify-center" scrim="rgba(0, 0, 0, 0.7)">
       <v-progress-circular indeterminate color="primary" size="64" />
     </v-overlay>
 
     <v-form @submit.prevent="submit()">
       <v-row>
-        <v-checkbox
-          label="Enable tool"
-          v-model="instance.enabled"
-          hide-details
-        />
-        <v-checkbox
-          label="Auto add local communities"
-          v-model="instance.auto_add"
-          hide-details
-        />
+        <v-checkbox label="Enable tool" v-model="instance.enabled" hide-details />
+        <v-checkbox label="Auto add local communities" v-model="instance.auto_add" hide-details />
         <v-checkbox v-model="instance.cross_software" hide-details>
           <template v-slot:label>
             Cross software
@@ -189,12 +225,7 @@ const deleteAllowed = async (id: number) => {
         <v-col cols="12">
           <p>Federation mode</p>
           <v-row>
-            <v-checkbox
-              label="Mutual"
-              v-model="instance.mode"
-              value="FULL"
-              hide-details
-            >
+            <v-checkbox label="Mutual" v-model="instance.mode" value="FULL" hide-details>
               <template v-slot:label>
                 Mutual
                 <info-tooltip>
@@ -252,86 +283,37 @@ const deleteAllowed = async (id: number) => {
         <v-col cols="12">
           <p>NSFW</p>
           <v-row>
-            <v-checkbox
-              label="Allow"
-              v-model="instance.nsfw"
-              value="ALLOW"
-              hide-details
-            />
-            <v-checkbox
-              label="Don't allow"
-              v-model="instance.nsfw"
-              value="BLOCK"
-              hide-details
-            />
-            <v-checkbox
-              label="Allow only NSFW"
-              v-model="instance.nsfw"
-              value="ONLY"
-              hide-details
-            />
+            <v-checkbox label="Allow" v-model="instance.nsfw" value="ALLOW" hide-details />
+            <v-checkbox label="Don't allow" v-model="instance.nsfw" value="BLOCK" hide-details />
+            <v-checkbox label="Allow only NSFW" v-model="instance.nsfw" value="ONLY" hide-details />
           </v-row>
         </v-col>
         <v-col cols="12">
           <p>Fediseer</p>
           <v-row>
-            <v-checkbox
-              label="Don't use"
-              v-model="instance.fediseer"
-              value="NONE"
-              hide-details
-            />
-            <v-checkbox
-              label="Don't allow censured"
-              v-model="instance.fediseer"
-              value="BLACKLIST_ONLY"
-              hide-details
-            />
-            <v-checkbox
-              label="Allow only endorsed"
-              v-model="instance.fediseer"
-              value="WHITELIST_ONLY"
-              hide-details
-            />
+            <v-checkbox label="Don't use" v-model="instance.fediseer" value="NONE" hide-details />
+            <v-checkbox label="Don't allow censured" v-model="instance.fediseer" value="BLACKLIST_ONLY" hide-details />
+            <v-checkbox label="Allow only endorsed" v-model="instance.fediseer" value="WHITELIST_ONLY" hide-details />
           </v-row>
         </v-col>
         <v-col cols="12" md="6">
-          <v-text-field
-            :label="
-              instance?.software === 'LEMMY'
-                ? 'Bot username'
-                : 'OAuth client id'
-            "
-            v-model="instance.client_id"
-            hide-details
-          />
+          <v-text-field :label="instance?.software === 'LEMMY'
+            ? 'Bot username'
+            : 'OAuth client id'
+            " v-model="instance.client_id" hide-details />
         </v-col>
         <v-col cols="12" md="6">
-          <v-text-field
-            :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
-            :type="showPassword ? 'text' : 'password'"
-            @click:append-inner="showPassword = !showPassword"
-            :label="
-              instance?.software === 'LEMMY'
-                ? 'Bot password'
-                : 'OAuth client secret'
-            "
-            v-model="instance.client_secret"
-            hide-details
-            autocomplete="off"
-          />
+          <v-text-field :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
+            :type="showPassword ? 'text' : 'password'" @click:append-inner="showPassword = !showPassword" :label="instance?.software === 'LEMMY'
+              ? 'Bot password'
+              : 'OAuth client secret'
+              " v-model="instance.client_secret" hide-details autocomplete="off" />
         </v-col>
         <v-col cols="12">
           <v-btn type="submit" color="primary">Save</v-btn>
           <v-menu v-if="instance.software === 'MBIN'" location="bottom">
             <template v-slot:activator="{ props }">
-              <v-btn
-                class="ml-4"
-                append-icon="mdi-information"
-                v-bind="props"
-                color="blue"
-                type="button"
-              >
+              <v-btn class="ml-4" append-icon="mdi-information" v-bind="props" color="blue" type="button">
                 Create OAuth Client
               </v-btn>
             </template>
@@ -357,23 +339,14 @@ const deleteAllowed = async (id: number) => {
               <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn variant="text">Cancel</v-btn>
-                <v-btn
-                  color="primary"
-                  variant="text"
-                  @click="createOauthClient"
-                  >Create
+                <v-btn color="primary" variant="text" @click="createOauthClient">Create
                 </v-btn>
               </v-card-actions>
             </v-card>
           </v-menu>
           <v-menu location="bottom">
             <template v-slot:activator="{ props }">
-              <v-btn
-                class="ml-4"
-                append-icon="mdi-information"
-                v-bind="props"
-                color="error"
-              >
+              <v-btn class="ml-4" append-icon="mdi-information" v-bind="props" color="error">
                 Reset Subscriptions
               </v-btn>
             </template>
@@ -392,21 +365,13 @@ const deleteAllowed = async (id: number) => {
               <v-card-actions>
                 <v-spacer></v-spacer>
                 <v-btn variant="text">Cancel</v-btn>
-                <v-btn
-                  color="primary"
-                  variant="text"
-                  @click="resetSubscriptions"
-                  >Save</v-btn
-                >
+                <v-btn color="primary" variant="text" @click="resetSubscriptions">Save</v-btn>
               </v-card-actions>
             </v-card>
           </v-menu>
         </v-col>
       </v-row>
-      <v-snackbar
-        v-model="snackbar.value"
-        :color="snackbar.success ? 'primary' : 'error'"
-      >
+      <v-snackbar v-model="snackbar.value" :color="snackbar.success ? 'primary' : 'error'">
         {{ snackbar.message }}
         <template v-slot:actions>
           <v-btn icon="mdi-close" @click="snackbar.value = false" />
@@ -415,30 +380,38 @@ const deleteAllowed = async (id: number) => {
     </v-form>
     <v-divider class="my-4" />
     <v-row>
-      <v-col cols="12">
-        <v-app-bar-title>
+      <v-col cols="12" lg="6">
+        <v-app-bar-title class="mb-2">
           Allowed instances
           <info-tooltip
-            text="If you add at lease one instance, then all others will be ignored. So this list is explicit."
-          />
+            text="If you add at lease one instance, then all others will be ignored. So this list is explicit." />
         </v-app-bar-title>
-      </v-col>
-      <v-col cols="12">
-        <v-autocomplete
-          label="Search an instance"
-          v-model="allowedInstance"
-          :items="filteredAllInstances"
-          item-title="host"
-          item-value="id"
-        />
-      </v-col>
-      <v-col cols="12">
+        <v-autocomplete label="instance to allow..." v-model="allowedInstance" :items="filteredAllInstances"
+          item-title="host" item-value="id" />
         <v-row>
           <v-col v-for="i in instance.allowed" :key="i.id" class="flex-grow-0">
             <v-chip class="mr-2" color="primary" label>
               {{ i.host }}
               <template v-slot:close>
                 <v-icon @click.prevent="deleteAllowed(i.id)">mdi-close</v-icon>
+              </template>
+            </v-chip>
+          </v-col>
+        </v-row>
+      </v-col>
+      <v-col cols="12" lg="6">
+        <v-app-bar-title class="mb-2">
+          Blocked instances
+          <info-tooltip text="Only the added instances are blocked, others continue to work." />
+        </v-app-bar-title>
+        <v-autocomplete label="instance to block..." v-model="blockedInstance" :items="filteredAllInstances"
+          item-title="host" item-value="id" />
+        <v-row>
+          <v-col v-for="i in instance.blocked" :key="i.id" class="flex-grow-0">
+            <v-chip class="mr-2" color="error" label>
+              {{ i.host }}
+              <template v-slot:close>
+                <v-icon @click.prevent="deleteBlocked(i.id)">mdi-close</v-icon>
               </template>
             </v-chip>
           </v-col>

@@ -25,6 +25,8 @@ model Instance {
   communities      Community[]
   allowedBy        Instance[]        @relation("InstanceAllows")
   allowed          Instance[]        @relation("InstanceAllows")
+  blockedBy        Instance[]        @relation("InstanceBlocks")
+  blocked          Instance[]        @relation("InstanceBlocks")
   users            User[]
   communityFollows CommunityFollow[]
 }

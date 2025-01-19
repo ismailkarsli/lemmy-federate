@@ -19,12 +19,8 @@ export const instanceRouter = router({
 				host: ctx.user.instance,
 			},
 			include: {
-				allowed: {
-					select: {
-						id: true,
-						host: true,
-					},
-				},
+				allowed: { select: { id: true, host: true } },
+				blocked: { select: { id: true, host: true } },
 			},
 		});
 
@@ -177,6 +173,48 @@ export const instanceRouter = router({
 
 				return {
 					message: "Instance removed from allowed list",
+				};
+			}),
+	}),
+	blocked: router({
+		add: protectedProcedure
+			.input(typia.createAssert<{ instanceId: number }>())
+			.mutation(async ({ ctx, input }) => {
+				await prisma.instance.update({
+					where: {
+						host: ctx.user.instance,
+					},
+					data: {
+						blocked: {
+							connect: {
+								id: input.instanceId,
+							},
+						},
+					},
+				});
+
+				return {
+					message: "Instance added to blocked list",
+				};
+			}),
+		delete: protectedProcedure
+			.input(typia.createAssert<{ instanceId: number }>())
+			.mutation(async ({ ctx, input }) => {
+				await prisma.instance.update({
+					where: {
+						host: ctx.user.instance,
+					},
+					data: {
+						blocked: {
+							disconnect: {
+								id: input.instanceId,
+							},
+						},
+					},
+				});
+
+				return {
+					message: "Instance removed from blocked list",
 				};
 			}),
 	}),

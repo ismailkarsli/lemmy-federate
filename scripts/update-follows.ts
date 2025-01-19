@@ -32,19 +32,14 @@ export async function updateFollows() {
 			orderBy: { communityId: "asc" },
 			include: {
 				instance: {
-					include: {
-						allowed: true,
-					},
+					include: { allowed: true, blocked: true },
 				},
 				community: {
 					include: {
 						instance: {
 							include: {
-								allowed: {
-									select: {
-										id: true,
-									},
-								},
+								allowed: { select: { id: true } },
+								blocked: { select: { id: true } },
 							},
 						},
 					},

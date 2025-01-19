@@ -65,22 +65,40 @@ export const conditionalFollow = async (
 	communityFollow: CommunityFollow & {
 		instance: Instance & {
 			allowed: Instance[];
+			blocked: Instance[];
 		};
 		community: Community & {
-			instance: Instance & { allowed: { id: number }[] };
+			instance: Instance & {
+				allowed: { id: number }[];
+				blocked: { id: number }[];
+			};
 		};
 	},
 ): Promise<CommunityFollowStatus> => {
 	const { instance, community } = communityFollow;
 	const sameInstance = instance.id === community.instance.id;
 	/**
-	 * If the home or target instances have at least one allowed instance, check if they allow each other.
+	 * If the home instance have at least one allowed instance, check if it allows target community instance.
 	 */
 	if (instance.allowed.length) {
 		const isAllowed = instance.allowed.some(
-			(i) => i.id === community.instanceId,
+			(a) => a.id === community.instanceId,
 		);
 		if (!isAllowed) return CommunityFollowStatus.NOT_ALLOWED;
+	}
+	/**
+	 * If the home or target instances have at least one blocked instance, check if they block each other.
+	 */
+	if (instance.blocked.length || community.instance.blocked.length) {
+		const isHomeBlocks = instance.blocked.some(
+			(b) => b.id === community.instanceId,
+		);
+		const isTargetBlocks = community.instance.blocked.some(
+			(b) => b.id === instance.id,
+		);
+		if (isHomeBlocks || isTargetBlocks) {
+			return CommunityFollowStatus.NOT_ALLOWED;
+		}
 	}
 
 	/**
@@ -225,17 +243,15 @@ export const conditionalFollowWithAllInstances = async (
 			instance: {
 				include: {
 					allowed: true,
+					blocked: true,
 				},
 			},
 			community: {
 				include: {
 					instance: {
 						include: {
-							allowed: {
-								select: {
-									id: true,
-								},
-							},
+							allowed: { select: { id: true } },
+							blocked: { select: { id: true } },
 						},
 					},
 				},
