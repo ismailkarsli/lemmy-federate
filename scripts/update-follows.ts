@@ -29,7 +29,7 @@ export async function updateFollows() {
 			skip: i,
 			take: 100,
 			where: filter,
-			orderBy: { communityId: "asc" },
+			orderBy: { createdAt: "desc" },
 			include: {
 				instance: {
 					include: { allowed: true, blocked: true },
