@@ -5,7 +5,6 @@ import {
 	FediseerUsage,
 	type Instance,
 	NSFW,
-	PrismaClient,
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { HTTPError, TimeoutError } from "ky";
@@ -14,9 +13,7 @@ import ms from "ms";
 import { getCensuresGiven, getEndorsements } from "./fediseer";
 import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
-import { getInstanceSoftware } from "./utils";
-
-const prisma = new PrismaClient();
+import { prisma } from "./prisma";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them

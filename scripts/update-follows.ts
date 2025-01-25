@@ -4,12 +4,16 @@ import { HTTPError, TimeoutError } from "ky";
 import { conditionalFollow } from "../src/lib/federation-utils";
 import { prisma } from "../src/lib/prisma";
 import { isMain } from "../src/lib/utils";
+import PQueue from "p-queue";
+
+const CONCURRENCY = 1000;
 
 if (isMain(import.meta.url)) {
 	updateFollows();
 }
 
 export async function updateFollows() {
+	const queue = new PQueue({ concurrency: CONCURRENCY });
 	const filter = {
 		status: {
 			in: [
@@ -21,20 +25,18 @@ export async function updateFollows() {
 			],
 		},
 	} satisfies Prisma.CommunityFollowWhereInput;
-	const recordCount = await prisma.communityFollow.count({
-		where: filter,
-	});
-	console.info("Started updating", recordCount, "community follows");
-	for (let i = 0; i < recordCount; i += 100) {
+	let cursor = 0;
+	console.info("Updating community follows");
+	while (true) {
+		// keep the queue size more than 2x of CONCURRENCY
+		await queue.onSizeLessThan(CONCURRENCY * 2);
 		const communityFollows = await prisma.communityFollow.findMany({
-			skip: i,
-			take: 100,
+			skip: cursor,
+			take: CONCURRENCY,
 			where: filter,
 			orderBy: { createdAt: "desc" },
 			include: {
-				instance: {
-					include: { allowed: true, blocked: true },
-				},
+				instance: { include: { allowed: true, blocked: true } },
 				community: {
 					include: {
 						instance: {
@@ -47,8 +49,9 @@ export async function updateFollows() {
 				},
 			},
 		});
-		await Promise.all(
-			communityFollows.map(async (cf) => {
+		if (!communityFollows.length) break;
+		queue.addAll(
+			communityFollows.map((cf) => async () => {
 				try {
 					const status = await conditionalFollow(cf);
 					await prisma.communityFollow.update({
@@ -80,6 +83,7 @@ export async function updateFollows() {
 				}
 			}),
 		);
+		cursor += CONCURRENCY;
 	}
-	console.info("Finished updating community follows");
+	console.info(`Updated ${cursor} community follows`);
 }

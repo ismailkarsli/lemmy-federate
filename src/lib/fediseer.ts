@@ -53,6 +53,7 @@ export const getGuarantees = async (instance: string) => {
 		throw new TRPCError({
 			code: "NOT_FOUND",
 			message: "Failed to fetch guarantees from Fediseer",
+			cause: e,
 		});
 	}
 };
@@ -74,6 +75,7 @@ export const getCensuresGiven = async (instance: string) => {
 		throw new TRPCError({
 			code: "NOT_FOUND",
 			message: "Failed to fetch censures from Fediseer",
+			cause: e,
 		});
 	}
 };
@@ -93,6 +95,7 @@ export const getEndorsements = async (instance: string) => {
 		throw new TRPCError({
 			code: "NOT_FOUND",
 			message: "Failed to fetch endorsements from Fediseer",
+			cause: e,
 		});
 	}
 };
