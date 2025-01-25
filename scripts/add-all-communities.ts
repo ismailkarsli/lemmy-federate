@@ -1,6 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+#!/usr/bin/env bun
+import { prisma } from "../src/lib/prisma";
+import { isMain } from "../src/lib/utils";
 
-const prisma = new PrismaClient();
+if (isMain(import.meta.url)) {
+	addAllCommunities();
+}
 
 /**
  * Fetch all communities from Lemmyverse.net and add them to the database if they don't exist

@@ -1,12 +1,13 @@
-import {
-	CommunityFollowStatus,
-	type Prisma,
-	PrismaClient,
-} from "@prisma/client";
+#!/usr/bin/env bun
+import { CommunityFollowStatus, type Prisma } from "@prisma/client";
 import { HTTPError, TimeoutError } from "ky";
 import { conditionalFollow } from "../src/lib/federation-utils";
+import { prisma } from "../src/lib/prisma";
+import { isMain } from "../src/lib/utils";
 
-const prisma = new PrismaClient();
+if (isMain(import.meta.url)) {
+	updateFollows();
+}
 
 export async function updateFollows() {
 	const filter = {

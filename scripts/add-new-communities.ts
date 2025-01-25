@@ -1,10 +1,14 @@
-import { PrismaClient } from "@prisma/client";
+#!/usr/bin/env bun
 import {
 	conditionalFollowWithAllInstances,
 	getClient,
 } from "../src/lib/federation-utils";
+import { prisma } from "../src/lib/prisma";
+import { isMain } from "../src/lib/utils";
 
-const prisma = new PrismaClient();
+if (isMain(import.meta.url)) {
+	addNewCommunities();
+}
 
 /**
  * Fetch 50 newest communities from instances and add them to the database if they don't exist

@@ -1,6 +1,7 @@
 import { randomInt } from "node:crypto";
 import ky from "ky";
 import typia from "typia";
+import { fileURLToPath } from "node:url";
 
 type Software = {
 	name: "lemmy" | "mbin";
@@ -37,4 +38,10 @@ export async function getInstanceSoftware(host: string) {
 		.then(typia.createAssert<NodeInfo>());
 	softwareCache.set(host, nodeInfo.software);
 	return nodeInfo.software;
+}
+
+export function isMain(moduleUrl: string) {
+	const modulePath = fileURLToPath(moduleUrl);
+	const [_binPath, mainScriptPath] = process.argv;
+	return modulePath === mainScriptPath;
 }

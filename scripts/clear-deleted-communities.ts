@@ -1,11 +1,15 @@
-import { PrismaClient } from "@prisma/client";
+#!/usr/bin/env bun
 import type { LemmyErrorType } from "lemmy-js-client";
 import {
 	getClient,
 	unfollowWithAllInstances,
 } from "../src/lib/federation-utils";
+import { prisma } from "../src/lib/prisma";
+import { isMain } from "../src/lib/utils";
 
-const prisma = new PrismaClient();
+if (isMain(import.meta.url)) {
+	clearDeletedCommunities();
+}
 
 /**
  * Check all communities and remove those that are deleted or removed
