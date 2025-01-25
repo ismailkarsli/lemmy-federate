@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 import { CommunityFollowStatus, type Prisma } from "@prisma/client";
 import { HTTPError, TimeoutError } from "ky";
+import PQueue from "p-queue";
 import { conditionalFollow } from "../src/lib/federation-utils";
 import { prisma } from "../src/lib/prisma";
 import { isMain } from "../src/lib/utils";
-import PQueue from "p-queue";
 
 const CONCURRENCY = 1000;
 

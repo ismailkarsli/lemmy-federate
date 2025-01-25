@@ -1,7 +1,7 @@
 import { randomInt } from "node:crypto";
+import { fileURLToPath } from "node:url";
 import ky from "ky";
 import typia from "typia";
-import { fileURLToPath } from "node:url";
 
 type Software = {
 	name: "lemmy" | "mbin";

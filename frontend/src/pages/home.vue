@@ -124,14 +124,15 @@ const { mutate: submit } = useMutation({
           <v-expand-transition>
             <div v-show="readMore">
               <p class="mb-4">
-                Communities in Lemmy/Mbin are <b>not federated</b> by default. So
-                when you create a new community, it will only be available to
-                your instance. At least 1 person from all other instances must
-                follow it in order to make it available. This tool does that. It
-                follows your community from all remote instances until at least
-                1 other person follows it.
+                By default, communities on Lemmy/Mbin are <strong>not federated</strong> due to the inherent limitations of ActivityPub.
               </p>
-              <p class="mb-4"></p>
+              <p class="mb-4">
+                When you create a new community, it will only be available to your instance.
+                To make it accessible to other instances, at least one user from each remote instance must follow it.
+              </p>
+              <p class="mb-4">
+                This tool automates this process by following your community from all remote instances until it gains at least <b>two</b> real user followers.
+              </p>
             </div>
           </v-expand-transition>
         </v-card>

@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 import ms from "ms";
+import { isMain } from "../src/lib/utils";
 import { addAllCommunities } from "./add-all-communities";
 import { addNewCommunities } from "./add-new-communities";
 import { clearDeletedCommunities } from "./clear-deleted-communities";
 import { updateFollows } from "./update-follows";
-import { isMain } from "../src/lib/utils";
 
 if (isMain(import.meta.url)) {
 	startJobs();

@@ -204,9 +204,9 @@ export const conditionalFollow = async (
 		return CommunityFollowStatus.IN_PROGRESS;
 	}
 
-	// Community has other subscribers than the bot
+	// Community has 2 other subscribers than the bot
 	if (
-		localSubscribers > (localCommunity.subscribed !== "NotSubscribed" ? 1 : 0)
+		localSubscribers > (localCommunity.subscribed !== "NotSubscribed" ? 2 : 1)
 	) {
 		if (localCommunity.subscribed !== "NotSubscribed") {
 			await localClient.followCommunity(localCommunity.id, false);
@@ -214,10 +214,10 @@ export const conditionalFollow = async (
 		return CommunityFollowStatus.FEDERATED_BY_USER;
 	}
 
-	// if stuck in "Pending" state, unfollow and return error. This way we can retry in next run.
+	// if stuck in "Pending" state, unfollow and return WAITING. This way we can retry in next run.
 	if (localCommunity.subscribed === "Pending") {
 		await localClient.followCommunity(localCommunity.id, false);
-		return CommunityFollowStatus.ERROR;
+		return CommunityFollowStatus.WAITING;
 	}
 
 	// follow if not following already. return in progress state.
