@@ -188,6 +188,15 @@ export class LemmyClient {
 									);
 								}
 							}
+							if (err.response.status === 429) {
+								if (this.rateLimits) {
+									const key = getRateLimitKey(
+										err.request.url,
+										err.request.method,
+									);
+									if (key) this.rateLimits[key] = 0;
+								}
+							}
 							return err;
 						},
 					],
