@@ -131,7 +131,7 @@ const { mutate: submit } = useMutation({
                 To make it accessible to other instances, at least one user from each remote instance must follow it.
               </p>
               <p class="mb-4">
-                This tool automates this process by following your community from all remote instances until it gains at least <b>two</b> real user followers.
+                This tool automates this process by following your community from all remote instances until it gains at least one real-user follower.
               </p>
             </div>
           </v-expand-transition>

@@ -206,7 +206,7 @@ export const conditionalFollow = async (
 
 	// Community has 2 other subscribers than the bot
 	if (
-		localSubscribers > (localCommunity.subscribed !== "NotSubscribed" ? 2 : 1)
+		localSubscribers > (localCommunity.subscribed !== "NotSubscribed" ? 1 : 0)
 	) {
 		if (localCommunity.subscribed !== "NotSubscribed") {
 			await localClient.followCommunity(localCommunity.id, false);
