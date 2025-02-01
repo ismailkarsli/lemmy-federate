@@ -37,7 +37,7 @@ type MbinOauthClient = {
 };
 
 const api = ky.create({
-	timeout: ms("5 minutes"),
+	timeout: ms("1 minutes"),
 	retry: {
 		limit: 50,
 	},

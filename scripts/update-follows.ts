@@ -46,7 +46,7 @@ export async function updateFollows(limit = 1000) {
 	if (!communityFollows.length) return;
 	// TODO: temporary debug purposes
 	console.info(`Oldest CF: ${communityFollows.at(0)?.updatedAt}`);
-	queue.addAll(
+	await queue.addAll(
 		communityFollows.map((cf) => async () => {
 			try {
 				const status = await conditionalFollow(cf);
