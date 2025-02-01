@@ -73,7 +73,11 @@ export const conditionalFollow = async (
 	},
 ): Promise<CommunityFollowStatus> => {
 	const { instance, community } = communityFollow;
+	/**
+	 * ignore if same instance
+	 */
 	const sameInstance = instance.id === community.instance.id;
+	if (sameInstance) return CommunityFollowStatus.NOT_AVAILABLE;
 	/**
 	 * If the home instance have at least one allowed instance, check if it allows target community instance.
 	 */
@@ -108,10 +112,7 @@ export const conditionalFollow = async (
 	/**
 	 * Check if federation modes of instances are compatible
 	 */
-	if (
-		!sameInstance &&
-		(instance.mode === "SEED" || community.instance.mode === "LEECH")
-	) {
+	if (instance.mode === "SEED" || community.instance.mode === "LEECH") {
 		return CommunityFollowStatus.NOT_ALLOWED;
 	}
 
@@ -119,7 +120,6 @@ export const conditionalFollow = async (
 	 * If at least one instance is not allowing cross software federation then check them
 	 */
 	if (
-		!sameInstance &&
 		!(instance.cross_software && community.instance.cross_software) &&
 		instance.software !== community.instance.software
 	) {
