@@ -74,6 +74,12 @@ export const conditionalFollow = async (
 ): Promise<CommunityFollowStatus> => {
 	const { instance, community } = communityFollow;
 	/**
+	 * Both instances must be enabled
+	 */
+	if (!instance.enabled || !community.instance.enabled) {
+		return CommunityFollowStatus.NOT_AVAILABLE;
+	}
+	/**
 	 * ignore if same instance
 	 */
 	const sameInstance = instance.id === community.instance.id;
@@ -105,7 +111,7 @@ export const conditionalFollow = async (
 	/**
 	 * If the instance is disabled or doesn't have bot credentials, return not available.
 	 */
-	if (!instance.enabled || !(instance.client_id && instance.client_secret)) {
+	if (!(instance.client_id && instance.client_secret)) {
 		return CommunityFollowStatus.NOT_AVAILABLE;
 	}
 
