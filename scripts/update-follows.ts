@@ -9,7 +9,8 @@ import { isMain } from "../src/lib/utils";
 const CONCURRENCY = 100;
 
 if (isMain(import.meta.url)) {
-	updateFollows();
+	await updateFollows();
+	process.exit(0);
 }
 
 export async function updateFollows(limit = 1000) {
@@ -75,4 +76,5 @@ export async function updateFollows(limit = 1000) {
 			}
 		}),
 	);
+	await queue.onIdle();
 }

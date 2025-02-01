@@ -167,8 +167,9 @@ export class LemmyClient {
 					beforeError: [
 						async (err) => {
 							if (err.response.status === 400) {
-								const lemmyError =
-									(await err.response.json()) as LemmyErrorType;
+								const lemmyError = (await err.response
+									.clone()
+									.json()) as LemmyErrorType;
 								if (lemmyError.error === "rate_limit_error") {
 									// reset local limit
 									if (this.rateLimits) {
@@ -182,6 +183,15 @@ export class LemmyClient {
 										new Response(err.response.body, {
 											status: 429,
 											statusText: "Too Many Requests",
+										}),
+										err.request,
+										err.options,
+									);
+								}
+								if (lemmyError.error === "couldnt_find_community") {
+									return new HTTPError(
+										new Response(err.response.body, {
+											status: 404,
 										}),
 										err.request,
 										err.options,
