@@ -55,6 +55,9 @@ export const instanceRouter = router({
 				});
 			}
 
+			// soft reset subscriptions to re-check with up to date settings.
+			resetSubscriptions(instance, { soft: true });
+
 			return instance;
 		}),
 	find: publicProcedure
@@ -138,7 +141,7 @@ export const instanceRouter = router({
 		add: protectedProcedure
 			.input(typia.createAssert<{ instanceId: number }>())
 			.mutation(async ({ ctx, input }) => {
-				await prisma.instance.update({
+				const instance = await prisma.instance.update({
 					where: {
 						host: ctx.user.instance,
 					},
@@ -151,6 +154,9 @@ export const instanceRouter = router({
 					},
 				});
 
+				// soft reset subscriptions to re-check with up to date settings.
+				resetSubscriptions(instance, { soft: true });
+
 				return {
 					message: "Instance added to allowed list",
 				};
@@ -158,7 +164,7 @@ export const instanceRouter = router({
 		delete: protectedProcedure
 			.input(typia.createAssert<{ instanceId: number }>())
 			.mutation(async ({ ctx, input }) => {
-				await prisma.instance.update({
+				const instance = await prisma.instance.update({
 					where: {
 						host: ctx.user.instance,
 					},
@@ -170,6 +176,9 @@ export const instanceRouter = router({
 						},
 					},
 				});
+
+				// soft reset subscriptions to re-check with up to date settings.
+				resetSubscriptions(instance, { soft: true });
 
 				return {
 					message: "Instance removed from allowed list",
@@ -180,7 +189,7 @@ export const instanceRouter = router({
 		add: protectedProcedure
 			.input(typia.createAssert<{ instanceId: number }>())
 			.mutation(async ({ ctx, input }) => {
-				await prisma.instance.update({
+				const instance = await prisma.instance.update({
 					where: {
 						host: ctx.user.instance,
 					},
@@ -193,6 +202,9 @@ export const instanceRouter = router({
 					},
 				});
 
+				// soft reset subscriptions to re-check with up to date settings.
+				resetSubscriptions(instance, { soft: true });
+
 				return {
 					message: "Instance added to blocked list",
 				};
@@ -200,7 +212,7 @@ export const instanceRouter = router({
 		delete: protectedProcedure
 			.input(typia.createAssert<{ instanceId: number }>())
 			.mutation(async ({ ctx, input }) => {
-				await prisma.instance.update({
+				const instance = await prisma.instance.update({
 					where: {
 						host: ctx.user.instance,
 					},
@@ -212,6 +224,9 @@ export const instanceRouter = router({
 						},
 					},
 				});
+
+				// soft reset subscriptions to re-check with up to date settings.
+				resetSubscriptions(instance, { soft: true });
 
 				return {
 					message: "Instance removed from blocked list",
