@@ -6,13 +6,15 @@ import { addNewCommunities } from "./add-new-communities";
 import { clearDeletedCommunities } from "./clear-deleted-communities";
 import { updateFollows } from "./update-follows";
 
+// TODO: just use cron
+
 if (isMain(import.meta.url)) {
 	startJobs();
 }
 
 export function startJobs() {
-	// update oldest updated 1000 cf every minute.
-	loop(() => updateFollows({ limit: 1000 }), ms("1 minute"));
+	// update oldest updated 1000 cf every minute
+	loop(() => updateFollows(1000), ms("1 minute"));
 	loop(addNewCommunities, ms("1 minute")); // fetch newest communities directly from instances
 	loop(addAllCommunities, ms("1 day"));
 	loop(clearDeletedCommunities, ms("2 days"));

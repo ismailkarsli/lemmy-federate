@@ -12,10 +12,10 @@ if (isMain(import.meta.url)) {
 	updateFollows();
 }
 
-export async function updateFollows(opts: { limit?: number } = {}) {
+export async function updateFollows(limit = 1000) {
 	const queue = new PQueue({ concurrency: CONCURRENCY });
 	const communityFollows = await prisma.communityFollow.findMany({
-		take: opts.limit,
+		take: limit,
 		where: {
 			status: {
 				in: [
@@ -43,6 +43,8 @@ export async function updateFollows(opts: { limit?: number } = {}) {
 		},
 	});
 	if (!communityFollows.length) return;
+	// TODO: temporary debug purposes
+	console.info(`Oldest CF: ${communityFollows.at(0)?.updatedAt}`);
 	queue.addAll(
 		communityFollows.map((cf) => async () => {
 			try {
@@ -56,6 +58,7 @@ export async function updateFollows(opts: { limit?: number } = {}) {
 					!(
 						e instanceof HTTPError &&
 						((e.response.status >= 500 && e.response.status < 600) ||
+							e.response.status === 404 ||
 							e.response.status === 429)
 					) &&
 					!(e instanceof TimeoutError)
