@@ -357,8 +357,12 @@ const deleteBlocked = async (id: number) => {
                   This will remove <b>all subscriptions</b> of the bot account.
                 </p>
                 <p>
-                  This is useful when you change the instance settings<br />
+                  This is useful when you change the instance settings<br></br>
                   or disabled the tool.
+                </p>
+                <p>
+                  You may need to temporarily increase the rate limits to<br></br>
+                  allow the bot to complete all unsubscriptions in bulk.
                 </p>
                 <p>If the tool is enabled, then it will re-subscribe later.</p>
               </v-card-text>

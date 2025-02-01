@@ -318,45 +318,37 @@ export const unfollowWithAllInstances = async (community: Community) => {
 	}
 };
 
-export async function resetSubscriptions(instance: Instance) {
-	try {
-		if (!(instance.client_id && instance.client_secret)) {
-			throw new Error("Bot name and password are required");
-		}
-		const client = await getClient(instance);
-		let page = 0;
-		while (true) {
-			const subscriptions = await client.listCommunities({
-				type_: "Subscribed",
-				limit: 50,
-				page: ++page,
-			});
-			if (subscriptions.length === 0) {
-				break;
-			}
-			for (const subscription of subscriptions) {
-				try {
-					await client.followCommunity(subscription.id, false);
-				} catch (e) {
-					if ((e as LemmyErrorType)?.error === "rate_limit_error") {
-						await new Promise((resolve) => setTimeout(resolve, ms("1 minute")));
-						continue;
-					}
-					throw e;
-				}
-			}
-		}
-		// make all follows "WAITING"
-		await prisma.communityFollow.updateMany({
-			where: {
-				instanceId: instance.id,
-			},
-			data: {
-				status: CommunityFollowStatus.WAITING,
-			},
+export async function resetSubscriptions(
+	instance: Instance,
+	opts: { soft?: boolean } = {},
+) {
+	// make all follows "WAITING"
+	await prisma.communityFollow.updateMany({
+		where: {
+			instanceId: instance.id,
+		},
+		data: {
+			status: CommunityFollowStatus.WAITING,
+		},
+	});
+	// if soft reset, then don't unsubscribe from instance itself.
+	if (opts.soft) return;
+	if (!(instance.client_id && instance.client_secret)) {
+		throw new Error("Bot name and password are required");
+	}
+	const client = await getClient(instance);
+	while (true) {
+		const subscriptions = await client.listCommunities({
+			type_: "Subscribed",
+			limit: 50,
+			page: 1,
 		});
-	} catch (e) {
-		console.error("error", e);
+		if (subscriptions.length === 0) {
+			break;
+		}
+		for (const subscription of subscriptions) {
+			await client.followCommunity(subscription.id, false);
+		}
 	}
 }
 
