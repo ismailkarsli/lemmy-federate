@@ -6,17 +6,15 @@ import { conditionalFollow } from "../src/lib/federation-utils";
 import { prisma } from "../src/lib/prisma";
 import { isMain } from "../src/lib/utils";
 
-const CONCURRENCY = 1000;
-
 if (isMain(import.meta.url)) {
-	await updateFollows(1000);
+	await updateFollows();
 	process.exit(0);
 }
 
-export async function updateFollows(limit: number) {
-	const queue = new PQueue({ concurrency: CONCURRENCY });
+export async function updateFollows() {
+	const queue = new PQueue({ concurrency: 1000 });
 	const communityFollows = await prisma.communityFollow.findMany({
-		take: limit,
+		take: 10000,
 		where: {
 			status: {
 				in: [

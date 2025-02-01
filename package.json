@@ -3,10 +3,8 @@
 	"private": true,
 	"type": "module",
 	"scripts": {
-		"package": "bun fe:build && bun db:generate && bun run build",
 		"start": "bun run ./dist/index.js",
 		"dev": "bun run --watch --inspect=localhost:6499/ src/index.ts",
-		"build": "bun run ./build.ts",
 		"fe:dev": "vite frontend",
 		"fe:build": "vite build frontend --emptyOutDir --outDir ../dist/frontend",
 		"db:generate": "prisma generate",
