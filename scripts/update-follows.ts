@@ -1,19 +1,19 @@
 #!/usr/bin/env bun
-import { CommunityFollowStatus, type Prisma } from "@prisma/client";
+import { CommunityFollowStatus } from "@prisma/client";
 import { HTTPError, TimeoutError } from "ky";
 import PQueue from "p-queue";
 import { conditionalFollow } from "../src/lib/federation-utils";
 import { prisma } from "../src/lib/prisma";
 import { isMain } from "../src/lib/utils";
 
-const CONCURRENCY = 100;
+const CONCURRENCY = 1000;
 
 if (isMain(import.meta.url)) {
-	await updateFollows();
+	await updateFollows(1000);
 	process.exit(0);
 }
 
-export async function updateFollows(limit = 1000) {
+export async function updateFollows(limit: number) {
 	const queue = new PQueue({ concurrency: CONCURRENCY });
 	const communityFollows = await prisma.communityFollow.findMany({
 		take: limit,

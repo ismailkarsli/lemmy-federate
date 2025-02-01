@@ -13,8 +13,7 @@ if (isMain(import.meta.url)) {
 }
 
 export function startJobs() {
-	// update oldest updated 1000 cf every minute
-	loop(() => updateFollows(1000), ms("1 minute"));
+	loop(() => updateFollows(10000), ms("1 minute"));
 	loop(addNewCommunities, ms("1 minute")); // fetch newest communities directly from instances
 	loop(addAllCommunities, ms("1 day"));
 	loop(clearDeletedCommunities, ms("2 days"));
