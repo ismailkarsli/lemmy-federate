@@ -59,3 +59,10 @@ app.get("/favicon.ico", serveStatic({ path: "/dist/frontend/favicon.ico" }));
 app.all("*", serveStatic({ path: "/dist/frontend/index.html" }));
 
 export default app;
+
+process.on("uncaughtException", (error) => {
+	console.error("Uncaught exception:", error, error.stack);
+});
+process.on("unhandledRejection", (reason) => {
+	console.error("Unhandled rejection:", reason);
+});

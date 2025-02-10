@@ -19,9 +19,11 @@ export function startJobs() {
 	loop(clearDeletedCommunities, ms("2 days"));
 }
 
-async function loop(callback: () => void, timeout = 0) {
+async function loop(callback: () => Promise<void>, timeout = 0) {
 	while (true) {
-		await callback();
+		await callback().catch((reason) =>
+			console.error(`Error on job ${callback.name}: ${reason}`),
+		);
 		await new Promise((resolve) => setTimeout(resolve, timeout));
 	}
 }
