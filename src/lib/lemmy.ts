@@ -47,7 +47,7 @@ const lemmyCommunityToCommunity = (cv: CommunityView): Community => ({
 });
 
 export class LemmyClient {
-	public type: string = "LEMMY";
+	public type = "LEMMY";
 	public host: string;
 	protected federatedInstances?: Set<string>;
 	private username?: string;
@@ -86,13 +86,16 @@ export class LemmyClient {
 	}
 
 	async followCommunity(community_id: number | string, follow: boolean) {
-		if (typeof community_id === 'string') {
+		let resolvedCommunityId = community_id;
+
+		if (typeof resolvedCommunityId === "string") {
 			// assume it's an activity pub id
-			community_id = await this.getCommunityIdFromApIdLemmy(community_id);
+			resolvedCommunityId =
+				await this.getCommunityIdFromApIdLemmy(resolvedCommunityId);
 		}
 
 		const client = await this.getHttpClient();
-		await client.followCommunity({ community_id, follow });
+		await client.followCommunity({ community_id: resolvedCommunityId, follow });
 	}
 
 	async listCommunities(query: ListCommunities): Promise<Community[]> {
@@ -120,13 +123,15 @@ export class LemmyClient {
 		return this.federatedInstances.has(host);
 	}
 
-	private async getCommunityIdFromApIdLemmy(activityPubId: string): Promise<number> {
+	private async getCommunityIdFromApIdLemmy(
+		activityPubId: string,
+	): Promise<number> {
 		const httpClient = await this.getHttpClient();
 		const result = await httpClient.resolveObject({
 			q: activityPubId,
 		});
 		if (!result.community) {
-			throw new Error("Could not resolve a community by its ActivityPub id")
+			throw new Error("Could not resolve a community by its ActivityPub id");
 		}
 
 		return result.community.community.id;

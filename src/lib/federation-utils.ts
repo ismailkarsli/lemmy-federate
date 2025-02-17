@@ -9,11 +9,11 @@ import {
 import { TRPCError } from "@trpc/server";
 import { HTTPError, TimeoutError } from "ky";
 import ms from "ms";
+import { ActivityPubClient } from "./activity-pub-client.ts";
 import { getCensuresGiven, getEndorsements } from "./fediseer";
 import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
-import {ActivityPubClient} from "./activity-pub-client.ts";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them

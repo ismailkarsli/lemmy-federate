@@ -1,8 +1,8 @@
 import { randomInt } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { TRPCError } from "@trpc/server";
 import ky from "ky";
 import typia from "typia";
-import { TRPCError } from "@trpc/server";
 
 type InstanceSoftware = {
 	name: string;

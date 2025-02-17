@@ -37,11 +37,11 @@ type MbinOauthClient = {
 };
 
 interface SearchActor {
-	type: 'user' | 'magazine';
+	type: "user" | "magazine";
 	object: {
 		apId: string;
 		magazineId?: number | null;
-	}
+	};
 }
 
 const api = ky.create({
@@ -63,7 +63,7 @@ const mbinMagazineToCommunity = (magazine: MbinMagazine): Community => ({
 });
 
 export class MbinClient extends LemmyClient {
-	public type: string = "MBIN";
+	public type = "MBIN";
 	private oauthClientId?: string;
 	private oauthClientSecret?: string;
 	private token?: string;
@@ -106,14 +106,17 @@ export class MbinClient extends LemmyClient {
 	}
 
 	async followCommunity(community_id: number | string, follow: boolean) {
-		if (typeof community_id === 'string') {
+		let resolvedCommunityId = community_id;
+
+		if (typeof resolvedCommunityId === "string") {
 			// assume it's an activity pub id
-			community_id = await this.getCommunityIdFromApIdMbin(community_id);
+			resolvedCommunityId =
+				await this.getCommunityIdFromApIdMbin(resolvedCommunityId);
 		}
 
 		const endpoint = follow ? "subscribe" : "unsubscribe";
 		await api.put(
-			`https://${this.host}/api/magazine/${community_id}/${endpoint}`,
+			`https://${this.host}/api/magazine/${resolvedCommunityId}/${endpoint}`,
 			{ headers: { Authorization: `Bearer ${await this.getBearerToken()}` } },
 		);
 	}
@@ -157,18 +160,22 @@ export class MbinClient extends LemmyClient {
 		return this.federatedInstances.has(host);
 	}
 
-	private async getCommunityIdFromApIdMbin(activityPubId: string): Promise<number> {
-		const result = await api.get<{ apActors: SearchActor[] }>(
-			`https://${this.host}/api/search?q=${activityPubId}`,
-			{ headers: { Authorization: `Bearer ${await this.getBearerToken()}` } }
-		).json();
+	private async getCommunityIdFromApIdMbin(
+		activityPubId: string,
+	): Promise<number> {
+		const result = await api
+			.get<{ apActors: SearchActor[] }>(
+				`https://${this.host}/api/search?q=${activityPubId}`,
+				{ headers: { Authorization: `Bearer ${await this.getBearerToken()}` } },
+			)
+			.json();
 
 		for (const item of result.apActors) {
-			if (item.type !== 'magazine' || item.object.apId !== activityPubId) {
+			if (item.type !== "magazine" || item.object.apId !== activityPubId) {
 				continue;
 			}
 
-			return item.object.magazineId!;
+			return item.object.magazineId as number;
 		}
 
 		throw new Error("Could not resolve magazine by its ActivityPub id.");

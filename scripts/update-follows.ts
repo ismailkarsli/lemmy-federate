@@ -1,5 +1,5 @@
 #!/usr/bin/env bun
-import { CommunityFollowStatus, Prisma } from "@prisma/client";
+import { CommunityFollowStatus, type Prisma } from "@prisma/client";
 import { HTTPError, TimeoutError } from "ky";
 import PQueue from "p-queue";
 import { conditionalFollow } from "../src/lib/federation-utils";

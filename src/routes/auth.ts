@@ -65,7 +65,8 @@ export const authRouter = router({
 			let fediseerGuaranteed: boolean;
 
 			try {
-				fediseerGuaranteed = (((await getGuarantees(host))?.domains?.length) ?? 0) > 0;
+				fediseerGuaranteed =
+					((await getGuarantees(host))?.domains?.length ?? 0) > 0;
 			} catch (e) {
 				fediseerGuaranteed = false;
 			}
