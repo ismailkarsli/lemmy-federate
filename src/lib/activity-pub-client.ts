@@ -75,6 +75,11 @@ export class ActivityPubClient {
         const expanded = await expand(communityResponse);
         const expandedItem = expanded[0];
 
+        if ((expandedItem['@type'] as string[])[0] !== 'https://www.w3.org/ns/activitystreams#Group') {
+            // todo it's not actually a Group (community)
+            return undefined;
+        }
+
         const followers = (expandedItem['https://www.w3.org/ns/activitystreams#followers'] ?? null) as NodeObject[] | null;
         let followersCollection: string[] | null;
         if (typeof followers?.[0]?.['@id'] !== 'undefined') {
