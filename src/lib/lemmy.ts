@@ -88,12 +88,7 @@ export class LemmyClient {
 	async followCommunity(community_id: number | string, follow: boolean) {
 		if (typeof community_id === 'string') {
 			// assume it's an activity pub id
-			const result = await this.getCommunityIdFromApIdLemmy(community_id);
-			if (result === null) {
-				// todo not found
-				return;
-			}
-			community_id = result;
+			community_id = await this.getCommunityIdFromApIdLemmy(community_id);
 		}
 
 		const client = await this.getHttpClient();
@@ -125,13 +120,13 @@ export class LemmyClient {
 		return this.federatedInstances.has(host);
 	}
 
-	private async getCommunityIdFromApIdLemmy(activityPubId: string): Promise<number | null> {
+	private async getCommunityIdFromApIdLemmy(activityPubId: string): Promise<number> {
 		const httpClient = await this.getHttpClient();
 		const result = await httpClient.resolveObject({
 			q: activityPubId,
 		});
 		if (!result.community) {
-			return null;
+			throw new Error("Could not resolve a community by its ActivityPub id")
 		}
 
 		return result.community.community.id;

@@ -108,12 +108,7 @@ export class MbinClient extends LemmyClient {
 	async followCommunity(community_id: number | string, follow: boolean) {
 		if (typeof community_id === 'string') {
 			// assume it's an activity pub id
-			const result = await this.getCommunityIdFromApIdMbin(community_id);
-			if (result === null) {
-				// todo not found
-				return;
-			}
-			community_id = result;
+			community_id = await this.getCommunityIdFromApIdMbin(community_id);
 		}
 
 		const endpoint = follow ? "subscribe" : "unsubscribe";
@@ -162,7 +157,7 @@ export class MbinClient extends LemmyClient {
 		return this.federatedInstances.has(host);
 	}
 
-	private async getCommunityIdFromApIdMbin(activityPubId: string): Promise<number | null> {
+	private async getCommunityIdFromApIdMbin(activityPubId: string): Promise<number> {
 		const result = await api.get<{ apActors: SearchActor[] }>(
 			`https://${this.host}/api/search?q=${activityPubId}`,
 			{ headers: { Authorization: `Bearer ${await this.getBearerToken()}` } }
@@ -176,7 +171,7 @@ export class MbinClient extends LemmyClient {
 			return item.object.magazineId!;
 		}
 
-		return null;
+		throw new Error("Could not resolve magazine by its ActivityPub id.");
 	}
 
 	private async getBearerToken(): Promise<string> {
