@@ -162,7 +162,10 @@ export class MbinClient extends LemmyClient {
 	}
 
 	private async getCommunityIdFromApIdMbin(activityPubId: string): Promise<number | null> {
-		const result = await api.get<{ apActors: SearchActor[] }>(`https://${this.host}/api/search?q=${activityPubId}`).json();
+		const result = await api.get<{ apActors: SearchActor[] }>(
+			`https://${this.host}/api/search?q=${activityPubId}`,
+			{ headers: { Authorization: `Bearer ${await this.getBearerToken()}` } }
+		).json();
 
 		for (const item of result.apActors) {
 			if (item.type !== 'magazine' || item.object.apId !== activityPubId) {
