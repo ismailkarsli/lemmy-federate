@@ -2,7 +2,8 @@ import {type Community, type User} from "./lemmy.ts";
 import type {ListCommunities} from "lemmy-js-client";
 import ky, {type KyInstance} from "ky";
 import ms from "ms";
-import {expand, JsonLdDocument, type NodeObject, ValueObject} from "jsonld";
+import {expand, type NodeObject} from "jsonld";
+import type {JsonLdDocument, ValueObject} from "jsonld";
 
 interface WebFingerLink {
     rel: string;
@@ -33,15 +34,11 @@ export class ActivityPubClient {
     public type: string = "ACTIVITY_PUB";
 
     public host: string;
-    private username?: string;
-    private password?: string;
 
     private httpClient: KyInstance | null = null;
 
-    constructor(host: string, username?: string, password?: string) {
+    constructor(host: string) {
         this.host = host;
-        this.username = username;
-        this.password = password;
     }
 
     async getUser(username: string): Promise<User> {

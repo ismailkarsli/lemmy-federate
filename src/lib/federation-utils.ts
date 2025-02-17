@@ -48,7 +48,7 @@ export const getClient = ({
 	} else if (software === "DCH_BLOG") {
 		client = new DchBlog(host, id, secret);
 	} else {
-		client = new ActivityPubClient(host, id, secret);
+		client = new ActivityPubClient(host);
 	}
 
 	clientCacheMap.set(key, {
