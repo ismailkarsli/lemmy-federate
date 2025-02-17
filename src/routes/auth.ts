@@ -62,7 +62,13 @@ export const authRouter = router({
 				});
 			}
 
-			const fediseerGuaranteed = ((await getGuarantees(host))?.domains?.length) ?? 0 > 0;
+			let fediseerGuaranteed: boolean;
+
+			try {
+				fediseerGuaranteed = (((await getGuarantees(host))?.domains?.length) ?? 0) > 0;
+			} catch (e) {
+				fediseerGuaranteed = false;
+			}
 
 			let instance = await prisma.instance.findFirst({ where: { host: host } });
 			if (!instance) {

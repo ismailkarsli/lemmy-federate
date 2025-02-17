@@ -116,11 +116,11 @@ export class ActivityPubClient {
     }
 
     private async fetchWebfinger(name: string): Promise<JsonLdDocument> {
-        const acct = `acct:${name}:${this.host}`;
+        const acct = `acct:${name}@${this.host}`;
         const webfingerUrl = `https://${this.host}/.well-known/webfinger?resource=${acct}`;
         const httpClient = await this.getHttpClient();
 
-        const response = httpClient.get<WebfingerResponse>(`https://${webfingerUrl}`, {
+        const response = httpClient.get<WebfingerResponse>(webfingerUrl, {
             headers: {
                 Accept: `application/jrd+json`,
             },
@@ -143,7 +143,9 @@ export class ActivityPubClient {
             throw new Error("No ActivityPub URL has been found using WebFinger");
         }
 
-        const resourceResponse = await httpClient.get<JsonLdDocument>(url);
+        const resourceResponse = await httpClient.get<JsonLdDocument>(url, {
+            headers: {Accept: 'application/activity+json'},
+        });
         return await resourceResponse.json();
     }
 
