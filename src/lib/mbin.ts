@@ -36,6 +36,14 @@ type MbinOauthClient = {
 	secret: string;
 };
 
+interface SearchActor {
+	type: 'user' | 'magazine';
+	object: {
+		apId: string;
+		magazineId?: number | null;
+	}
+}
+
 const api = ky.create({
 	timeout: ms("1 minutes"),
 	retry: {
@@ -96,7 +104,17 @@ export class MbinClient extends LemmyClient {
 		return mbinMagazineToCommunity(magazine);
 	}
 
-	async followCommunity(community_id: number, follow: boolean) {
+	async followCommunity(community_id: number | string, follow: boolean) {
+		if (typeof community_id === 'string') {
+			// assume it's an activity pub id
+			const result = await this.getCommunityIdFromApIdMbin(community_id);
+			if (result === null) {
+				// todo not found
+				return;
+			}
+			community_id = result;
+		}
+
 		const endpoint = follow ? "subscribe" : "unsubscribe";
 		await api.put(
 			`https://${this.host}/api/magazine/${community_id}/${endpoint}`,
@@ -141,6 +159,20 @@ export class MbinClient extends LemmyClient {
 			);
 		}
 		return this.federatedInstances.has(host);
+	}
+
+	private async getCommunityIdFromApIdMbin(activityPubId: string): Promise<number | null> {
+		const result = await api.get<{ apActors: SearchActor[] }>(`https://${this.host}/api/search?q=${activityPubId}`).json();
+
+		for (const item of result.apActors) {
+			if (item.type !== 'magazine' || item.object.apId !== activityPubId) {
+				continue;
+			}
+
+			return item.object.magazineId!;
+		}
+
+		return null;
 	}
 
 	private async getBearerToken(): Promise<string> {

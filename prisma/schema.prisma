@@ -17,7 +17,7 @@ model Instance {
   nsfw             NSFW              @default(BLOCK)
   fediseer         FediseerUsage     @default(BLACKLIST_ONLY)
   auto_add         Boolean           @default(true)
-  software         Software
+  software         String
   client_id        String?
   client_secret    String?
   cross_software   Boolean           @default(true)

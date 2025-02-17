@@ -8,6 +8,7 @@ import { getGuarantees } from "../lib/fediseer";
 import { MbinClient } from "../lib/mbin";
 import { getInstanceSoftware, randomNumber } from "../lib/utils";
 import { publicProcedure, router } from "../trpc";
+import {ActivityPubClient} from "../lib/activity-pub-client.ts";
 
 const prisma = new PrismaClient();
 const BLACKLISTED_INSTANCES =
@@ -48,7 +49,7 @@ export const authRouter = router({
 			}
 
 			const softwareInfo = await getInstanceSoftware(host);
-			const software = softwareInfo.name === "lemmy" ? "LEMMY" : "MBIN";
+			const software = softwareInfo.name.toUpperCase();
 			const client = getClient({
 				host,
 				software,
@@ -68,7 +69,7 @@ export const authRouter = router({
 			 * Only allow instances that have guarantees in Fediseer
 			 * Disabled for Mbin for now
 			 */
-			if (!(client instanceof MbinClient)) {
+			if (!(client instanceof MbinClient) && !(client instanceof ActivityPubClient)) {
 				const guarantees = await getGuarantees(host);
 				if (!guarantees?.domains?.length) {
 					throw new TRPCError({

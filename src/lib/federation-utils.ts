@@ -14,6 +14,7 @@ import { getCensuresGiven, getEndorsements } from "./fediseer";
 import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
+import {ActivityPubClient} from "./activity-pub-client.ts";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them
@@ -21,7 +22,7 @@ import { prisma } from "./prisma";
 const clientCacheMap = new Map<
 	string,
 	{
-		client: LemmyClient | MbinClient;
+		client: LemmyClient | MbinClient | ActivityPubClient;
 		expiration: Date;
 	}
 >();
@@ -37,14 +38,16 @@ export const getClient = ({
 		return cached.client;
 	}
 
-	let client: LemmyClient | MbinClient;
+	let client: LemmyClient | MbinClient | ActivityPubClient;
 	const id = client_id ?? undefined;
 	const secret = client_secret ?? undefined;
 	if (software === "LEMMY") {
 		client = new LemmyClient(host, id, secret);
 	} else if (software === "MBIN") {
 		client = new MbinClient(host, id, secret);
-	} else throw new Error("Invalid software");
+	} else {
+		client = new ActivityPubClient(host, id, secret);
+	}
 
 	clientCacheMap.set(key, {
 		client,
@@ -366,7 +369,7 @@ if (!BOT_INSTANCE || !BOT_USERNAME || !BOT_PASSWORD) {
 }
 let BOT_HTTP_CLIENT: LemmyHttpExtended | undefined; // using standard LemmyHttp for bot
 
-export const sendAuthCode = async (
+export const csendAuthCode = async (
 	username: string,
 	instance: string,
 	code: string,

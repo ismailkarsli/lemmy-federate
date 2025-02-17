@@ -20,7 +20,7 @@ export type User = {
 };
 
 export type Community = {
-	id: number;
+	id: number | string;
 	name: string;
 	isDeleted: boolean;
 	isRemoved: boolean;
@@ -84,7 +84,17 @@ export class LemmyClient {
 		return lemmyCommunityToCommunity(community.community_view);
 	}
 
-	async followCommunity(community_id: number, follow: boolean) {
+	async followCommunity(community_id: number | string, follow: boolean) {
+		if (typeof community_id === 'string') {
+			// assume it's an activity pub id
+			const result = await this.getCommunityIdFromApIdLemmy(community_id);
+			if (result === null) {
+				// todo not found
+				return;
+			}
+			community_id = result;
+		}
+
 		const client = await this.getHttpClient();
 		await client.followCommunity({ community_id, follow });
 	}
@@ -112,6 +122,18 @@ export class LemmyClient {
 			);
 		}
 		return this.federatedInstances.has(host);
+	}
+
+	private async getCommunityIdFromApIdLemmy(activityPubId: string): Promise<number | null> {
+		const httpClient = await this.getHttpClient();
+		const result = await httpClient.resolveObject({
+			q: activityPubId,
+		});
+		if (!result.community) {
+			return null;
+		}
+
+		return result.community.community.id;
 	}
 
 	/**
