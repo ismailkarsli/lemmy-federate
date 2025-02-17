@@ -43,10 +43,6 @@ export class ActivityPubClient {
 
     async getUser(username: string): Promise<User> {
         const userResponse = await this.fetchWebfinger(username);
-        if (userResponse === null) {
-            // todo there were some failures
-            return undefined;
-        }
 
         const expanded = await expand(userResponse);
         const expandedItem = expanded[0];
@@ -66,17 +62,12 @@ export class ActivityPubClient {
 
     async getCommunity(name: string): Promise<Community> {
         const communityResponse = await this.fetchWebfinger(name);
-        if (communityResponse === null) {
-            // todo there were failures
-            return undefined;
-        }
 
         const expanded = await expand(communityResponse);
         const expandedItem = expanded[0];
 
         if ((expandedItem['@type'] as string[])[0] !== 'https://www.w3.org/ns/activitystreams#Group') {
-            // todo it's not actually a Group (community)
-            return undefined;
+            throw new Error("The fetched community is not of the Group type.")
         }
 
         const followers = (expandedItem['https://www.w3.org/ns/activitystreams#followers'] ?? null) as NodeObject[] | null;
@@ -124,7 +115,7 @@ export class ActivityPubClient {
         return this.httpClient;
     }
 
-    private async fetchWebfinger(name: string): Promise<JsonLdDocument | null> {
+    private async fetchWebfinger(name: string): Promise<JsonLdDocument> {
         const acct = `acct:${name}:${this.host}`;
         const webfingerUrl = `https://${this.host}/.well-known/webfinger?resource=${acct}`;
         const httpClient = await this.getHttpClient();
@@ -136,8 +127,7 @@ export class ActivityPubClient {
         });
         const webfingerResponse = await response.json();
         if (webfingerResponse.subject !== acct) {
-            // todo if it's not the same, return not found
-            return null;
+            throw new Error("Invalid data has been returned, the returned subject does not match the requested one");
         }
 
         let url: string | undefined = undefined;
@@ -150,8 +140,7 @@ export class ActivityPubClient {
         }
 
         if (!url) {
-            // todo there's no activity pub relation link
-            return null;
+            throw new Error("No ActivityPub URL has been found using WebFinger");
         }
 
         const resourceResponse = await httpClient.get<JsonLdDocument>(url);
