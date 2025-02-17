@@ -29,6 +29,7 @@ model Instance {
   blocked          Instance[]        @relation("InstanceBlocks")
   users            User[]
   communityFollows CommunityFollow[]
+  approved         Boolean           @default(true)
 }
 
 model User {

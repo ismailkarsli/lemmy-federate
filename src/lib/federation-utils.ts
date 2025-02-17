@@ -14,7 +14,6 @@ import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
 import {ActivityPubClient} from "./activity-pub-client.ts";
-import { DchBlog } from "./dch-blog";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them
@@ -22,7 +21,7 @@ import { DchBlog } from "./dch-blog";
 const clientCacheMap = new Map<
 	string,
 	{
-		client: LemmyClient | MbinClient | ActivityPubClient | DchBlog;
+		client: LemmyClient | MbinClient | ActivityPubClient;
 		expiration: Date;
 	}
 >();
@@ -45,8 +44,6 @@ export const getClient = ({
 		client = new LemmyClient(host, id, secret);
 	} else if (software === "MBIN") {
 		client = new MbinClient(host, id, secret);
-	} else if (software === "DCH_BLOG") {
-		client = new DchBlog(host, id, secret);
 	} else {
 		client = new ActivityPubClient(host);
 	}

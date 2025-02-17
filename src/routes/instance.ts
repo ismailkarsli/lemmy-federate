@@ -33,7 +33,7 @@ export const instanceRouter = router({
 				where: { host: ctx.user.instance, id: input.id },
 			});
 			if (!instance) throw new TRPCError({ code: "NOT_FOUND" });
-			const isSeedOnly = instance.software === "DCH_BLOG";
+			const isSeedOnly = instance.software === "ACTIVITY_PUB";
 			const updated = await prisma.instance.update({
 				where: {
 					host: ctx.user.instance,

@@ -7,7 +7,6 @@ import { getClient, sendAuthCode } from "../lib/federation-utils";
 import { getGuarantees } from "../lib/fediseer";
 import { getInstanceSoftware, randomNumber } from "../lib/utils";
 import { publicProcedure, router } from "../trpc";
-import {ActivityPubClient} from "../lib/activity-pub-client.ts";
 
 const prisma = new PrismaClient();
 const BLACKLISTED_INSTANCES =
@@ -63,27 +62,16 @@ export const authRouter = router({
 				});
 			}
 
-			/**
-			 * Only allow instances that have guarantees in Fediseer
-			 * Enabled only on Lemmy for now
-			 */
-			if (client.type === "LEMMY") {
-				const guarantees = await getGuarantees(host);
-				if (!guarantees?.domains?.length) {
-					throw new TRPCError({
-						code: "CONFLICT",
-						message: "No guarantees found for this instance",
-					});
-				}
-			}
+			const fediseerGuaranteed = ((await getGuarantees(host))?.domains?.length) ?? 0 > 0;
 
 			let instance = await prisma.instance.findFirst({ where: { host: host } });
 			if (!instance) {
-				const isSeedOnly = software.name === "DCH_BLOG";
+				const isSeedOnly = software.name.toUpperCase() === "ACTIVITY_PUB";
 				instance = await prisma.instance.create({
 					data: {
 						host,
-						software: software.name,
+						software: software.name.toUpperCase(),
+						approved: fediseerGuaranteed,
 						...(isSeedOnly
 							? {
 									auto_add: false,

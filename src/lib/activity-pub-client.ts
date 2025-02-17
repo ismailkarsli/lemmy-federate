@@ -119,16 +119,6 @@ export class ActivityPubClient {
         this.httpClient ??= ky.create({
             timeout: ms("1 minutes"),
             retry: 1,
-            hooks: {
-                beforeRequest: [
-                    async (req) => {
-                        let newReq = req;
-                        newReq.headers.set('Accept', 'application/activity+json');
-
-                        return newReq;
-                    },
-                ],
-            },
         });
 
         return this.httpClient;
@@ -164,8 +154,8 @@ export class ActivityPubClient {
             return null;
         }
 
-        const userResponse = await httpClient.get<JsonLdDocument>(url);
-        return await userResponse.json();
+        const resourceResponse = await httpClient.get<JsonLdDocument>(url);
+        return await resourceResponse.json();
     }
 
     private async resolveCollection<T>(collectionOrLink: Collection<T> | string): Promise<T[] | null> {
@@ -174,7 +164,9 @@ export class ActivityPubClient {
         let collection: Collection<T>;
 
         if (typeof collectionOrLink === 'string') {
-            const response = await httpClient.get<Collection<T>>(collectionOrLink);
+            const response = await httpClient.get<Collection<T>>(collectionOrLink, {
+                headers: {Accept: 'application/activity+json'},
+            });
             collection = await response.json();
         } else {
             collection = collectionOrLink;
@@ -211,7 +203,9 @@ export class ActivityPubClient {
         }
 
         const httpClient = await this.getHttpClient();
-        const response = await httpClient.get<CollectionPage<T>>(page);
+        const response = await httpClient.get<CollectionPage<T>>(page, {
+            headers: {Accept: 'application/activity+json'},
+        });
 
         return await response.json();
     }
