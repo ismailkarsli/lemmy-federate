@@ -28,6 +28,9 @@ const showPassword = ref(false);
 const allowedInstance = ref<number | null>(null);
 const blockedInstance = ref<number | null>(null);
 
+const softwareSeedOnly = computed(() => {
+	return instance.value.software === "DCH_BLOG";
+});
 const filteredAllInstances = computed(() => {
 	if (instance) {
 		return allInstances.value?.instances.filter(
@@ -206,8 +209,8 @@ const deleteBlocked = async (id: number) => {
     <v-form @submit.prevent="submit()">
       <v-row>
         <v-checkbox label="Enable tool" v-model="instance.enabled" hide-details />
-        <v-checkbox label="Auto add local communities" v-model="instance.auto_add" hide-details />
-        <v-checkbox v-model="instance.cross_software" hide-details>
+        <v-checkbox v-if="!softwareSeedOnly" label="Auto add local communities" v-model="instance.auto_add" hide-details />
+        <v-checkbox v-if="!softwareSeedOnly" v-model="instance.cross_software" hide-details>
           <template v-slot:label>
             Cross software
             <info-tooltip>
@@ -222,7 +225,7 @@ const deleteBlocked = async (id: number) => {
             </info-tooltip>
           </template>
         </v-checkbox>
-        <v-col cols="12">
+        <v-col v-if="!softwareSeedOnly" cols="12">
           <p>Federation mode</p>
           <v-row>
             <v-checkbox label="Mutual" v-model="instance.mode" value="FULL" hide-details>
@@ -280,7 +283,7 @@ const deleteBlocked = async (id: number) => {
           </v-row>
         </v-col>
 
-        <v-col cols="12">
+        <v-col v-if="!softwareSeedOnly" cols="12">
           <p>NSFW</p>
           <v-row>
             <v-checkbox label="Allow" v-model="instance.nsfw" value="ALLOW" hide-details />
@@ -288,7 +291,7 @@ const deleteBlocked = async (id: number) => {
             <v-checkbox label="Allow only NSFW" v-model="instance.nsfw" value="ONLY" hide-details />
           </v-row>
         </v-col>
-        <v-col cols="12">
+        <v-col v-if="!softwareSeedOnly" cols="12">
           <p>Fediseer</p>
           <v-row>
             <v-checkbox label="Don't use" v-model="instance.fediseer" value="NONE" hide-details />
@@ -296,13 +299,13 @@ const deleteBlocked = async (id: number) => {
             <v-checkbox label="Allow only endorsed" v-model="instance.fediseer" value="WHITELIST_ONLY" hide-details />
           </v-row>
         </v-col>
-        <v-col cols="12" md="6">
+        <v-col v-if="!softwareSeedOnly" cols="12" md="6">
           <v-text-field :label="instance?.software === 'LEMMY'
             ? 'Bot username'
             : 'OAuth client id'
             " v-model="instance.client_id" hide-details />
         </v-col>
-        <v-col cols="12" md="6">
+        <v-col v-if="!softwareSeedOnly" cols="12" md="6">
           <v-text-field :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
             :type="showPassword ? 'text' : 'password'" @click:append-inner="showPassword = !showPassword" :label="instance?.software === 'LEMMY'
               ? 'Bot password'
@@ -344,7 +347,7 @@ const deleteBlocked = async (id: number) => {
               </v-card-actions>
             </v-card>
           </v-menu>
-          <v-menu location="bottom">
+          <v-menu v-if="!softwareSeedOnly" location="bottom">
             <template v-slot:activator="{ props }">
               <v-btn class="ml-4" append-icon="mdi-information" v-bind="props" color="error">
                 Reset Subscriptions

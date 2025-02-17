@@ -8,12 +8,12 @@ import {
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { HTTPError, TimeoutError } from "ky";
-import type { LemmyErrorType } from "lemmy-js-client";
 import ms from "ms";
 import { getCensuresGiven, getEndorsements } from "./fediseer";
 import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
+import { DchBlog } from "./dch-blog";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them
@@ -44,7 +44,9 @@ export const getClient = ({
 		client = new LemmyClient(host, id, secret);
 	} else if (software === "MBIN") {
 		client = new MbinClient(host, id, secret);
-	} else throw new Error("Invalid software");
+	} else if (software === "DCH_BLOG") {
+		client = new DchBlog(host, id, secret);
+	} else throw new Error(`Invalid software: ${software}`);
 
 	clientCacheMap.set(key, {
 		client,

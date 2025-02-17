@@ -11,6 +11,7 @@ import {
 } from "lemmy-js-client";
 import ms from "ms";
 import type { FilterNotEndingWith } from "../types/FilterNotEndingWith";
+import type { Software } from "@prisma/client";
 
 export type User = {
 	username: string;
@@ -47,6 +48,7 @@ const lemmyCommunityToCommunity = (cv: CommunityView): Community => ({
 });
 
 export class LemmyClient {
+	public type: Software = "LEMMY";
 	public host: string;
 	protected federatedInstances?: Set<string>;
 	private username?: string;

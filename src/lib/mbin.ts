@@ -3,6 +3,7 @@ import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
 import typia from "typia";
 import { type Community, LemmyClient, type User } from "./lemmy";
+import type { Software } from "@prisma/client";
 
 const CONTACT_EMAIL = typia.assert<string>(process.env.CONTACT_EMAIL);
 const APP_URL = typia.assert<string>(process.env.APP_URL);
@@ -39,7 +40,7 @@ type MbinOauthClient = {
 const api = ky.create({
 	timeout: ms("1 minutes"),
 	retry: {
-		limit: 50,
+		limit: 3,
 	},
 });
 
@@ -55,6 +56,7 @@ const mbinMagazineToCommunity = (magazine: MbinMagazine): Community => ({
 });
 
 export class MbinClient extends LemmyClient {
+	public type: Software = "MBIN";
 	private oauthClientId?: string;
 	private oauthClientSecret?: string;
 	private token?: string;
