@@ -94,6 +94,7 @@ enum CommunityFollowStatus {
 enum Software {
   LEMMY
   MBIN
+  DCH_BLOG
 }
 
 enum Mode {

@@ -47,7 +47,7 @@ interface SearchActor {
 const api = ky.create({
 	timeout: ms("1 minutes"),
 	retry: {
-		limit: 50,
+		limit: 3,
 	},
 });
 
@@ -63,6 +63,7 @@ const mbinMagazineToCommunity = (magazine: MbinMagazine): Community => ({
 });
 
 export class MbinClient extends LemmyClient {
+	public type: string = "MBIN";
 	private oauthClientId?: string;
 	private oauthClientSecret?: string;
 	private token?: string;

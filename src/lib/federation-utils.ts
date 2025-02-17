@@ -8,13 +8,13 @@ import {
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { HTTPError, TimeoutError } from "ky";
-import type { LemmyErrorType } from "lemmy-js-client";
 import ms from "ms";
 import { getCensuresGiven, getEndorsements } from "./fediseer";
 import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
 import {ActivityPubClient} from "./activity-pub-client.ts";
+import { DchBlog } from "./dch-blog";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them
@@ -22,7 +22,7 @@ import {ActivityPubClient} from "./activity-pub-client.ts";
 const clientCacheMap = new Map<
 	string,
 	{
-		client: LemmyClient | MbinClient | ActivityPubClient;
+		client: LemmyClient | MbinClient | ActivityPubClient | DchBlog;
 		expiration: Date;
 	}
 >();
@@ -45,6 +45,8 @@ export const getClient = ({
 		client = new LemmyClient(host, id, secret);
 	} else if (software === "MBIN") {
 		client = new MbinClient(host, id, secret);
+	} else if (software === "DCH_BLOG") {
+		client = new DchBlog(host, id, secret);
 	} else {
 		client = new ActivityPubClient(host, id, secret);
 	}
@@ -369,7 +371,7 @@ if (!BOT_INSTANCE || !BOT_USERNAME || !BOT_PASSWORD) {
 }
 let BOT_HTTP_CLIENT: LemmyHttpExtended | undefined; // using standard LemmyHttp for bot
 
-export const csendAuthCode = async (
+export const sendAuthCode = async (
 	username: string,
 	instance: string,
 	code: string,

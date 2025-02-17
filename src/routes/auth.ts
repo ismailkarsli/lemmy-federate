@@ -5,7 +5,6 @@ import ms from "ms";
 import typia from "typia";
 import { getClient, sendAuthCode } from "../lib/federation-utils";
 import { getGuarantees } from "../lib/fediseer";
-import { MbinClient } from "../lib/mbin";
 import { getInstanceSoftware, randomNumber } from "../lib/utils";
 import { publicProcedure, router } from "../trpc";
 import {ActivityPubClient} from "../lib/activity-pub-client.ts";
@@ -48,11 +47,10 @@ export const authRouter = router({
 				});
 			}
 
-			const softwareInfo = await getInstanceSoftware(host);
-			const software = softwareInfo.name.toUpperCase();
+			const software = await getInstanceSoftware(host);
 			const client = getClient({
 				host,
-				software,
+				software: software.name.toUpperCase(),
 				client_id: null,
 				client_secret: null,
 			});
@@ -67,9 +65,9 @@ export const authRouter = router({
 
 			/**
 			 * Only allow instances that have guarantees in Fediseer
-			 * Disabled for Mbin for now
+			 * Enabled only on Lemmy for now
 			 */
-			if (!(client instanceof MbinClient) && !(client instanceof ActivityPubClient)) {
+			if (client.type === "LEMMY") {
 				const guarantees = await getGuarantees(host);
 				if (!guarantees?.domains?.length) {
 					throw new TRPCError({
@@ -81,7 +79,22 @@ export const authRouter = router({
 
 			let instance = await prisma.instance.findFirst({ where: { host: host } });
 			if (!instance) {
-				instance = await prisma.instance.create({ data: { host, software } });
+				const isSeedOnly = software.name === "DCH_BLOG";
+				instance = await prisma.instance.create({
+					data: {
+						host,
+						software: software.name,
+						...(isSeedOnly
+							? {
+									auto_add: false,
+									cross_software: true,
+									mode: "SEED",
+									nsfw: "BLOCK",
+									fediseer: "NONE",
+								}
+							: {}),
+					},
+				});
 			}
 
 			if (body.code) {

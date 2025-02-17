@@ -29,7 +29,12 @@ export const instanceRouter = router({
 	update: protectedProcedure
 		.input(typia.createAssert<Instance & { id: number }>())
 		.mutation(async ({ input, ctx }) => {
-			const instance = await prisma.instance.update({
+			const instance = await prisma.instance.findFirst({
+				where: { host: ctx.user.instance, id: input.id },
+			});
+			if (!instance) throw new TRPCError({ code: "NOT_FOUND" });
+			const isSeedOnly = instance.software === "DCH_BLOG";
+			const updated = await prisma.instance.update({
 				where: {
 					host: ctx.user.instance,
 					id: input.id,
@@ -44,6 +49,15 @@ export const instanceRouter = router({
 					mode: input.mode,
 					software: input.software,
 					cross_software: input.cross_software,
+					...(isSeedOnly
+						? {
+								auto_add: false,
+								cross_software: true,
+								mode: "SEED",
+								nsfw: "BLOCK",
+								fediseer: "NONE",
+							}
+						: {}),
 				},
 			});
 
@@ -56,9 +70,9 @@ export const instanceRouter = router({
 			}
 
 			// soft reset subscriptions to re-check with up to date settings.
-			resetSubscriptions(instance, { soft: true });
+			resetSubscriptions(updated, { soft: true });
 
-			return instance;
+			return updated;
 		}),
 	find: publicProcedure
 		.input(typia.createAssert<FindArgs | undefined>())

@@ -30,6 +30,8 @@ interface CollectionPage<T> extends Collection<T> {
 }
 
 export class ActivityPubClient {
+    public type: string = "ACTIVITY_PUB";
+
     public host: string;
     private username?: string;
     private password?: string;
