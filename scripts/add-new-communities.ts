@@ -25,6 +25,8 @@ export async function addNewCommunities() {
 
 	for (const instance of instances) {
 		try {
+			// ActivityPub instances can't list or follow communities
+			if (instance.software === "ACTIVITY_PUB") continue;
 			const client = await getClient(instance);
 
 			const communities = await client.listCommunities({

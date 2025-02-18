@@ -125,6 +125,16 @@ export const conditionalFollow = async (
 	}
 
 	/**
+	 * ActivityPub client can't follow other instances
+	 */
+	if (instance.software === "ACTIVITY_PUB") {
+		console.warn(
+			`ACTIVITY_PUB software should only be able to use "SEED" mode, the instance: ${instance.host}`,
+		);
+		return CommunityFollowStatus.NOT_AVAILABLE;
+	}
+
+	/**
 	 * If at least one instance is not allowing cross software federation then check them
 	 */
 	if (
@@ -341,6 +351,8 @@ export async function resetSubscriptions(
 	});
 	// if soft reset, then don't unsubscribe from instance itself.
 	if (opts.soft) return;
+	// ActivityPub instances can't list or unsubscribe
+	if (instance.software === "ACTIVITY_PUB") return;
 	if (!(instance.client_id && instance.client_secret)) {
 		throw new Error("Bot name and password are required");
 	}

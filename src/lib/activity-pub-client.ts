@@ -66,11 +66,6 @@ export class ActivityPubClient {
 		};
 	}
 
-	async checkFederationWith(host: string): Promise<boolean> {
-		// not possible
-		return true;
-	}
-
 	async getCommunity(name: string): Promise<Community> {
 		const communityResponse = (await this.fetchWebfinger(
 			name,
@@ -133,16 +128,26 @@ export class ActivityPubClient {
 		};
 	}
 
+	async checkFederationWith(host: string): Promise<boolean> {
+		throw new Error(
+			"Checking federation with ActivityPubClient is not possible.",
+		);
+	}
+
 	async followCommunity(
 		community_id: number | string,
 		follow: boolean,
 	): Promise<void> {
 		// not possible, maybe at a later date with a private key?
+		throw new Error(
+			"Following communities with ActivityPubClient is not possible.",
+		);
 	}
 
 	async listCommunities(query: ListCommunities): Promise<Community[]> {
-		// not possible
-		return [];
+		throw new Error(
+			"Listing communities with ActivityPubClient is not possible.",
+		);
 	}
 
 	private async getHttpClient(): Promise<KyInstance> {
