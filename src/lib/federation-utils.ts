@@ -14,11 +14,12 @@ import { getCensuresGiven, getEndorsements } from "./fediseer";
 import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
-import { isSeedOnlySoftware } from "./utils.ts";
+import {isSeedOnlySoftware, readFileAsync} from "./utils.ts";
 import {createMessage} from "./messaging.ts";
 import {LocalUser} from "../types/activity-pub/local-user.ts";
 import {PublicKey} from "../types/activity-pub/public-key.ts";
 import {ActivityPubSender} from "./activity-pub-server.ts";
+import * as fs from 'fs';
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them
@@ -403,17 +404,20 @@ export const sendAuthCode = async (
 	code: string,
 	software: string,
 ) => {
+	const publicKey = await readFileAsync(__dirname + "/../../keys/public.pem");
+	const privateKey = await readFileAsync(__dirname + "/../../keys/private.pem");
+
 	const apSender = new ActivityPubSender();
 	const apClient = new ActivityPubClient(instance);
 
 	const user = await apClient.getApUser(username);
-	const localUser = new LocalUser('TODO fetch public key'); // todo public key
+	const localUser = new LocalUser(publicKey);
 	const message = `Your authentication code to login Lemmy Federate is: ${code}`;
 
 	const messages = createMessage(software, localUser, user, message);
 	const promises: Promise<boolean>[] = [];
 	for (const message of messages) {
-		promises.push(apSender.sendActivity(message, 'TODO private key')); // todo private key
+		promises.push(apSender.sendActivity(message, privateKey));
 	}
 
 	const results = await Promise.all(promises);

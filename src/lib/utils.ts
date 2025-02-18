@@ -4,6 +4,7 @@ import { TRPCError } from "@trpc/server";
 import ky from "ky";
 import typia from "typia";
 import {v5} from "uuid";
+import * as fs from 'fs';
 
 type NodeInfoSoftware = {
 	name: string;
@@ -79,4 +80,18 @@ export function generateDeterministicUuid(...inputs: unknown[]): string {
 	const base64 = Buffer.from(concatenated).toString('base64');
 
 	return v5(base64, namespace);
+}
+
+export function readFileAsync(filename: string): Promise<string> {
+	return new Promise((resolve, reject) => {
+		fs.readFile(filename, {
+			encoding: "utf8",
+		}, (err, data) => {
+			if (err) {
+				reject(err);
+			} else {
+				resolve(data);
+			}
+		})
+	})
 }

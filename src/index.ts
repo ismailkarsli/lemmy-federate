@@ -4,6 +4,7 @@ import { serveStatic } from "hono/bun";
 import { cors } from "hono/cors";
 import typia from "typia";
 import { createContext, router } from "./trpc";
+import * as fs from 'fs';
 
 import { startJobs } from "../scripts/start-jobs";
 import { authRouter } from "./routes/auth";
@@ -56,8 +57,10 @@ app.use(
 
 if (NODE_ENV === "production") startJobs();
 
+const publicKey = fs.readFileSync(__dirname + "/../keys/public.pem", 'utf8');
+
 app.get("/ap/u/bot", context => {
-	return context.json(new LocalUser('TODO'), 200, {
+	return context.json(new LocalUser(publicKey), 200, {
 		"Content-Type": "application/activity+json",
 	});
 });
