@@ -107,7 +107,7 @@ export const authRouter = router({
 						codeExp: { gte: new Date() },
 					},
 					include: {
-						instance: true,
+						instance: { omit: { client_id: false, client_secret: false } },
 					},
 				});
 				if (!user) {
