@@ -147,19 +147,6 @@ export class MbinClient extends LemmyClient {
 		return magazines.items.map(mbinMagazineToCommunity);
 	}
 
-	async checkFederationWith(host: string): Promise<boolean> {
-		if (host === this.host) return true;
-		if (!this.federatedInstances) {
-			const federated = await api<MbinFederatedInstances>(
-				`https://${this.host}/api/federated`,
-			).json();
-			this.federatedInstances = new Set(
-				federated.instances.map((i) => i.domain),
-			);
-		}
-		return this.federatedInstances.has(host);
-	}
-
 	private async getCommunityIdFromApIdMbin(
 		activityPubId: string,
 	): Promise<number> {
