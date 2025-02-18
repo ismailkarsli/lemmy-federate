@@ -54,16 +54,13 @@ export class ActivityPubSender {
         const recipient = await this.fetchActor(activity.to as string);
 
         const inboxUrl = new URL(recipient.inbox);
-        let inboxPathAndQuery = inboxUrl.pathname;
-        if (inboxUrl.search) {
-            inboxPathAndQuery += `?${inboxUrl.search}`;
-        }
+        const inboxPathAndQuery = inboxUrl.pathname + inboxUrl.search;
 
         const body = JSON.stringify(activity);
         let headers = this.requestSigner.sign({
             'content-type': 'application/activity+json',
             'date': new Date().toUTCString(),
-            'host': new URL(recipient.inbox).host,
+            'host': inboxUrl.host,
         }, inboxPathAndQuery, body, privateKey, sender.publicKey.id);
 
         const response = await httpClient.post(recipient.inbox, {
