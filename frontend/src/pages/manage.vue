@@ -206,6 +206,11 @@ const deleteBlocked = async (id: number) => {
     <v-overlay :model-value="isPending" class="align-center justify-center" scrim="rgba(0, 0, 0, 0.7)">
       <v-progress-circular indeterminate color="primary" size="64" />
     </v-overlay>
+    <v-alert v-if="!instance.approved" class="my-4" type="warning" variant="tonal" closable>
+      Your instance is not approved yet.
+      We manually check new instances to prevent spam.
+      You can edit the settings until your instance is approved.
+    </v-alert>
 
     <v-form @submit.prevent="submit()">
       <v-row>

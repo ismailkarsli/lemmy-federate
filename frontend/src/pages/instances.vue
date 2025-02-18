@@ -27,8 +27,7 @@ const { data, isPending } = useQuery({
         <v-card variant="text">
           <p>
             If you want to add your instance to the list, you can login from top
-            right. Your instance must be guaranteed on the Fediseer. If you are
-            a user, you can ask your instance admin to add your instance.
+            right. If you are a user, you can ask your instance admin to add your instance.
           </p>
         </v-card>
       </v-col>
