@@ -14,6 +14,7 @@ export function createMessage(software: string, from: string | Actor<string>, to
     switch (software.toUpperCase()) {
         case "LEMMY":
         case "MBIN":
+        case "DCH_BLOG":
             return [lemmyStyleMessage];
         case "MASTODON":
             return [mastodonStyleMessage];
