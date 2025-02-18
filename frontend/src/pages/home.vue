@@ -111,7 +111,7 @@ const { mutate: submit } = useMutation({
       <v-col cols="12">
         <v-card variant="text">
           <p class="mb-4">
-            Lemmy Federate is a tool to help new Lemmy/Mbin communities grow.
+            Lemmy Federate is a tool to help new threadiverse<sup>1</sup> communities grow.
             <button
               @click="readMore = !readMore"
               variant="text"
@@ -124,7 +124,7 @@ const { mutate: submit } = useMutation({
           <v-expand-transition>
             <div v-show="readMore">
               <p class="mb-4">
-                By default, communities on Lemmy/Mbin are <strong>not federated</strong> due to the inherent limitations of ActivityPub.
+                Communities on threadiverse are <strong>not federated</strong> by default.
               </p>
               <p class="mb-4">
                 When you create a new community, it will only be available to your instance.
@@ -132,6 +132,11 @@ const { mutate: submit } = useMutation({
               </p>
               <p class="mb-4">
                 This tool automates this process by following your community from all remote instances until it gains at least one real-user follower.
+              </p>
+              <p>
+                <cite>
+                  1: Threadiverse refers to Fediverse software that implements "FEP-1b12: group federation". For example, Lemmy, Mbin, Guppe, NodeBB and others...
+                </cite>
               </p>
             </div>
           </v-expand-transition>
