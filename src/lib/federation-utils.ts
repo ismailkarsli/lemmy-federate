@@ -160,9 +160,12 @@ export const conditionalFollow = async (
 	const localIsFederated = await localClient.checkFederationWith(
 		remoteClient.host,
 	);
-	const remoteIsFederated = await remoteClient.checkFederationWith(
-		localClient.host,
-	);
+	let remoteIsFederated = true; // don't check remote federation for AP since we can't do it with generic AP client.
+	if (community.instance.software !== "ACTIVITY_PUB") {
+		remoteIsFederated = await remoteClient.checkFederationWith(
+			localClient.host,
+		);
+	}
 	if (!localIsFederated || !remoteIsFederated) {
 		return CommunityFollowStatus.NOT_ALLOWED;
 	}
