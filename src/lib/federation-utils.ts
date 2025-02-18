@@ -163,12 +163,12 @@ export const conditionalFollow = async (
 	 * Check if both instances are federated with each other
 	 */
 	const localIsFederated = await localClient.checkFederationWith(
-		remoteClient.host as string,
+		remoteClient.host,
 	);
 	let remoteIsFederated = true; // don't check remote federation for seed-only instance since we can't do it with generic AP client.
 	if (!isSeedOnlySoftware(community.instance.software)) {
 		remoteIsFederated = await remoteClient.checkFederationWith(
-			localClient.host as string,
+			localClient.host,
 		);
 	}
 	if (!localIsFederated || !remoteIsFederated) {
