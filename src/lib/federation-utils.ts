@@ -82,6 +82,12 @@ export const conditionalFollow = async (
 		return CommunityFollowStatus.NOT_AVAILABLE;
 	}
 	/**
+	 * Both instances must be approved
+	 */
+	if (!(instance.approved || community.instance.approved)) {
+		return CommunityFollowStatus.NOT_AVAILABLE;
+	}
+	/**
 	 * ignore if same instance
 	 */
 	const sameInstance = instance.id === community.instance.id;

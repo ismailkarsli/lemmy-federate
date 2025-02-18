@@ -146,6 +146,13 @@ export const instanceRouter = router({
 			});
 		}
 
+		if (!instance.approved) {
+			throw new TRPCError({
+				code: "FORBIDDEN",
+				message: "You can't reset because instance is not approved yet.",
+			});
+		}
+
 		resetSubscriptions(instance);
 
 		return {
