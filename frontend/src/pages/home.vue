@@ -72,6 +72,13 @@ const communitiesWithProgress = computed(() => {
 				waiting,
 				error,
 				notAllowed,
+				allNotAvailable: !(
+					federatedByBot.length ||
+					federatedByUser.length ||
+					waiting.length ||
+					error.length ||
+					notAllowed.length
+				),
 			},
 		};
 	});
@@ -260,7 +267,7 @@ const { mutate: submit } = useMutation({
                 </a>
               </td>
               <td>
-                <div v-if="item.progress.count === 0" class="text-grey">
+                <div v-if="item.progress.count === 0 || item.progress.allNotAvailable" class="text-grey">
                   No progress
                 </div>
                 <template v-else>
