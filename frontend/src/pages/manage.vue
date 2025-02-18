@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/vue-query";
 import { computed, ref, watchEffect } from "vue";
 import InfoTooltip from "../components/InfoTooltip.vue";
 import { trpc } from "../trpc";
-import { getHumanReadableSoftwareName } from "../lib/utils";
+import { getHumanReadableSoftwareName, isSeedOnlySoftware } from "../lib/utils";
 
 const instance = ref<Awaited<ReturnType<typeof trpc.instance.get.query>>>();
 const { data, isPending, refetch } = useQuery({
@@ -30,7 +30,7 @@ const allowedInstance = ref<number | null>(null);
 const blockedInstance = ref<number | null>(null);
 
 const softwareSeedOnly = computed(() => {
-	return instance.value?.software === "ACTIVITY_PUB";
+	return isSeedOnlySoftware(instance.value?.software || "unknown");
 });
 const filteredAllInstances = computed(() => {
 	if (instance) {

@@ -54,6 +54,17 @@ export async function getInstanceSoftware(
 	return instanceSoftware;
 }
 
+// keep this function same with /frontend/src/lib/utils.ts
+export function isSeedOnlySoftware(name: string): boolean {
+	switch (name.toLocaleLowerCase()) {
+		case "lemmy":
+		case "mbin":
+			return false;
+		default:
+			return true;
+	}
+}
+
 export function isMain(moduleUrl: string) {
 	const modulePath = fileURLToPath(moduleUrl);
 	const [_binPath, mainScriptPath] = process.argv;

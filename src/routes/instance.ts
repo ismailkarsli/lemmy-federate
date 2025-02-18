@@ -4,6 +4,7 @@ import typia from "typia";
 import { resetSubscriptions } from "../lib/federation-utils";
 import { MbinClient } from "../lib/mbin";
 import { protectedProcedure, publicProcedure, router } from "../trpc";
+import { isSeedOnlySoftware } from "../lib/utils";
 
 interface FindArgs {
 	take?: number;
@@ -33,7 +34,7 @@ export const instanceRouter = router({
 				where: { host: ctx.user.instance, id: input.id },
 			});
 			if (!instance) throw new TRPCError({ code: "NOT_FOUND" });
-			const isSeedOnly = instance.software === "ACTIVITY_PUB";
+			const isSeedOnly = isSeedOnlySoftware(instance.software);
 			const updated = await prisma.instance.update({
 				where: {
 					host: ctx.user.instance,

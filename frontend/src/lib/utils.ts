@@ -4,9 +4,18 @@ export function getHumanReadableSoftwareName(name: string) {
 			return "Lemmy";
 		case "mbin":
 			return "Mbin";
-		case "activity_pub":
-			return "Generic ActivityPub";
 		default:
 			return name[0].toLocaleUpperCase() + name.slice(1).toLocaleLowerCase();
+	}
+}
+
+// keep this function same with /src/lib/utils.ts
+export function isSeedOnlySoftware(name: string): boolean {
+	switch (name.toLocaleLowerCase()) {
+		case "lemmy":
+		case "mbin":
+			return false;
+		default:
+			return true;
 	}
 }

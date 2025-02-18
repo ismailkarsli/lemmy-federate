@@ -3,7 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { computed, ref } from "vue";
 import InfoTooltip from "../components/InfoTooltip.vue";
 import { trpc } from "../trpc";
-import { getHumanReadableSoftwareName } from "../lib/utils";
+import { getHumanReadableSoftwareName, isSeedOnlySoftware } from "../lib/utils";
 
 const page = ref(1);
 const skip = computed(() => (page.value - 1) * perPage);
@@ -66,7 +66,7 @@ const { data, isPending } = useQuery({
                 <v-chip v-else color="error" class="mr-2">Disabled</v-chip>
               </td>
               <td>
-                <v-chip v-if="instance.software === 'ACTIVITY_PUB'" color="blue-grey" class="mr-2">Not applicable</v-chip>
+                <v-chip v-if="isSeedOnlySoftware(instance.software)" color="blue-grey" class="mr-2">Not applicable</v-chip>
                 <v-chip v-else-if="instance.auto_add" color="success" class="mr-2">
                   Enabled
                 </v-chip>

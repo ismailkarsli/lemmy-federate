@@ -4,7 +4,7 @@ import {
 	getClient,
 } from "../src/lib/federation-utils";
 import { prisma } from "../src/lib/prisma";
-import { isMain } from "../src/lib/utils";
+import { isMain, isSeedOnlySoftware } from "../src/lib/utils";
 
 if (isMain(import.meta.url)) {
 	addNewCommunities();
@@ -25,8 +25,8 @@ export async function addNewCommunities() {
 
 	for (const instance of instances) {
 		try {
-			// ActivityPub instances can't list or follow communities
-			if (instance.software === "ACTIVITY_PUB") continue;
+			// Seed-only instances can't list or follow communities
+			if (isSeedOnlySoftware(instance.software)) continue;
 			const client = await getClient(instance);
 
 			const communities = await client.listCommunities({

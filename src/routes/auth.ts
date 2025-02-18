@@ -5,7 +5,11 @@ import ms from "ms";
 import typia from "typia";
 import { getClient, sendAuthCode } from "../lib/federation-utils";
 import { getGuarantees } from "../lib/fediseer";
-import { getInstanceSoftware, randomNumber } from "../lib/utils";
+import {
+	getInstanceSoftware,
+	isSeedOnlySoftware,
+	randomNumber,
+} from "../lib/utils";
 import { publicProcedure, router } from "../trpc";
 
 const prisma = new PrismaClient();
@@ -73,7 +77,7 @@ export const authRouter = router({
 
 			let instance = await prisma.instance.findFirst({ where: { host: host } });
 			if (!instance) {
-				const isSeedOnly = software.name.toUpperCase() === "ACTIVITY_PUB";
+				const isSeedOnly = isSeedOnlySoftware(software.name);
 				instance = await prisma.instance.create({
 					data: {
 						host,

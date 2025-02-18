@@ -14,6 +14,7 @@ import { getCensuresGiven, getEndorsements } from "./fediseer";
 import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
+import { isSeedOnlySoftware } from "./utils.ts";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them
@@ -133,9 +134,9 @@ export const conditionalFollow = async (
 	/**
 	 * ActivityPub client can't follow other instances
 	 */
-	if (instance.software === "ACTIVITY_PUB") {
+	if (isSeedOnlySoftware(instance.software)) {
 		console.warn(
-			`ACTIVITY_PUB software should only be able to use "SEED" mode, the instance: ${instance.host}`,
+			`Seed-only software should only be able to use "SEED" option, the instance: ${instance.host}`,
 		);
 		return CommunityFollowStatus.NOT_AVAILABLE;
 	}
@@ -160,8 +161,8 @@ export const conditionalFollow = async (
 	const localIsFederated = await localClient.checkFederationWith(
 		remoteClient.host,
 	);
-	let remoteIsFederated = true; // don't check remote federation for AP since we can't do it with generic AP client.
-	if (community.instance.software !== "ACTIVITY_PUB") {
+	let remoteIsFederated = true; // don't check remote federation for seed-only instance since we can't do it with generic AP client.
+	if (!isSeedOnlySoftware(community.instance.software)) {
 		remoteIsFederated = await remoteClient.checkFederationWith(
 			localClient.host,
 		);
@@ -360,8 +361,8 @@ export async function resetSubscriptions(
 	});
 	// if soft reset, then don't unsubscribe from instance itself.
 	if (opts.soft) return;
-	// ActivityPub instances can't list or unsubscribe
-	if (instance.software === "ACTIVITY_PUB") return;
+	// Seed-only instances can't list or unsubscribe
+	if (isSeedOnlySoftware(instance.software)) return;
 	if (!(instance.client_id && instance.client_secret)) {
 		throw new Error("Bot name and password are required");
 	}
