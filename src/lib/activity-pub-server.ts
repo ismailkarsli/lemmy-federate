@@ -7,7 +7,7 @@ import type {Actor} from "../types/activity-pub/actor.ts";
 class RequestSigner {
     public sign(
         headers: Record<string, string>,
-        url: string,
+        pathAndQuery: string,
         body: string,
         privateKey: string,
         keyId: string,
@@ -20,7 +20,7 @@ class RequestSigner {
         for (const headerName of Object.keys(headers)) {
             headersToUse[headerName.toLowerCase()] = headers[headerName];
         }
-        headersToUse['(request-target)'] = `post ${url}`;
+        headersToUse['(request-target)'] = `post ${pathAndQuery}`;
         headersToUse['digest'] = `SHA-256=${hasher.digest('base64')}`;
 
         const signingParts: string[] = [];
@@ -53,12 +53,18 @@ export class ActivityPubSender {
         const sender = await this.fetchActor(activity.actor);
         const recipient = await this.fetchActor(activity.to as string);
 
+        const inboxUrl = new URL(recipient.inbox);
+        let inboxPathAndQuery = inboxUrl.pathname;
+        if (inboxUrl.search) {
+            inboxPathAndQuery += `?${inboxUrl.search}`;
+        }
+
         const body = JSON.stringify(activity);
         let headers = this.requestSigner.sign({
             'content-type': 'application/activity+json',
             'date': new Date().toUTCString(),
             'host': new URL(recipient.inbox).host,
-        }, recipient.inbox, body, privateKey, sender.publicKey.id);
+        }, inboxPathAndQuery, body, privateKey, sender.publicKey.id);
 
         const response = await httpClient.post(recipient.inbox, {
             body: body,
