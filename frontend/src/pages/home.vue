@@ -36,12 +36,14 @@ const communitiesWithProgress = computed(() => {
 	return data.value?.communities.map((item) => {
 		const federatedByUser = [];
 		const federatedByBot = [];
-		const inProgress = [];
 		const waiting = [];
 		const error = [];
 		const notAllowed = [];
 
-		for (const follow of item.follows) {
+		const sortedFollows = item.follows.toSorted((a, b) =>
+			a.instance.host.localeCompare(b.instance.host),
+		);
+		for (const follow of sortedFollows) {
 			switch (follow.status) {
 				case "FEDERATED_BY_USER":
 					federatedByUser.push(follow);
@@ -49,7 +51,6 @@ const communitiesWithProgress = computed(() => {
 				case "FEDERATED_BY_BOT":
 				case "IN_PROGRESS":
 					federatedByBot.push(follow);
-					inProgress.push(follow);
 					break;
 				case "WAITING":
 					waiting.push(follow);
@@ -69,7 +70,6 @@ const communitiesWithProgress = computed(() => {
 				federatedByUser,
 				federatedByBot,
 				waiting,
-				inProgress,
 				error,
 				notAllowed,
 			},
