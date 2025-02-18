@@ -4,10 +4,6 @@ import { TRPCError } from "@trpc/server";
 import ky from "ky";
 import typia from "typia";
 
-type InstanceSoftware = {
-	name: string;
-	version: string;
-};
 type NodeInfoSoftware = {
 	name: string;
 	version: string;
@@ -23,12 +19,12 @@ export const randomNumber = (length: number) => {
 	return randomInt(10 ** (length - 1), 10 ** length - 1);
 };
 
-const softwareCache = new Map<string, InstanceSoftware>();
+const softwareCache = new Map<string, NodeInfoSoftware>();
 export async function getInstanceSoftware(
 	host: string,
-): Promise<InstanceSoftware> {
+): Promise<NodeInfoSoftware> {
 	if (softwareCache.has(host))
-		return softwareCache.get(host) as InstanceSoftware;
+		return softwareCache.get(host) as NodeInfoSoftware;
 	const nodeInfoLinks = await ky<NodeInfoLinks>(
 		`https://${host}/.well-known/nodeinfo`,
 	)
@@ -50,7 +46,7 @@ export async function getInstanceSoftware(
 			code: "CONFLICT",
 			message: `Invalid app: ${nodeInfo.software.name}`,
 		});
-	const instanceSoftware: InstanceSoftware = {
+	const instanceSoftware: NodeInfoSoftware = {
 		name: softwareName,
 		version: nodeInfo.software.version,
 	};
