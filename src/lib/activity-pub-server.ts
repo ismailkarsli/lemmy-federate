@@ -23,10 +23,10 @@ class RequestSigner {
         headersToUse['(request-target)'] = `post ${pathAndQuery}`;
         headersToUse['digest'] = `SHA-256=${hasher.digest('base64')}`;
 
-        const signingParts: string[] = [];
-        for (const headerName of Object.keys(headersToUse)) {
-            signingParts.push(`${headerName}: ${headers[headerName]}`);
-        }
+        const headersList = Object.keys(headersToUse).sort();
+        const signingParts: string[] = headersList.map(
+            headerName => `${headerName}: ${headersToUse[headerName]}`
+        );
         const stringToSign = signingParts.join("\n");
 
         const signer = crypto.createSign('SHA256');
@@ -34,7 +34,7 @@ class RequestSigner {
         signer.end();
 
         const signature = signer.sign(privateKey, 'base64');
-        const signatureHeader = `keyId="${keyId}",algorithm="hs2019",headers="${Object.keys(headers).join(' ')}",signature="${signature}"`;
+        const signatureHeader = `keyId="${keyId}",algorithm="rsa-sha256",headers="${headersList.join(' ')}",signature="${signature}"`;
 
         const result = {...headersToUse};
         delete result['(request-target)'];
