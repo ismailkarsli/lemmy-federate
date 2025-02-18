@@ -3,6 +3,7 @@ import { fileURLToPath } from "node:url";
 import { TRPCError } from "@trpc/server";
 import ky from "ky";
 import typia from "typia";
+import {v5} from "uuid";
 
 type NodeInfoSoftware = {
 	name: string;
@@ -69,4 +70,13 @@ export function isMain(moduleUrl: string) {
 	const modulePath = fileURLToPath(moduleUrl);
 	const [_binPath, mainScriptPath] = process.argv;
 	return modulePath === mainScriptPath;
+}
+
+export function generateDeterministicUuid(...inputs: unknown[]): string {
+	const namespace = '8e38712e-fbe2-47b1-a30c-65c3238e8a3e';
+
+	const concatenated = inputs.map(input => JSON.stringify(input)).join('|');
+	const base64 = Buffer.from(concatenated).toString('base64');
+
+	return v5(base64, namespace);
 }

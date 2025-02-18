@@ -4,6 +4,7 @@ import ky, { type KyInstance } from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
 import type { Community, User } from "./lemmy.ts";
+import type {Actor} from "../types/activity-pub/actor.ts";
 
 interface WebFingerLink {
 	rel: string;
@@ -41,8 +42,12 @@ export class ActivityPubClient {
 		this.host = host;
 	}
 
+	async getApUser(username: string): Promise<Actor<string>> {
+		return await this.fetchWebfinger(username);
+	}
+
 	async getUser(username: string): Promise<User> {
-		const userResponse = await this.fetchWebfinger(username);
+		const userResponse = await this.getApUser(username);
 
 		const expanded = await expand(userResponse);
 		const expandedItem = expanded[0];
@@ -159,7 +164,7 @@ export class ActivityPubClient {
 		return this.httpClient;
 	}
 
-	private async fetchWebfinger(name: string): Promise<JsonLdDocument> {
+	private async fetchWebfinger(name: string): Promise<Actor<string>> {
 		const acct = `acct:${name}@${this.host}`;
 		const webfingerUrl = `https://${this.host}/.well-known/webfinger?resource=${acct}`;
 		const httpClient = await this.getHttpClient();

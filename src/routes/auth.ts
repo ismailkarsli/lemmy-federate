@@ -168,7 +168,7 @@ export const authRouter = router({
 				},
 			});
 
-			await sendAuthCode(user.username, user.instance.host, code);
+			await sendAuthCode(user.username, user.instance.host, code, user.instance.software);
 
 			return {
 				message: `Code sent to @${body.username}@${host}.`,

@@ -15,6 +15,10 @@ import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
 import { isSeedOnlySoftware } from "./utils.ts";
+import {createMessage} from "./messaging.ts";
+import {LocalUser} from "../types/activity-pub/local-user.ts";
+import {PublicKey} from "../types/activity-pub/public-key.ts";
+import {ActivityPubSender} from "./activity-pub-server.ts";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them
@@ -159,12 +163,12 @@ export const conditionalFollow = async (
 	 * Check if both instances are federated with each other
 	 */
 	const localIsFederated = await localClient.checkFederationWith(
-		remoteClient.host,
+		remoteClient.host as string,
 	);
 	let remoteIsFederated = true; // don't check remote federation for seed-only instance since we can't do it with generic AP client.
 	if (!isSeedOnlySoftware(community.instance.software)) {
 		remoteIsFederated = await remoteClient.checkFederationWith(
-			localClient.host,
+			localClient.host as string,
 		);
 	}
 	if (!localIsFederated || !remoteIsFederated) {
@@ -397,28 +401,23 @@ export const sendAuthCode = async (
 	username: string,
 	instance: string,
 	code: string,
+	software: string,
 ) => {
-	if (!BOT_HTTP_CLIENT) {
-		BOT_HTTP_CLIENT = new LemmyHttpExtended(`https://${BOT_INSTANCE}`);
-		await BOT_HTTP_CLIENT.login({
-			username_or_email: BOT_USERNAME,
-			password: BOT_PASSWORD,
-		});
-	}
-	const personQuery = await BOT_HTTP_CLIENT.resolveObject({
-		q: `https://${instance}/u/${username}`,
-	});
-	const person = personQuery.person?.person;
-	if (!person) {
-		throw new TRPCError({
-			code: "INTERNAL_SERVER_ERROR",
-			message: "Person not found",
-		});
+	const apSender = new ActivityPubSender();
+	const apClient = new ActivityPubClient(instance);
+
+	const user = await apClient.getApUser(username);
+	const localUser = new LocalUser('TODO fetch public key'); // todo public key
+	const message = `Your authentication code to login Lemmy Federate is: ${code}`;
+
+	const messages = createMessage(software, localUser, user, message);
+	const promises: Promise<boolean>[] = [];
+	for (const message of messages) {
+		promises.push(apSender.sendActivity(message, 'TODO private key')); // todo private key
 	}
 
-	const message = `Your authentication code to login Lemmy Federate is: ${code}`;
-	await BOT_HTTP_CLIENT.createPrivateMessage({
-		content: message,
-		recipient_id: person.id,
-	});
+	const results = await Promise.all(promises);
+	if (results.find(result => result === false)) {
+		throw new Error("Auth code sending failed");
+	}
 };
