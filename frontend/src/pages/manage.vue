@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "@tanstack/vue-query";
 import { computed, ref, watchEffect } from "vue";
 import InfoTooltip from "../components/InfoTooltip.vue";
 import { trpc } from "../trpc";
+import { getHumanReadableSoftwareName } from "../lib/utils";
 
 const instance = ref<Awaited<ReturnType<typeof trpc.instance.get.query>>>();
 const { data, isPending, refetch } = useQuery({
@@ -217,9 +218,9 @@ const deleteBlocked = async (id: number) => {
               <p>Only federate with instances that use the same software.</p>
               <p>
                 For example, as a
-                {{ instance.software === "LEMMY" ? "Lemmy" : "Mbin" }} instance,
+                {{ getHumanReadableSoftwareName(instance.software) }} instance,
                 check this option to follow only
-                {{ instance.software === "LEMMY" ? "Lemmy" : "Mbin" }}
+                {{ getHumanReadableSoftwareName(instance.software) }}
                 instances.
               </p>
             </info-tooltip>
