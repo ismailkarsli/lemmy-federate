@@ -5,7 +5,7 @@ WORKDIR /app
 RUN apt update && apt install -y tini && rm -rf /var/lib/apt/lists/*
 
 FROM base AS install
-COPY package.json bun.lockb bunfig.toml ./
+COPY package.json bun.lock bunfig.toml ./
 RUN bun install --frozen-lockfile
 
 FROM base AS release
