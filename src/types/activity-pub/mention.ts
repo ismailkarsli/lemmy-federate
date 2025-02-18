@@ -5,9 +5,6 @@ export class Mention {
     public readonly type = 'Mention';
     public readonly '@context': ContextValue = [
         Context.Default,
-        {
-            Hashtag: Context.Hashtag,
-        },
     ];
 
     constructor(
