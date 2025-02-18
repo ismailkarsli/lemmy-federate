@@ -90,6 +90,7 @@ export const instanceRouter = router({
 						host: true,
 						enabled: true,
 						auto_add: true,
+						software: true,
 					},
 					skip,
 					take,

@@ -3,6 +3,7 @@ import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { computed, ref } from "vue";
 import InfoTooltip from "../components/InfoTooltip.vue";
 import { trpc } from "../trpc";
+import { getHumanReadableSoftwareName } from "../lib/utils";
 
 const page = ref(1);
 const skip = computed(() => (page.value - 1) * perPage);
@@ -36,6 +37,7 @@ const { data, isPending } = useQuery({
           <thead>
             <tr>
               <th class="text-left text-no-wrap">Instance</th>
+              <th class="text-left text-no-wrap">Software</th>
               <th class="text-left text-no-wrap">Status</th>
               <th class="text-left text-no-wrap">
                 Auto add
@@ -56,16 +58,20 @@ const { data, isPending } = useQuery({
                 >
               </td>
               <td>
+                {{ getHumanReadableSoftwareName(instance.software) }}
+              </td>
+              <td>
                 <v-chip v-if="instance.enabled" color="success" class="mr-2">
                   Enabled
                 </v-chip>
-                <v-chip v-else color="error" class="mr-2"> Disabled </v-chip>
+                <v-chip v-else color="error" class="mr-2">Disabled</v-chip>
               </td>
               <td>
-                <v-chip v-if="instance.auto_add" color="success" class="mr-2">
+                <v-chip v-if="instance.software === 'ACTIVITY_PUB'" color="blue-grey" class="mr-2">Not applicable</v-chip>
+                <v-chip v-else-if="instance.auto_add" color="success" class="mr-2">
                   Enabled
                 </v-chip>
-                <v-chip v-else color="error" class="mr-2"> Disabled </v-chip>
+                <v-chip v-else color="error" class="mr-2">Disabled</v-chip>
               </td>
             </tr>
           </tbody>
