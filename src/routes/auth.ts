@@ -1,10 +1,11 @@
-import { type Instance, PrismaClient, type User } from "@prisma/client";
+import type { Instance, User } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import jwt from "jsonwebtoken";
 import ms from "ms";
 import typia from "typia";
 import { getClient, sendAuthCode } from "../lib/federation-utils";
 import { getGuarantees } from "../lib/fediseer";
+import { prisma } from "../lib/prisma";
 import {
 	getInstanceSoftware,
 	isSeedOnlySoftware,
@@ -12,7 +13,6 @@ import {
 } from "../lib/utils";
 import { publicProcedure, router } from "../trpc";
 
-const prisma = new PrismaClient();
 const BLACKLISTED_INSTANCES =
 	process.env.BLACKLISTED_INSTANCES?.split(",") || [];
 const SECRET_KEY = process.env.SECRET_KEY;

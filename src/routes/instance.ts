@@ -1,17 +1,17 @@
-import { type Instance, PrismaClient } from "@prisma/client";
+import type { Instance } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import typia from "typia";
 import { resetSubscriptions } from "../lib/federation-utils";
 import { MbinClient } from "../lib/mbin";
-import { protectedProcedure, publicProcedure, router } from "../trpc";
+import { prisma } from "../lib/prisma";
 import { isSeedOnlySoftware } from "../lib/utils";
+import { protectedProcedure, publicProcedure, router } from "../trpc";
 
 interface FindArgs {
 	take?: number;
 	skip?: number;
 	enabledOnly?: boolean;
 }
-const prisma = new PrismaClient();
 
 export const instanceRouter = router({
 	get: protectedProcedure.query(async ({ ctx }) => {
@@ -23,6 +23,7 @@ export const instanceRouter = router({
 				allowed: { select: { id: true, host: true } },
 				blocked: { select: { id: true, host: true } },
 			},
+			omit: { client_id: false, client_secret: false },
 		});
 
 		return instance;
@@ -60,6 +61,7 @@ export const instanceRouter = router({
 							}
 						: {}),
 				},
+				omit: { client_id: false, client_secret: false },
 			});
 
 			if (input.enabled === false) {
@@ -108,6 +110,7 @@ export const instanceRouter = router({
 	createOauthClient: protectedProcedure.mutation(async ({ ctx }) => {
 		const instance = await prisma.instance.findFirst({
 			where: { host: ctx.user.instance },
+			omit: { client_id: false, client_secret: false },
 		});
 		if (!instance) {
 			throw new TRPCError({
@@ -138,6 +141,7 @@ export const instanceRouter = router({
 			where: {
 				host: ctx.user.instance,
 			},
+			omit: { client_id: false, client_secret: false },
 		});
 
 		if (!instance) {
@@ -175,6 +179,7 @@ export const instanceRouter = router({
 							},
 						},
 					},
+					omit: { client_id: false, client_secret: false },
 				});
 
 				// soft reset subscriptions to re-check with up to date settings.
@@ -198,6 +203,7 @@ export const instanceRouter = router({
 							},
 						},
 					},
+					omit: { client_id: false, client_secret: false },
 				});
 
 				// soft reset subscriptions to re-check with up to date settings.
@@ -223,6 +229,7 @@ export const instanceRouter = router({
 							},
 						},
 					},
+					omit: { client_id: false, client_secret: false },
 				});
 
 				// soft reset subscriptions to re-check with up to date settings.
@@ -246,6 +253,7 @@ export const instanceRouter = router({
 							},
 						},
 					},
+					omit: { client_id: false, client_secret: false },
 				});
 
 				// soft reset subscriptions to re-check with up to date settings.

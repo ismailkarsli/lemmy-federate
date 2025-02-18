@@ -1,13 +1,12 @@
-import { CommunityFollowStatus, PrismaClient } from "@prisma/client";
+import { CommunityFollowStatus } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import typia from "typia";
 import {
 	conditionalFollowWithAllInstances,
 	getClient,
 } from "../lib/federation-utils";
+import { prisma } from "../lib/prisma";
 import { publicProcedure, router } from "../trpc";
-
-const prisma = new PrismaClient();
 
 interface FindArgs {
 	take?: number;
@@ -42,6 +41,7 @@ export const communityRouter = router({
 				where: {
 					host,
 				},
+				omit: { client_id: false, client_secret: false },
 			});
 			if (!instance) {
 				throw new TRPCError({
@@ -97,7 +97,9 @@ export const communityRouter = router({
 					updatedAt: new Date(),
 				},
 				include: {
-					instance: true,
+					instance: {
+						omit: { client_id: false, client_secret: false },
+					},
 				},
 			});
 
@@ -149,9 +151,7 @@ export const communityRouter = router({
 					}),
 					prisma.community.count({ where: { instanceId: input.instanceId } }),
 					prisma.instance.count({
-						where: {
-							enabled: true,
-						},
+						where: { enabled: true },
 					}),
 					prisma.$queryRaw`SELECT count(CASE WHEN cf.status = 'FEDERATED_BY_USER' THEN 1 ELSE NULL end)::int as completed, count(CASE WHEN cf.status IN ('FEDERATED_BY_BOT', 'IN_PROGRESS') THEN 1 ELSE NULL end)::int as inprogress from "CommunityFollow" cf`,
 				]);

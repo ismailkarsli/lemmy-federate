@@ -2,8 +2,8 @@
 import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { computed, ref } from "vue";
 import InfoTooltip from "../components/InfoTooltip.vue";
-import { trpc } from "../trpc";
 import { getHumanReadableSoftwareName, isSeedOnlySoftware } from "../lib/utils";
+import { trpc } from "../trpc";
 
 const page = ref(1);
 const skip = computed(() => (page.value - 1) * perPage);

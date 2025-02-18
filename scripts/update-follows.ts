@@ -37,7 +37,10 @@ export async function updateFollows() {
 			where: filter,
 			orderBy: { createdAt: "desc" },
 			include: {
-				instance: { include: { allowed: true, blocked: true } },
+				instance: {
+					include: { allowed: true, blocked: true },
+					omit: { client_id: false, client_secret: false },
+				},
 				community: {
 					include: {
 						instance: {
@@ -45,6 +48,7 @@ export async function updateFollows() {
 								allowed: { select: { id: true } },
 								blocked: { select: { id: true } },
 							},
+							omit: { client_id: false, client_secret: false },
 						},
 					},
 				},

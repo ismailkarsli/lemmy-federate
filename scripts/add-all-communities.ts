@@ -16,6 +16,7 @@ export async function addAllCommunities() {
 			enabled: true,
 			auto_add: true,
 		},
+		omit: { client_id: false, client_secret: false },
 	});
 	const instanceIdMap = Object.fromEntries(
 		instances.map((i) => [i.host, i.id]),

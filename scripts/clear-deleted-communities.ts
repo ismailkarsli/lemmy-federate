@@ -18,7 +18,7 @@ export async function clearDeletedCommunities() {
 	console.info("Clearing deleted communities");
 	const communities = await prisma.community.findMany({
 		include: {
-			instance: true,
+			instance: { omit: { client_id: false, client_secret: false } },
 		},
 	});
 

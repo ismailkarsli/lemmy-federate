@@ -270,6 +270,7 @@ export const conditionalFollowWithAllInstances = async (
 					allowed: true,
 					blocked: true,
 				},
+				omit: { client_id: false, client_secret: false },
 			},
 			community: {
 				include: {
@@ -278,6 +279,7 @@ export const conditionalFollowWithAllInstances = async (
 							allowed: { select: { id: true } },
 							blocked: { select: { id: true } },
 						},
+						omit: { client_id: false, client_secret: false },
 					},
 				},
 			},
@@ -320,10 +322,10 @@ export const unfollowWithAllInstances = async (community: Community) => {
 			communityId: community.id,
 		},
 		include: {
-			instance: true,
+			instance: { omit: { client_id: false, client_secret: false } },
 			community: {
 				include: {
-					instance: true,
+					instance: { omit: { client_id: false, client_secret: false } },
 				},
 			},
 		},

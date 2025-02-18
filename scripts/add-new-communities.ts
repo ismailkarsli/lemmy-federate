@@ -21,6 +21,7 @@ export async function addNewCommunities() {
 			auto_add: true,
 			AND: [{ client_id: { not: null } }, { client_secret: { not: null } }],
 		},
+		omit: { client_id: false, client_secret: false },
 	});
 
 	for (const instance of instances) {
@@ -51,7 +52,7 @@ export async function addNewCommunities() {
 							instanceId: instance.id,
 						},
 						include: {
-							instance: true,
+							instance: { omit: { client_id: false, client_secret: false } },
 						},
 					});
 					conditionalFollowWithAllInstances(addedCommunity);
