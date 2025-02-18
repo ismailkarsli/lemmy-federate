@@ -29,7 +29,7 @@ const allowedInstance = ref<number | null>(null);
 const blockedInstance = ref<number | null>(null);
 
 const softwareSeedOnly = computed(() => {
-	return instance.value.software === "DCH_BLOG";
+	return instance.value?.software === "ACTIVITY_PUB";
 });
 const filteredAllInstances = computed(() => {
 	if (instance) {

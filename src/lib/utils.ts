@@ -1,16 +1,15 @@
 import { randomInt } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { TRPCError } from "@trpc/server";
 import ky from "ky";
 import typia from "typia";
-import type { Software } from "@prisma/client";
-import { TRPCError } from "@trpc/server";
 
 type InstanceSoftware = {
-	name: Software;
+	name: string;
 	version: string;
 };
 type NodeInfoSoftware = {
-	name: "lemmy" | "mbin" | "dch_blog";
+	name: string;
 	version: string;
 };
 type NodeInfoLinks = { links: { href: string; rel: string }[] };
@@ -45,14 +44,7 @@ export async function getInstanceSoftware(
 	const nodeInfo = await ky<NodeInfo>(preferredNodeInfoLink.href)
 		.json()
 		.then(typia.createAssert<NodeInfo>());
-	const softwareName =
-		nodeInfo.software.name === "lemmy"
-			? "LEMMY"
-			: nodeInfo.software.name === "mbin"
-				? "MBIN"
-				: nodeInfo.software.name === "dch_blog"
-					? "DCH_BLOG"
-					: null;
+	const softwareName = nodeInfo.software.name.toUpperCase();
 	if (!softwareName)
 		throw new TRPCError({
 			code: "CONFLICT",

@@ -3,7 +3,6 @@ import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
 import typia from "typia";
 import { type Community, LemmyClient, type User } from "./lemmy";
-import type { Software } from "@prisma/client";
 
 const CONTACT_EMAIL = typia.assert<string>(process.env.CONTACT_EMAIL);
 const APP_URL = typia.assert<string>(process.env.APP_URL);
@@ -37,6 +36,14 @@ type MbinOauthClient = {
 	secret: string;
 };
 
+interface SearchActor {
+	type: "user" | "magazine";
+	object: {
+		apId: string;
+		magazineId?: number | null;
+	};
+}
+
 const api = ky.create({
 	timeout: ms("1 minutes"),
 	retry: {
@@ -56,7 +63,7 @@ const mbinMagazineToCommunity = (magazine: MbinMagazine): Community => ({
 });
 
 export class MbinClient extends LemmyClient {
-	public type: Software = "MBIN";
+	public type = "MBIN";
 	private oauthClientId?: string;
 	private oauthClientSecret?: string;
 	private token?: string;
@@ -98,10 +105,18 @@ export class MbinClient extends LemmyClient {
 		return mbinMagazineToCommunity(magazine);
 	}
 
-	async followCommunity(community_id: number, follow: boolean) {
+	async followCommunity(community_id: number | string, follow: boolean) {
+		let resolvedCommunityId = community_id;
+
+		if (typeof resolvedCommunityId === "string") {
+			// assume it's an activity pub id
+			resolvedCommunityId =
+				await this.getCommunityIdFromApIdMbin(resolvedCommunityId);
+		}
+
 		const endpoint = follow ? "subscribe" : "unsubscribe";
 		await api.put(
-			`https://${this.host}/api/magazine/${community_id}/${endpoint}`,
+			`https://${this.host}/api/magazine/${resolvedCommunityId}/${endpoint}`,
 			{ headers: { Authorization: `Bearer ${await this.getBearerToken()}` } },
 		);
 	}
@@ -143,6 +158,27 @@ export class MbinClient extends LemmyClient {
 			);
 		}
 		return this.federatedInstances.has(host);
+	}
+
+	private async getCommunityIdFromApIdMbin(
+		activityPubId: string,
+	): Promise<number> {
+		const result = await api
+			.get<{ apActors: SearchActor[] }>(
+				`https://${this.host}/api/search?q=${activityPubId}`,
+				{ headers: { Authorization: `Bearer ${await this.getBearerToken()}` } },
+			)
+			.json();
+
+		for (const item of result.apActors) {
+			if (item.type !== "magazine" || item.object.apId !== activityPubId) {
+				continue;
+			}
+
+			return item.object.magazineId as number;
+		}
+
+		throw new Error("Could not resolve magazine by its ActivityPub id.");
 	}
 
 	private async getBearerToken(): Promise<string> {

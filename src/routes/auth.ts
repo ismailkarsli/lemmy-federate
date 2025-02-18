@@ -49,7 +49,7 @@ export const authRouter = router({
 			const software = await getInstanceSoftware(host);
 			const client = getClient({
 				host,
-				software: software.name,
+				software: software.name.toUpperCase(),
 				client_id: null,
 				client_secret: null,
 			});
@@ -62,27 +62,23 @@ export const authRouter = router({
 				});
 			}
 
-			/**
-			 * Only allow instances that have guarantees in Fediseer
-			 * Enabled only on Lemmy for now
-			 */
-			if (client.type === "LEMMY") {
-				const guarantees = await getGuarantees(host);
-				if (!guarantees?.domains?.length) {
-					throw new TRPCError({
-						code: "CONFLICT",
-						message: "No guarantees found for this instance",
-					});
-				}
+			let fediseerGuaranteed: boolean;
+
+			try {
+				fediseerGuaranteed =
+					((await getGuarantees(host))?.domains?.length ?? 0) > 0;
+			} catch (e) {
+				fediseerGuaranteed = false;
 			}
 
 			let instance = await prisma.instance.findFirst({ where: { host: host } });
 			if (!instance) {
-				const isSeedOnly = software.name === "DCH_BLOG";
+				const isSeedOnly = software.name.toUpperCase() === "ACTIVITY_PUB";
 				instance = await prisma.instance.create({
 					data: {
 						host,
-						software: software.name,
+						software: software.name.toUpperCase(),
+						approved: fediseerGuaranteed,
 						...(isSeedOnly
 							? {
 									auto_add: false,

@@ -11,7 +11,6 @@ import {
 } from "lemmy-js-client";
 import ms from "ms";
 import type { FilterNotEndingWith } from "../types/FilterNotEndingWith";
-import type { Software } from "@prisma/client";
 
 export type User = {
 	username: string;
@@ -21,7 +20,7 @@ export type User = {
 };
 
 export type Community = {
-	id: number;
+	id: number | string;
 	name: string;
 	isDeleted: boolean;
 	isRemoved: boolean;
@@ -48,7 +47,7 @@ const lemmyCommunityToCommunity = (cv: CommunityView): Community => ({
 });
 
 export class LemmyClient {
-	public type: Software = "LEMMY";
+	public type = "LEMMY";
 	public host: string;
 	protected federatedInstances?: Set<string>;
 	private username?: string;
@@ -86,9 +85,17 @@ export class LemmyClient {
 		return lemmyCommunityToCommunity(community.community_view);
 	}
 
-	async followCommunity(community_id: number, follow: boolean) {
+	async followCommunity(community_id: number | string, follow: boolean) {
+		let resolvedCommunityId = community_id;
+
+		if (typeof resolvedCommunityId === "string") {
+			// assume it's an activity pub id
+			resolvedCommunityId =
+				await this.getCommunityIdFromApIdLemmy(resolvedCommunityId);
+		}
+
 		const client = await this.getHttpClient();
-		await client.followCommunity({ community_id, follow });
+		await client.followCommunity({ community_id: resolvedCommunityId, follow });
 	}
 
 	async listCommunities(query: ListCommunities): Promise<Community[]> {
@@ -114,6 +121,20 @@ export class LemmyClient {
 			);
 		}
 		return this.federatedInstances.has(host);
+	}
+
+	private async getCommunityIdFromApIdLemmy(
+		activityPubId: string,
+	): Promise<number> {
+		const httpClient = await this.getHttpClient();
+		const result = await httpClient.resolveObject({
+			q: activityPubId,
+		});
+		if (!result.community) {
+			throw new Error("Could not resolve a community by its ActivityPub id");
+		}
+
+		return result.community.community.id;
 	}
 
 	/**
