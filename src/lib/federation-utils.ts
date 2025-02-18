@@ -85,7 +85,7 @@ export const conditionalFollow = async (
 	/**
 	 * Both instances must be approved
 	 */
-	if (!(instance.approved || community.instance.approved)) {
+	if (!(instance.approved && community.instance.approved)) {
 		return CommunityFollowStatus.NOT_AVAILABLE;
 	}
 	/**
@@ -291,6 +291,7 @@ export const conditionalFollowWithAllInstances = async (
 			let status: CommunityFollowStatus = CommunityFollowStatus.WAITING;
 			try {
 				status = await conditionalFollow(cf);
+				console.log(status);
 			} catch (e) {
 				status = CommunityFollowStatus.ERROR;
 				if (
