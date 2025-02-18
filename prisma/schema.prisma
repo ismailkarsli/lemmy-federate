@@ -92,12 +92,6 @@ enum CommunityFollowStatus {
   NOT_AVAILABLE /// instance is not enabled. Just skip.
 }
 
-enum Software {
-  LEMMY
-  MBIN
-  DCH_BLOG
-}
-
 enum Mode {
   FULL
   SEED
