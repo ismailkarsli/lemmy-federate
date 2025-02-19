@@ -16,10 +16,8 @@ import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
 import {isSeedOnlySoftware, readFileAsync} from "./utils.ts";
 import {createMessage} from "./messaging.ts";
-import {LocalUser} from "../types/activity-pub/local-user.ts";
-import {PublicKey} from "../types/activity-pub/public-key.ts";
-import {ActivityPubSender} from "./activity-pub-server.ts";
-import * as fs from 'fs';
+import {LocalUser} from "../activitypub-server/vocabulary/local-user.ts";
+import {ActivityPubSender} from "../activitypub-server/activity-pub-server.ts";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them

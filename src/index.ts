@@ -10,8 +10,8 @@ import { startJobs } from "../scripts/start-jobs";
 import { authRouter } from "./routes/auth";
 import { communityRouter } from "./routes/community";
 import { instanceRouter } from "./routes/instance";
-import {LocalUser} from "./types/activity-pub/local-user.ts";
-import {OrderedCollection, UnorderedCollection} from "./types/activity-pub/collection.ts";
+import {LocalUser} from "./activitypub-server/vocabulary/local-user.ts";
+import {OrderedCollection, UnorderedCollection} from "./activitypub-server/vocabulary/collection.ts";
 
 const APP_URL = typia.assert<string>(process.env.APP_URL);
 const NODE_ENV = typia.assert<string>(process.env.NODE_ENV);

@@ -1,8 +1,8 @@
 import ky, {type KyInstance} from "ky";
 import ms from "ms";
 import * as crypto from 'crypto';
-import type {Activity} from "../types/activity-pub/activity.ts";
-import type {Actor} from "../types/activity-pub/actor.ts";
+import type {Activity} from "./vocabulary/activity.ts";
+import type {Actor} from "./vocabulary/actor.ts";
 
 class RequestSigner {
     public sign(

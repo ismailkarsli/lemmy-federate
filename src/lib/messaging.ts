@@ -1,7 +1,7 @@
-import type {Actor} from "../types/activity-pub/actor.ts";
-import {Create} from "../types/activity-pub/create.ts";
-import {ChatMessage} from "../types/activity-pub/chat-message.ts";
-import {ChatMessageNote} from "../types/activity-pub/chat-message-note.ts";
+import type {Actor} from "../activitypub-server/vocabulary/actor.ts";
+import {Create} from "../activitypub-server/vocabulary/create.ts";
+import {ChatMessage} from "../activitypub-server/vocabulary/chat-message.ts";
+import {ChatMessageNote} from "../activitypub-server/vocabulary/chat-message-note.ts";
 
 function stringifyActor(actor: string | Actor<string>): string {
     return typeof actor === "string" ? actor : actor.id;

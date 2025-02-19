@@ -4,7 +4,7 @@ import ky, { type KyInstance } from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
 import type { Community, User } from "./lemmy.ts";
-import type {Actor} from "../types/activity-pub/actor.ts";
+import type {Actor} from "../activitypub-server/vocabulary/actor.ts";
 
 interface WebFingerLink {
 	rel: string;
