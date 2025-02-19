@@ -14,7 +14,7 @@ export class ChatMessageNote extends Note {
             content,
             [
                 new Mention(
-                    `@${to.preferredUsername}`,
+                    to.preferredUsername,
                     to.id,
                 ),
             ]
