@@ -221,7 +221,7 @@ const deleteBlocked = async (id: number) => {
           <template v-slot:label>
             Cross software
             <info-tooltip>
-              <p>Allow bot to federate with instances that use other types of Fediverse software.</p>
+              <p>Allow the bot to federate with instances that use other types of Fediverse software.</p>
               <p>
                 For example, as a
                 {{ getHumanReadableSoftwareName(instance.software) }} instance,
