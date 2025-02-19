@@ -104,25 +104,6 @@ export class LemmyClient {
 		return communities.communities.map(lemmyCommunityToCommunity);
 	}
 
-	/**
-	 * @param host target instance host
-	 * @returns Whetever the instance is federated with this instance
-	 */
-	async checkFederationWith(host: string) {
-		if (host === this.host) return true;
-		if (!this.federatedInstances) {
-			const client = await this.getHttpClient();
-			const res = await client.getFederatedInstances();
-			if (!res.federated_instances?.linked) {
-				throw new Error("Couldn't fetch federation list");
-			}
-			this.federatedInstances = new Set(
-				res.federated_instances.linked.map((i) => i.domain),
-			);
-		}
-		return this.federatedInstances.has(host);
-	}
-
 	private async getCommunityIdFromApIdLemmy(
 		activityPubId: string,
 	): Promise<number> {

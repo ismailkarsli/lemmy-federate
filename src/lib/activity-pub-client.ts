@@ -71,7 +71,13 @@ export class ActivityPubClient {
 		};
 	}
 
-	async getCommunity(name: string): Promise<Community> {
+	async getCommunity(communityName: string): Promise<Community> {
+		const [name, host] = communityName.split("@");
+		if (host && host !== this.host) {
+			throw new Error(
+				`ActivityPubClient can't pull remote communities like: ${communityName}`,
+			);
+		}
 		const communityResponse = (await this.fetchWebfinger(
 			name,
 		)) as JsonLdDocument & {
@@ -131,12 +137,6 @@ export class ActivityPubClient {
 					return url.host === this.host;
 				})?.length ?? null,
 		};
-	}
-
-	async checkFederationWith(host: string): Promise<boolean> {
-		throw new Error(
-			"Checking federation with ActivityPubClient is not possible.",
-		);
 	}
 
 	async followCommunity(

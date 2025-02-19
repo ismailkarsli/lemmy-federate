@@ -215,18 +215,20 @@ const deleteBlocked = async (id: number) => {
     <v-form @submit.prevent="submit()">
       <v-row>
         <v-checkbox label="Enable tool" v-model="instance.enabled" hide-details />
-        <v-checkbox v-if="!softwareSeedOnly" label="Auto add local communities" v-model="instance.auto_add" hide-details />
+        <v-checkbox v-if="!softwareSeedOnly" label="Auto add local communities" v-model="instance.auto_add"
+          hide-details />
         <v-checkbox v-if="!softwareSeedOnly" v-model="instance.cross_software" hide-details>
           <template v-slot:label>
             Cross software
             <info-tooltip>
-              <p>Only federate with instances that use the same software.</p>
+              <p>Allow bot to federate with instances that use other types of Fediverse software.</p>
               <p>
                 For example, as a
                 {{ getHumanReadableSoftwareName(instance.software) }} instance,
-                check this option to follow only
+                tick this option to follow instances other than
                 {{ getHumanReadableSoftwareName(instance.software) }}
-                instances.
+                such as
+                {{ getHumanReadableSoftwareName(instance.software === "LEMMY" ? "MBIN" : "LEMMY") }}, Mastodon.
               </p>
             </info-tooltip>
           </template>

@@ -160,43 +160,28 @@ export const conditionalFollow = async (
 	const localClient = getClient(instance);
 	// instance where the community is hosted
 	const remoteClient = getClient(community.instance);
-	/**
-	 * Check if both instances are federated with each other
-	 */
-	const localIsFederated = await localClient.checkFederationWith(
-		remoteClient.host,
-	);
-	let remoteIsFederated = true; // don't check remote federation for seed-only instance since we can't do it with generic AP client.
-	if (!isSeedOnlySoftware(community.instance.software)) {
-		remoteIsFederated = await remoteClient.checkFederationWith(
-			localClient.host,
-		);
-	}
-	if (!localIsFederated || !remoteIsFederated) {
-		return CommunityFollowStatus.NOT_ALLOWED;
-	}
 
 	/**
 	 * Check instance's Fediseer policy.
-	 * Disabled for Mbin.
+	 * Enabled only for Lemmy to Lemmy.
+	 * TODO: change this logic here later.
 	 */
-	if (
-		instance.fediseer === FediseerUsage.BLACKLIST_ONLY &&
-		!(localClient instanceof MbinClient)
-	) {
-		const censures = await getCensuresGiven(instance.host);
-		if (censures.domains.includes(community.instance.host)) {
-			return CommunityFollowStatus.NOT_ALLOWED;
-		}
-	} else if (instance.fediseer === FediseerUsage.WHITELIST_ONLY) {
-		const endorsements = await getEndorsements(community.instance.host);
-		if (!endorsements.domains.includes(instance.host)) {
-			return CommunityFollowStatus.NOT_ALLOWED;
+	if (localClient.type === "LEMMY" && remoteClient.type === "LEMMY") {
+		if (instance.fediseer === FediseerUsage.BLACKLIST_ONLY) {
+			const censures = await getCensuresGiven(instance.host);
+			if (censures.domains.includes(community.instance.host)) {
+				return CommunityFollowStatus.NOT_ALLOWED;
+			}
+		} else if (instance.fediseer === FediseerUsage.WHITELIST_ONLY) {
+			const endorsements = await getEndorsements(community.instance.host);
+			if (!endorsements.domains.includes(instance.host)) {
+				return CommunityFollowStatus.NOT_ALLOWED;
+			}
 		}
 	}
 
 	// check NSFW with remote client to avoid unwanted discoveries
-	const communityRemote = await localClient.getCommunity(
+	const communityRemote = await remoteClient.getCommunity(
 		`${community.name}@${community.instance.host}`,
 	);
 
@@ -237,7 +222,7 @@ export const conditionalFollow = async (
 		return CommunityFollowStatus.IN_PROGRESS;
 	}
 
-	// Community has 2 other subscribers than the bot
+	// Community has another subscriber. We can unsubscribe.
 	if (
 		localSubscribers > (localCommunity.subscribed !== "NotSubscribed" ? 1 : 0)
 	) {
@@ -296,7 +281,6 @@ export const conditionalFollowWithAllInstances = async (
 			let status: CommunityFollowStatus = CommunityFollowStatus.WAITING;
 			try {
 				status = await conditionalFollow(cf);
-				console.log(status);
 			} catch (e) {
 				status = CommunityFollowStatus.ERROR;
 				if (
