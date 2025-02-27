@@ -56,7 +56,7 @@ export async function getInstanceSoftware(
 
 // keep this function same with /frontend/src/lib/utils.ts
 export function isSeedOnlySoftware(name: string): boolean {
-	switch (name.toLocaleLowerCase()) {
+	switch (name.toLowerCase()) {
 		case "lemmy":
 		case "mbin":
 			return false;
