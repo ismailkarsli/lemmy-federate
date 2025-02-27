@@ -6,11 +6,7 @@ import typia from "typia";
 import { getClient, sendAuthCode } from "../lib/federation-utils";
 import { getGuarantees } from "../lib/fediseer";
 import { prisma } from "../lib/prisma";
-import {
-	getInstanceSoftware,
-	isSeedOnlySoftware,
-	randomNumber,
-} from "../lib/utils";
+import { getInstanceSoftware, isGenericAP, randomNumber } from "../lib/utils";
 import { publicProcedure, router } from "../trpc";
 
 const BLACKLISTED_INSTANCES =
@@ -77,13 +73,13 @@ export const authRouter = router({
 
 			let instance = await prisma.instance.findFirst({ where: { host: host } });
 			if (!instance) {
-				const isSeedOnly = isSeedOnlySoftware(software.name);
+				const isGeneric = isGenericAP(software.name);
 				instance = await prisma.instance.create({
 					data: {
 						host,
 						software: software.name.toUpperCase(),
 						approved: fediseerGuaranteed,
-						...(isSeedOnly
+						...(isGeneric
 							? {
 									auto_add: false,
 									cross_software: true,

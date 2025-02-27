@@ -14,7 +14,7 @@ import { getCensuresGiven, getEndorsements } from "./fediseer";
 import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
-import { isSeedOnlySoftware } from "./utils.ts";
+import { isGenericAP } from "./utils.ts";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them
@@ -134,7 +134,7 @@ export const conditionalFollow = async (
 	/**
 	 * ActivityPub client can't follow other instances
 	 */
-	if (isSeedOnlySoftware(instance.software)) {
+	if (isGenericAP(instance.software)) {
 		console.warn(
 			`Seed-only software should only be able to use "SEED" option, the instance: ${instance.host}`,
 		);
@@ -349,7 +349,7 @@ export async function resetSubscriptions(
 	// if soft reset, then don't unsubscribe from instance itself.
 	if (opts.soft) return;
 	// Seed-only instances can't list or unsubscribe
-	if (isSeedOnlySoftware(instance.software)) return;
+	if (isGenericAP(instance.software)) return;
 	if (!(instance.client_id && instance.client_secret)) {
 		throw new Error("Bot name and password are required");
 	}
