@@ -10,8 +10,8 @@ export function getHumanReadableSoftwareName(name: string) {
 }
 
 // keep this function same with /src/lib/utils.ts
-export function isSeedOnlySoftware(name: string): boolean {
-	switch (name.toLocaleLowerCase()) {
+export function isGenericAP(name: string): boolean {
+	switch (name.toLowerCase()) {
 		case "lemmy":
 		case "mbin":
 			return false;

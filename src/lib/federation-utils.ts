@@ -14,7 +14,7 @@ import { getCensuresGiven, getEndorsements } from "./fediseer";
 import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
-import {isSeedOnlySoftware, readFileAsync} from "./utils.ts";
+import {isGenericAP, readFileAsync} from "./utils.ts";
 import {createMessage} from "./messaging.ts";
 import {LocalUser} from "../activitypub-server/vocabulary/local-user.ts";
 import {ActivityPubSender} from "../activitypub-server/activity-pub-server.ts";
@@ -137,7 +137,7 @@ export const conditionalFollow = async (
 	/**
 	 * ActivityPub client can't follow other instances
 	 */
-	if (isSeedOnlySoftware(instance.software)) {
+	if (isGenericAP(instance.software)) {
 		console.warn(
 			`Seed-only software should only be able to use "SEED" option, the instance: ${instance.host}`,
 		);
@@ -352,7 +352,7 @@ export async function resetSubscriptions(
 	// if soft reset, then don't unsubscribe from instance itself.
 	if (opts.soft) return;
 	// Seed-only instances can't list or unsubscribe
-	if (isSeedOnlySoftware(instance.software)) return;
+	if (isGenericAP(instance.software)) return;
 	if (!(instance.client_id && instance.client_secret)) {
 		throw new Error("Bot name and password are required");
 	}
@@ -403,7 +403,7 @@ export const sendAuthCode = async (
 	}
 
 	const results = await Promise.all(promises);
-	if (results.find(result => result === false)) {
+	if (results.find((result) => result === false)) {
 		throw new Error("Auth code sending failed");
 	}
 };
