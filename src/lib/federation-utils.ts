@@ -14,7 +14,10 @@ import { getCensuresGiven, getEndorsements } from "./fediseer";
 import { LemmyClient, LemmyHttpExtended } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
-import { isGenericAP } from "./utils.ts";
+import {isGenericAP, readFileAsync} from "./utils.ts";
+import {createMessage} from "./messaging.ts";
+import {LocalUser} from "../activitypub-server/vocabulary/local-user.ts";
+import {ActivityPubSender} from "../activitypub-server/activity-pub-server.ts";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them
@@ -381,28 +384,26 @@ export const sendAuthCode = async (
 	username: string,
 	instance: string,
 	code: string,
+	software: string,
 ) => {
-	if (!BOT_HTTP_CLIENT) {
-		BOT_HTTP_CLIENT = new LemmyHttpExtended(`https://${BOT_INSTANCE}`);
-		await BOT_HTTP_CLIENT.login({
-			username_or_email: BOT_USERNAME,
-			password: BOT_PASSWORD,
-		});
-	}
-	const personQuery = await BOT_HTTP_CLIENT.resolveObject({
-		q: `https://${instance}/u/${username}`,
-	});
-	const person = personQuery.person?.person;
-	if (!person) {
-		throw new TRPCError({
-			code: "INTERNAL_SERVER_ERROR",
-			message: "Person not found",
-		});
+	const publicKey = await readFileAsync(__dirname + "/../../keys/public.pem");
+	const privateKey = await readFileAsync(__dirname + "/../../keys/private.pem");
+
+	const apSender = new ActivityPubSender();
+	const apClient = new ActivityPubClient(instance);
+
+	const user = await apClient.getApUser(username);
+	const localUser = new LocalUser(publicKey);
+	const message = `Your authentication code to login Lemmy Federate is: ${code}`;
+
+	const messages = createMessage(software, localUser, user, message);
+	const promises: Promise<boolean>[] = [];
+	for (const message of messages) {
+		promises.push(apSender.sendActivity(message, privateKey));
 	}
 
-	const message = `Your authentication code to login Lemmy Federate is: ${code}`;
-	await BOT_HTTP_CLIENT.createPrivateMessage({
-		content: message,
-		recipient_id: person.id,
-	});
+	const results = await Promise.all(promises);
+	if (results.find((result) => result === false)) {
+		throw new Error("Auth code sending failed");
+	}
 };
