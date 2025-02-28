@@ -394,7 +394,7 @@ const deleteBlocked = async (id: number) => {
       </v-snackbar>
     </v-form>
     <v-divider class="my-4" />
-    <v-row>
+    <v-row style="min-height: 16em">
       <v-col cols="12" lg="6">
         <v-app-bar-title class="mb-2">
           Allowed instances
