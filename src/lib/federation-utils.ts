@@ -390,7 +390,7 @@ export const sendAuthCode = async (
 		});
 	}
 	const personQuery = await BOT_HTTP_CLIENT.resolveObject({
-		q: `https://${instance}/u/${username}`,
+		q: `${username}@${instance}`,
 	});
 	const person = personQuery.person?.person;
 	if (!person) {

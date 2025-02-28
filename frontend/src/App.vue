@@ -34,27 +34,36 @@ const { mobile: isMobile } = useDisplay();
           <v-icon v-if="isMobile">mdi-server-network</v-icon>
           <span v-else>Instances</span>
         </v-btn>
-        <a
-          href="https://github.com/ismailkarsli/lemmy-federate"
-          class="github-link"
-          target="_blank"
-          title="Source code"
-        >
-          <v-btn class="mx-1" icon="mdi-github" />
-        </a>
         <TheHeaderAuth />
       </template>
     </v-app-bar>
     <v-main style="min-height: 300px" class="my-4">
       <div style="max-width: 1200px; margin: 0 auto">
         <RouterView />
+        <v-footer class="bg-transparent text-no-wrap d-flex flex-column flex-sm-row">
+          <div>
+            <v-btn href="https://github.com/ismailkarsli/lemmy-federate" variant="text" class="text-none" target="_blank">
+              <v-icon size="x-large" class="mr-2">mdi-github</v-icon>
+              Star on Github
+            </v-btn>
+            <v-btn href="https://lemmyverse.link/c/lemmyfederate@lemy.lol" variant="text" class="text-none" target="_blank">
+              <img src="./assets/lemmy.svg" class="v-icon v-icon--size-x-large mr-2"></img>
+              Subscribe on Lemmy
+            </v-btn>
+          </div>
+          <v-divider></v-divider>
+          <div>
+            <strong>Lemmy Federate</strong>
+          </div>
+        </v-footer>
       </div>
     </v-main>
   </v-layout>
 </template>
 
 <style scoped>
-.github-link {
+.footer-link {
   color: white;
+  text-decoration: unset;
 }
 </style>

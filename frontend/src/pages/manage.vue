@@ -6,9 +6,10 @@ import { getHumanReadableSoftwareName, isGenericAP } from "../lib/utils";
 import { trpc } from "../trpc";
 
 const instance = ref<Awaited<ReturnType<typeof trpc.instance.get.query>>>();
-const { data, isPending, refetch } = useQuery({
+const { data, isPending, refetch, error } = useQuery({
 	queryKey: ["instance"],
 	queryFn: () => trpc.instance.get.query(),
+	retry: false,
 });
 watchEffect(async () => {
 	if (data.value) {
@@ -196,6 +197,9 @@ const deleteBlocked = async (id: number) => {
 </script>
 
 <template>
+  <v-alert v-if="error" class="my-4" type="warning" variant="tonal">
+    {{ error.message }}
+  </v-alert>
   <v-container v-if="instance">
     <v-app-bar-title class="mb-4">
       Manage instance
@@ -394,7 +398,7 @@ const deleteBlocked = async (id: number) => {
       </v-snackbar>
     </v-form>
     <v-divider class="my-4" />
-    <v-row>
+    <v-row style="min-height: 16em">
       <v-col cols="12" lg="6">
         <v-app-bar-title class="mb-2">
           Allowed instances
@@ -434,7 +438,7 @@ const deleteBlocked = async (id: number) => {
       </v-col>
     </v-row>
   </v-container>
-  <v-container v-else>
+  <v-container v-else-if="!error">
     <v-progress-linear indeterminate color="primary" />
   </v-container>
 </template>
