@@ -3,6 +3,8 @@ import { fileURLToPath } from "node:url";
 import { TRPCError } from "@trpc/server";
 import ky from "ky";
 import typia from "typia";
+import {v5} from "uuid";
+import * as fs from 'fs';
 
 type NodeInfoSoftware = {
 	name: string;
@@ -69,4 +71,27 @@ export function isMain(moduleUrl: string) {
 	const modulePath = fileURLToPath(moduleUrl);
 	const [_binPath, mainScriptPath] = process.argv;
 	return modulePath === mainScriptPath;
+}
+
+export function generateDeterministicUuid(...inputs: unknown[]): string {
+	const namespace = '8e38712e-fbe2-47b1-a30c-65c3238e8a3e';
+
+	const concatenated = inputs.map(input => JSON.stringify(input)).join('|');
+	const base64 = Buffer.from(concatenated).toString('base64');
+
+	return v5(base64, namespace);
+}
+
+export function readFileAsync(filename: string): Promise<string> {
+	return new Promise((resolve, reject) => {
+		fs.readFile(filename, {
+			encoding: "utf8",
+		}, (err, data) => {
+			if (err) {
+				reject(err);
+			} else {
+				resolve(data);
+			}
+		})
+	})
 }
