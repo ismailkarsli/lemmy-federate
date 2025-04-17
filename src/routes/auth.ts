@@ -39,6 +39,7 @@ export const authRouter = router({
 		.output(typia.createAssert<ResponseType>())
 		.mutation(async ({ input: body, ctx }) => {
 			const host = body.instance.toLowerCase();
+			const username = body.username.toLowerCase();
 			if (BLACKLISTED_INSTANCES.includes(host)) {
 				throw new TRPCError({
 					code: "CONFLICT",
@@ -46,67 +47,18 @@ export const authRouter = router({
 				});
 			}
 
-			const software = await getInstanceSoftware(host);
-			const client = getClient({
-				host,
-				software: software.name.toUpperCase(),
-				client_id: null,
-				client_secret: null,
+			const existingUser = await prisma.user.findFirst({
+				where: { instance: { host }, username },
+				include: {
+					instance: { omit: { client_id: false, client_secret: false } },
+				},
 			});
-			const user_ = await client.getUser(body.username);
-			const canLogin = user_.isAdmin && !user_.isBanned;
-			if (!canLogin) {
-				throw new TRPCError({
-					code: "FORBIDDEN",
-					message: "You are not an admin on this instance",
-				});
-			}
 
-			let fediseerGuaranteed: boolean;
-
-			try {
-				fediseerGuaranteed =
-					((await getGuarantees(host))?.domains?.length ?? 0) > 0;
-			} catch (e) {
-				fediseerGuaranteed = false;
-			}
-
-			let instance = await prisma.instance.findFirst({ where: { host: host } });
-			if (!instance) {
-				const isGeneric = isGenericAP(software.name);
-				instance = await prisma.instance.create({
-					data: {
-						host,
-						software: software.name.toUpperCase(),
-						approved: fediseerGuaranteed,
-						...(isGeneric
-							? {
-									auto_add: false,
-									cross_software: true,
-									mode: "SEED",
-									nsfw: "BLOCK",
-									fediseer: "NONE",
-								}
-							: {}),
-					},
-				});
-			}
-
-			if (body.code) {
-				const user = await prisma.user.findUnique({
-					where: {
-						username_instanceId: {
-							username: body.username,
-							instanceId: instance.id,
-						},
-						code: body.code,
-						codeExp: { gte: new Date() },
-					},
-					include: {
-						instance: { omit: { client_id: false, client_secret: false } },
-					},
-				});
-				if (!user) {
+			if (existingUser && body.code) {
+				if (
+					body.code !== existingUser.code ||
+					existingUser.codeExp < new Date()
+				) {
 					throw new TRPCError({
 						code: "UNAUTHORIZED",
 						message: "Invalid code",
@@ -118,8 +70,8 @@ export const authRouter = router({
 				const exp = Math.floor((Date.now() + valid) / 1000);
 				const token = jwt.sign(
 					{
-						username: user.username,
-						instance: user.instance.host,
+						username: existingUser.username,
+						instance: existingUser.instance.host,
 						iss: "lemmy-federate",
 						iat,
 						exp,
@@ -127,7 +79,6 @@ export const authRouter = router({
 					},
 					SECRET_KEY,
 				);
-
 				ctx.setCookie("token", token, {
 					maxAge: valid / 1000,
 					httpOnly: true,
@@ -136,38 +87,87 @@ export const authRouter = router({
 				});
 
 				return {
-					user,
+					user: existingUser,
 				};
 			}
 
+			let createdInstance: Instance | null = null;
+			if (!existingUser) {
+				const software = await getInstanceSoftware(host);
+				const isGeneric = isGenericAP(software.name);
+				const client = getClient({
+					host,
+					software: software.name.toUpperCase(),
+					client_id: null,
+					client_secret: null,
+				});
+				const user_ = await client.getUser(username);
+				const canLogin = user_.isAdmin && !user_.isBanned;
+				if (!canLogin) {
+					// if we can't verify user is an admin and it's a generic ActivityPub instance, return specific message for that.
+					if (isGeneric) {
+						throw new TRPCError({
+							code: "CONFLICT",
+							message:
+								"We were unable to verify that you are an admin. Please contact to iso@lemy.lol for manual registration.",
+						});
+					}
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message: "You are not an admin on this instance",
+					});
+				}
+
+				let fediseerGuaranteed: boolean;
+				try {
+					fediseerGuaranteed =
+						((await getGuarantees(host))?.domains?.length ?? 0) > 0;
+				} catch (e) {
+					fediseerGuaranteed = false;
+				}
+
+				createdInstance = await prisma.instance.findFirst({ where: { host } });
+				if (!createdInstance) {
+					createdInstance = await prisma.instance.create({
+						data: {
+							host,
+							software: software.name.toUpperCase(),
+							approved: fediseerGuaranteed,
+							...(isGeneric
+								? {
+										auto_add: false,
+										cross_software: true,
+										mode: "SEED",
+										nsfw: "BLOCK",
+										fediseer: "NONE",
+									}
+								: {}),
+						},
+					});
+				}
+			}
+
+			const instanceId = createdInstance?.id || existingUser?.instanceId;
+			if (!instanceId) {
+				throw new Error("instanceId is null. it should be impossible.");
+			}
 			const code = randomNumber(8).toString();
 			const codeExp = new Date(Date.now() + ms("5 minutes"));
-			const user = await prisma.user.upsert({
+			await prisma.user.upsert({
 				where: {
-					username_instanceId: {
-						username: body.username,
-						instanceId: instance.id,
-					},
+					username_instanceId: { username, instanceId },
 				},
-				update: {
-					code,
-					codeExp,
-				},
+				update: { code, codeExp },
 				create: {
-					username: body.username,
-					instanceId: instance.id,
+					username,
+					instanceId,
 					code,
 					codeExp,
-				},
-				include: {
-					instance: true,
 				},
 			});
 
-			await sendAuthCode(user.username, user.instance.host, code, user.instance.software);
+			await sendAuthCode(username, host, code, createdInstance!.host);
 
-			return {
-				message: `Code sent to @${body.username}@${host}.`,
-			};
+			return { message: `Code sent to @${username}@${host}.` };
 		}),
 });

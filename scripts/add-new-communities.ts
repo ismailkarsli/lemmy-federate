@@ -4,7 +4,7 @@ import {
 	getClient,
 } from "../src/lib/federation-utils";
 import { prisma } from "../src/lib/prisma";
-import { isMain, isGenericAP } from "../src/lib/utils";
+import { isGenericAP, isMain } from "../src/lib/utils";
 
 if (isMain(import.meta.url)) {
 	addNewCommunities();
