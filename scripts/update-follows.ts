@@ -1,8 +1,10 @@
 #!/usr/bin/env bun
 import { CommunityFollowStatus, type Prisma } from "@prisma/client";
-import { HTTPError, TimeoutError } from "ky";
 import PQueue from "p-queue";
-import { conditionalFollow } from "../src/lib/federation-utils";
+import {
+	conditionalFollow,
+	handleFederationError,
+} from "../src/lib/federation-utils";
 import { prisma } from "../src/lib/prisma";
 import { isMain } from "../src/lib/utils";
 
@@ -68,19 +70,7 @@ export async function updateFollows() {
 						},
 					});
 				} catch (e) {
-					if (
-						!(
-							e instanceof HTTPError &&
-							((e.response.status >= 500 && e.response.status < 600) ||
-								e.response.status === 429)
-						) &&
-						!(e instanceof TimeoutError)
-					) {
-						console.error(
-							`Error while following community periodically ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
-							e,
-						);
-					}
+					await handleFederationError(cf.instanceId, e);
 					await prisma.communityFollow.update({
 						where: { id: cf.id },
 						data: { status: CommunityFollowStatus.ERROR },

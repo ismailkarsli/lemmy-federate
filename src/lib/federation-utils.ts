@@ -278,19 +278,7 @@ export const conditionalFollowWithAllInstances = async (
 				status = await conditionalFollow(cf);
 			} catch (e) {
 				status = CommunityFollowStatus.ERROR;
-				if (
-					!(
-						e instanceof HTTPError &&
-						((e.response.status >= 500 && e.response.status < 600) ||
-							e.response.status === 429)
-					) &&
-					!(e instanceof TimeoutError)
-				) {
-					console.error(
-						`Error while following community ${cf.community.name}@${cf.community.instance.host} from ${cf.instance.host}`,
-						e,
-					);
-				}
+				handleFederationError(cf.instanceId, e);
 			} finally {
 				await prisma.communityFollow.update({
 					where: { id: cf.id },
@@ -332,6 +320,27 @@ export const unfollowWithAllInstances = async (community: Community) => {
 		}
 	}
 };
+
+export async function handleFederationError(instanceId: number, e: unknown) {
+	let errorMessage = (e as Error).message;
+	if (e instanceof HTTPError) {
+		errorMessage = JSON.stringify({
+			name: e.name,
+			message: e.message,
+			status: e.response.status,
+			url: e.request.url,
+			method: e.request.method,
+			responseBody: await e.response.json(),
+			requestHeaders: e.request.headers.toJSON(),
+			responseHeaders: e.response.headers.toJSON(),
+
+			stack: e.stack,
+		});
+	}
+	await prisma.instanceLog.create({
+		data: { instanceId: instanceId, content: errorMessage },
+	});
+}
 
 export async function resetSubscriptions(
 	instance: Instance,

@@ -152,7 +152,7 @@ export class ActivityPubClient {
 
 	private async getHttpClient(): Promise<KyInstance> {
 		this.httpClient ??= ky.create({
-			timeout: ms("1 minutes"),
+			timeout: ms("10 seconds"),
 			retry: 1,
 		});
 

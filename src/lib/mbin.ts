@@ -45,7 +45,7 @@ interface SearchActor {
 }
 
 const api = ky.create({
-	timeout: ms("1 minutes"),
+	timeout: ms("10 seconds"),
 	retry: {
 		limit: 3,
 	},

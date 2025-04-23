@@ -29,7 +29,17 @@ model Instance {
   blocked          Instance[]        @relation("InstanceBlocks")
   users            User[]
   communityFollows CommunityFollow[]
+  instanceLogs     InstanceLog[]
   approved         Boolean           @default(false)
+}
+
+model InstanceLog {
+  id         Int      @id @default(autoincrement())
+  instance   Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId Int
+  content    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @default(now()) @updatedAt
 }
 
 model User {

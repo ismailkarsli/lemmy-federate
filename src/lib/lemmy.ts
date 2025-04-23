@@ -124,8 +124,8 @@ export class LemmyClient {
 	private async getHttpClient() {
 		if (!this.httpClient) {
 			const api = ky.create({
-				timeout: ms("1 minutes"),
-				retry: 1,
+				timeout: ms("10 seconds"),
+				retry: 0,
 				hooks: {
 					beforeRequest: [
 						async (req) => {
