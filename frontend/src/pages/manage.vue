@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { useMutation, useQuery } from "@tanstack/vue-query";
-import { computed, ref, watchEffect } from "vue";
+import { computed, ref, useTemplateRef, watchEffect } from "vue";
 import InfoTooltip from "../components/InfoTooltip.vue";
 import { getHumanReadableSoftwareName, isGenericAP } from "../lib/utils";
 import { trpc } from "../trpc";
+import { useInfiniteScroll } from "@vueuse/core";
 
 const instance = ref<Awaited<ReturnType<typeof trpc.instance.get.query>>>();
 const { data, isPending, refetch, error } = useQuery({
@@ -194,6 +195,24 @@ const deleteBlocked = async (id: number) => {
 		} else throw error;
 	}
 };
+
+const logsRef = useTemplateRef<HTMLElement>("logs-ref");
+const logs = ref<
+	Awaited<ReturnType<typeof trpc.instance.logs.find.query>>["logs"]
+>([]);
+const logsCount = ref<number>(10);
+async function loadLogs() {
+	const res = await trpc.instance.logs.find.query({
+		skip: logs.value?.length || 0,
+		take: 10,
+	});
+	logs.value.push(...res.logs);
+	logsCount.value = res.total;
+}
+loadLogs();
+useInfiniteScroll(logsRef, loadLogs, {
+	canLoadMore: () => logs.value.length < logsCount.value,
+});
 </script>
 
 <template>
@@ -435,6 +454,16 @@ const deleteBlocked = async (id: number) => {
             </v-chip>
           </v-col>
         </v-row>
+      </v-col>
+      <v-col cols="12">
+        <v-app-bar-title class="mb-2">
+          Logs
+        </v-app-bar-title>
+        <v-list v-if="logs.length" ref="logs-ref" style="height: 20rem; overflow-y: auto" lines="two"        >
+            <v-list-item v-for="item in logs" :key="item.id" :value="item.id" :subtitle="new Intl.DateTimeFormat(undefined, {dateStyle: 'medium',timeStyle: 'medium'}).format(new Date(item.createdAt), )">
+              <v-list-item-title v-text="item.content?.message || item.content?.name || item.content"></v-list-item-title>
+            </v-list-item>
+        </v-list>
       </v-col>
     </v-row>
   </v-container>

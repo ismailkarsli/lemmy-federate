@@ -37,7 +37,8 @@ model InstanceLog {
   id         Int      @id @default(autoincrement())
   instance   Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId Int
-  content    String
+  message    String
+  content    Json?
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
 }

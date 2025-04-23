@@ -322,9 +322,9 @@ export const unfollowWithAllInstances = async (community: Community) => {
 };
 
 export async function handleFederationError(instanceId: number, e: unknown) {
-	let errorMessage = (e as Error).message;
+	let content = undefined;
 	if (e instanceof HTTPError) {
-		errorMessage = JSON.stringify({
+		content = JSON.stringify({
 			name: e.name,
 			message: e.message,
 			status: e.response.status,
@@ -333,12 +333,15 @@ export async function handleFederationError(instanceId: number, e: unknown) {
 			responseBody: await e.response.json(),
 			requestHeaders: e.request.headers.toJSON(),
 			responseHeaders: e.response.headers.toJSON(),
-
 			stack: e.stack,
 		});
 	}
 	await prisma.instanceLog.create({
-		data: { instanceId: instanceId, content: errorMessage },
+		data: {
+			instanceId: instanceId,
+			message: (e as Error)?.message || (e as Error).toString(),
+			content: content,
+		},
 	});
 }
 
