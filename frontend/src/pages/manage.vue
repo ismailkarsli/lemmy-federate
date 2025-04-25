@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { useMutation, useQuery } from "@tanstack/vue-query";
+import { useInfiniteScroll } from "@vueuse/core";
 import { computed, ref, useTemplateRef, watchEffect } from "vue";
+import { VTreeview } from "vuetify/labs/VTreeview";
 import InfoTooltip from "../components/InfoTooltip.vue";
 import { getHumanReadableSoftwareName, isGenericAP } from "../lib/utils";
 import { trpc } from "../trpc";
-import { useInfiniteScroll } from "@vueuse/core";
 
 const instance = ref<Awaited<ReturnType<typeof trpc.instance.get.query>>>();
 const { data, isPending, refetch, error } = useQuery({
@@ -197,22 +198,62 @@ const deleteBlocked = async (id: number) => {
 };
 
 const logsRef = useTemplateRef<HTMLElement>("logs-ref");
-const logs = ref<
-	Awaited<ReturnType<typeof trpc.instance.logs.find.query>>["logs"]
->([]);
-const logsCount = ref<number>(10);
+type Log = Awaited<
+	ReturnType<typeof trpc.instance.logs.find.query>
+>["logs"][number] & {
+	content: { [key: string]: unknown } | null;
+};
+const logs = ref<Log[]>([]);
+const logsCount = ref<number>(0);
 async function loadLogs() {
 	const res = await trpc.instance.logs.find.query({
 		skip: logs.value?.length || 0,
 		take: 10,
 	});
-	logs.value.push(...res.logs);
+	logs.value.push(
+		...res.logs.map((i) => ({
+			...i,
+			content: i.content ? JSON.parse(JSON.parse(i.content)) : null,
+		})),
+	);
 	logsCount.value = res.total;
 }
 loadLogs();
 useInfiniteScroll(logsRef, loadLogs, {
 	canLoadMore: () => logs.value.length < logsCount.value,
 });
+
+type TreeItem = {
+	id: number | string;
+	title: string | number | boolean;
+	children?: TreeItem[];
+};
+function getJsonAsTree(
+	title: string,
+	target: unknown,
+	id: number | string,
+): TreeItem {
+	if (
+		!target ||
+		typeof target === "string" ||
+		typeof target === "number" ||
+		typeof target === "boolean"
+	) {
+		return { id, title: `${title}: ${target || "null"}` };
+	}
+
+	if (typeof target === "object") {
+		return {
+			id,
+			title: title,
+			children: Object.entries(target).map(([key, value]) =>
+				getJsonAsTree(key, value, `${key}:${id}`),
+			),
+		};
+	}
+
+	return { id, title: "Unknown" };
+}
 </script>
 
 <template>
@@ -455,14 +496,41 @@ useInfiniteScroll(logsRef, loadLogs, {
           </v-col>
         </v-row>
       </v-col>
-      <v-col cols="12">
+      <v-col v-if="logs.length" cols="12">
         <v-app-bar-title class="mb-2">
           Logs
+          <info-tooltip text="You can use logs to debug the tool or federation issues." />
         </v-app-bar-title>
-        <v-list v-if="logs.length" ref="logs-ref" style="height: 20rem; overflow-y: auto" lines="two"        >
-            <v-list-item v-for="item in logs" :key="item.id" :value="item.id" :subtitle="new Intl.DateTimeFormat(undefined, {dateStyle: 'medium',timeStyle: 'medium'}).format(new Date(item.createdAt), )">
-              <v-list-item-title v-text="item.content?.message || item.content?.name || item.content"></v-list-item-title>
-            </v-list-item>
+        <v-list ref="logs-ref" style="height: 32rem; overflow-y: auto;" class="rounded">
+          <v-dialog v-for="item in logs" :key="item.id" max-width="1200">
+            <template v-slot:activator="{ props: activatorProps }">
+              <v-list-item v-bind="activatorProps" :subtitle="new Intl.DateTimeFormat(undefined, {dateStyle: 'medium',timeStyle: 'medium'}).format(new Date(item.createdAt))">
+                <v-list-item-title v-text="item.content?.message || item.content?.name || item.message || item.content"></v-list-item-title>
+              </v-list-item>
+            </template>
+            <template v-slot:default="{ isActive }">
+              <v-card :title="(item.content?.message || item.content?.name || item.message || item.content) + ''">
+                <v-card-text>
+                  <v-treeview
+                    :items="[getJsonAsTree(item.message, item.content, item.id)]"
+                    item-value="id"
+                    open-all
+                    density="compact"
+                    fluid
+                    ></v-treeview>
+                </v-card-text>
+
+                <v-card-actions>
+                  <v-spacer></v-spacer>
+
+                  <v-btn
+                    text="Close"
+                    @click="isActive.value = false"
+                  ></v-btn>
+                </v-card-actions>
+              </v-card>
+            </template>
+          </v-dialog>
         </v-list>
       </v-col>
     </v-row>

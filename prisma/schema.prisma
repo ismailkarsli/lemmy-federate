@@ -38,7 +38,7 @@ model InstanceLog {
   instance   Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId Int
   message    String
-  content    Json?
+  content    String? // JSON
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
 }
