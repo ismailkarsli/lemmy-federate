@@ -10,6 +10,7 @@
         "@ryoppippi/unplugin-typia": "2.2.0",
         "@trpc/client": "^11.1.1",
         "@trpc/server": "^11.1.1",
+        "@vueuse/core": "^13.1.0",
         "cookie": "1.0.2",
         "jsonld": "8.3.3",
         "jsonwebtoken": "9.0.2",
@@ -227,6 +228,8 @@
 
     "@types/node": ["@types/node@22.14.1", "", { "dependencies": { "undici-types": "~6.21.0" } }, "sha512-u0HuPQwe/dHrItgHHpmw3N2fYCR6x4ivMNbPHRkBVP4CvN+kiRrKHWk3i8tXiO/joPwXLMYvF9TTF0eqgHIuOw=="],
 
+    "@types/web-bluetooth": ["@types/web-bluetooth@0.0.21", "", {}, "sha512-oIQLCGWtcFZy2JW77j9k8nHzAOpqMHLQejDA48XXMWH6tjCQHz5RCFz1bzsmROyL6PUm+LLnUiI4BCn221inxA=="],
+
     "@vitejs/plugin-vue": ["@vitejs/plugin-vue@5.2.3", "", { "peerDependencies": { "vite": "^5.0.0 || ^6.0.0", "vue": "^3.2.25" } }, "sha512-IYSLEQj4LgZZuoVpdSUCw3dIynTWQgPlaRP6iAvMle4My0HdYwr5g5wQAfwOeHQBmYwEkqF70nRpSilr6PoUDg=="],
 
     "@volar/language-core": ["@volar/language-core@2.4.12", "", { "dependencies": { "@volar/source-map": "2.4.12" } }, "sha512-RLrFdXEaQBWfSnYGVxvR2WrO6Bub0unkdHYIdC31HzIEqATIuuhRRzYu76iGPZ6OtA4Au1SnW0ZwIqPP217YhA=="],
@@ -264,6 +267,12 @@
     "@vue/shared": ["@vue/shared@3.5.13", "", {}, "sha512-/hnE/qP5ZoGpol0a5mDi45bOd7t3tjYJBjsgCsivow7D48cJeV5l05RD82lPqi7gRiphZM37rnhW1l6ZoCNNnQ=="],
 
     "@vuetify/loader-shared": ["@vuetify/loader-shared@2.1.0", "", { "dependencies": { "upath": "^2.0.1" }, "peerDependencies": { "vue": "^3.0.0", "vuetify": "^3.0.0" } }, "sha512-dNE6Ceym9ijFsmJKB7YGW0cxs7xbYV8+1LjU6jd4P14xOt/ji4Igtgzt0rJFbxu+ZhAzqz853lhB0z8V9Dy9cQ=="],
+
+    "@vueuse/core": ["@vueuse/core@13.1.0", "", { "dependencies": { "@types/web-bluetooth": "^0.0.21", "@vueuse/metadata": "13.1.0", "@vueuse/shared": "13.1.0" }, "peerDependencies": { "vue": "^3.5.0" } }, "sha512-PAauvdRXZvTWXtGLg8cPUFjiZEddTqmogdwYpnn60t08AA5a8Q4hZokBnpTOnVNqySlFlTcRYIC8OqreV4hv3Q=="],
+
+    "@vueuse/metadata": ["@vueuse/metadata@13.1.0", "", {}, "sha512-+TDd7/a78jale5YbHX9KHW3cEDav1lz1JptwDvep2zSG8XjCsVE+9mHIzjTOaPbHUAk5XiE4jXLz51/tS+aKQw=="],
+
+    "@vueuse/shared": ["@vueuse/shared@13.1.0", "", { "peerDependencies": { "vue": "^3.5.0" } }, "sha512-IVS/qRRjhPTZ6C2/AM3jieqXACGwFZwWTdw5sNTSKk2m/ZpkuuN+ri+WCVUP8TqaKwJYt/KuMwmXspMAw8E6ew=="],
 
     "abort-controller": ["abort-controller@3.0.0", "", { "dependencies": { "event-target-shim": "^5.0.0" } }, "sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg=="],
 

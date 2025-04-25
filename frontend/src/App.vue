@@ -2,7 +2,7 @@
 import { onMounted } from "vue";
 import { RouterView } from "vue-router";
 import { useDisplay } from "vuetify";
-import TheHeaderAuth from "./components/TheHeaderAuth.vue";
+import TheHeaderAuth from "./components/the-header-auth.vue";
 import { useAuthStore } from "./stores/auth";
 
 const authStore = useAuthStore();
