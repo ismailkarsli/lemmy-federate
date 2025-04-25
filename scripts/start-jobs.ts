@@ -13,7 +13,7 @@ if (isMain(import.meta.url)) {
 }
 
 export function startJobs() {
-	loop(updateFollows, ms("12 hours"));
+	loop(updateFollows, ms("1 minute"));
 	loop(addNewCommunities, ms("1 minute")); // fetch newest communities directly from instances
 	loop(addAllCommunities, ms("1 day"));
 	loop(clearDeletedCommunities, ms("2 days"));

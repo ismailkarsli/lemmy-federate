@@ -13,9 +13,8 @@ if (isMain(import.meta.url)) {
 	process.exit(0);
 }
 
-const CONCURRENCY = 10;
-
 export async function updateFollows() {
+	const CONCURRENCY = 1000;
 	const queue = new PQueue({ concurrency: CONCURRENCY });
 	const filter = {
 		status: {
