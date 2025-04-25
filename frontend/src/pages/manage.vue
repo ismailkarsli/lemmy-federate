@@ -2,8 +2,8 @@
 import { useMutation, useQuery } from "@tanstack/vue-query";
 import { useInfiniteScroll } from "@vueuse/core";
 import { computed, ref, useTemplateRef, watchEffect } from "vue";
-import { VTreeview } from "vuetify/labs/VTreeview";
 import InfoTooltip from "../components/info-tooltip.vue";
+import ObjectVisualizer from "../components/object-visualizer.vue";
 import { getHumanReadableSoftwareName, isGenericAP } from "../lib/utils";
 import { trpc } from "../trpc";
 
@@ -222,38 +222,6 @@ loadLogs();
 useInfiniteScroll(logsRef, loadLogs, {
 	canLoadMore: () => logs.value.length < logsCount.value,
 });
-
-type TreeItem = {
-	id: number | string;
-	title: string | number | boolean;
-	children?: TreeItem[];
-};
-function getJsonAsTree(
-	title: string,
-	target: unknown,
-	id: number | string,
-): TreeItem {
-	if (
-		!target ||
-		typeof target === "string" ||
-		typeof target === "number" ||
-		typeof target === "boolean"
-	) {
-		return { id, title: `${title}: ${target || "null"}` };
-	}
-
-	if (typeof target === "object") {
-		return {
-			id,
-			title: title,
-			children: Object.entries(target).map(([key, value]) =>
-				getJsonAsTree(key, value, `${key}:${id}`),
-			),
-		};
-	}
-
-	return { id, title: "Unknown" };
-}
 </script>
 
 <template>
@@ -511,13 +479,7 @@ function getJsonAsTree(
             <template v-slot:default="{ isActive }">
               <v-card :title="(item.content?.message || item.content?.name || item.message || item.content) + ''">
                 <v-card-text>
-                  <v-treeview
-                    :items="[getJsonAsTree(item.message, item.content, item.id)]"
-                    item-value="id"
-                    open-all
-                    density="compact"
-                    fluid
-                    ></v-treeview>
+                  <object-visualizer :object="item.content"></object-visualizer>
                 </v-card-text>
 
                 <v-card-actions>
