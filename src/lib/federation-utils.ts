@@ -331,7 +331,7 @@ export async function handleFederationError(
 	instanceId: number,
 	e: unknown,
 ) {
-	let content = undefined;
+	let content = JSON.stringify(e);
 	if (e instanceof HTTPError) {
 		content = JSON.stringify({
 			name: e.name,
@@ -339,9 +339,21 @@ export async function handleFederationError(
 			status: e.response.status,
 			url: e.request.url,
 			method: e.request.method,
-			responseBody: e.response ? await e.response.json() : null,
+			responseBody: e.response
+				? await e.response
+						.json()
+						.catch((e) => `(LF internal) JSON parse error: ${e}`)
+				: null,
 			requestHeaders: e.request.headers.toJSON(),
 			responseHeaders: e.response.headers.toJSON(),
+			stack: e.stack,
+		});
+	}
+	if (e instanceof TRPCError) {
+		content = JSON.stringify({
+			name: e.name,
+			message: e.message,
+			code: e.code,
 			stack: e.stack,
 		});
 	}
