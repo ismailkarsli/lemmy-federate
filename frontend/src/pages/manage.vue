@@ -211,10 +211,19 @@ async function loadLogs() {
 		take: 10,
 	});
 	logs.value.push(
-		...res.logs.map((i) => ({
-			...i,
-			content: i.content ? JSON.parse(JSON.parse(i.content)) : null,
-		})),
+		...(res.logs.map((i) => {
+			let content = i.content || "";
+			try {
+				content = JSON.parse(content);
+				content = JSON.parse(content);
+			} catch (e) {
+				// for some reason prisma stringifies the content twice. so here we parse it twice. i know it's ugly, but it works. `content` is not type safe so I'm going to ignore this for now.
+			}
+			return {
+				...i,
+				content: content ?? null,
+			};
+		}) as Log[]),
 	);
 	logsCount.value = res.total;
 }
