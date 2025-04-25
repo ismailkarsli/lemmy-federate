@@ -3,7 +3,7 @@ import { useMutation, useQuery } from "@tanstack/vue-query";
 import { useInfiniteScroll } from "@vueuse/core";
 import { computed, ref, useTemplateRef, watchEffect } from "vue";
 import { VTreeview } from "vuetify/labs/VTreeview";
-import InfoTooltip from "../components/InfoTooltip.vue";
+import InfoTooltip from "../components/info-tooltip.vue";
 import { getHumanReadableSoftwareName, isGenericAP } from "../lib/utils";
 import { trpc } from "../trpc";
 
