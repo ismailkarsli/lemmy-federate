@@ -2,7 +2,7 @@
 FROM oven/bun:1-slim AS base
 ENV NODE_ENV=production
 WORKDIR /app
-RUN apt update && apt install -y tini && rm -rf /var/lib/apt/lists/*
+RUN apt update && apt install -y tini openssl && rm -rf /var/lib/apt/lists/*
 
 FROM base AS install
 COPY package.json bun.lock bunfig.toml ./

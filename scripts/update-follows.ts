@@ -69,7 +69,7 @@ export async function updateFollows() {
 						},
 					});
 				} catch (e) {
-					await handleFederationError(cf.instanceId, e);
+					await handleFederationError("updateFollows", cf.instanceId, e);
 					await prisma.communityFollow.update({
 						where: { id: cf.id },
 						data: { status: CommunityFollowStatus.ERROR },

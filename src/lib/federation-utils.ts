@@ -279,7 +279,11 @@ export const conditionalFollowWithAllInstances = async (
 				status = await conditionalFollow(cf);
 			} catch (e) {
 				status = CommunityFollowStatus.ERROR;
-				handleFederationError(cf.instanceId, e);
+				handleFederationError(
+					"conditionalFollowWithAllInstances",
+					cf.instanceId,
+					e,
+				);
 			} finally {
 				await prisma.communityFollow.update({
 					where: { id: cf.id },
@@ -322,7 +326,11 @@ export const unfollowWithAllInstances = async (community: Community) => {
 	}
 };
 
-export async function handleFederationError(instanceId: number, e: unknown) {
+export async function handleFederationError(
+	operation: string,
+	instanceId: number,
+	e: unknown,
+) {
 	let content = undefined;
 	if (e instanceof HTTPError) {
 		content = JSON.stringify({
@@ -331,7 +339,7 @@ export async function handleFederationError(instanceId: number, e: unknown) {
 			status: e.response.status,
 			url: e.request.url,
 			method: e.request.method,
-			responseBody: await e.response.json(),
+			responseBody: e.response ? await e.response.json() : null,
 			requestHeaders: e.request.headers.toJSON(),
 			responseHeaders: e.response.headers.toJSON(),
 			stack: e.stack,
@@ -340,6 +348,7 @@ export async function handleFederationError(instanceId: number, e: unknown) {
 	await prisma.instanceLog.create({
 		data: {
 			instanceId: instanceId,
+			operation,
 			message: (e as Error)?.message || (e as Error).toString(),
 			content: content,
 		},

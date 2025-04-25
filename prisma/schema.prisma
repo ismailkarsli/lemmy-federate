@@ -37,6 +37,7 @@ model InstanceLog {
   id         Int      @id @default(autoincrement())
   instance   Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId Int
+  operation  String   @default("unknown")
   message    String
   content    String? // JSON
   createdAt  DateTime @default(now())
