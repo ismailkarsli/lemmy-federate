@@ -481,7 +481,7 @@ useInfiniteScroll(logsRef, loadLogs, {
         <v-list ref="logs-ref" style="height: 32rem; overflow-y: auto;" class="rounded">
           <v-dialog v-for="item in logs" :key="item.id" max-width="1200">
             <template v-slot:activator="{ props: activatorProps }">
-              <v-list-item v-bind="activatorProps" :subtitle="new Intl.DateTimeFormat(undefined, {dateStyle: 'medium',timeStyle: 'medium'}).format(new Date(item.createdAt))">
+              <v-list-item v-bind="activatorProps" :subtitle="new Intl.DateTimeFormat(undefined, {dateStyle: 'medium',timeStyle: 'medium'}).format(new Date(item.createdAt)) + ' - ' + item.operation">
                 <v-list-item-title v-text="item.content?.message || item.content?.name || item.message || item.content"></v-list-item-title>
               </v-list-item>
             </template>
