@@ -154,7 +154,12 @@ export const conditionalFollow = async (
 	// client of the instance that will subscribe to the community
 	const localClient = getClient(instance);
 	// instance where the community is hosted
-	const remoteClient = getClient(community.instance);
+	const remoteClient = getClient({
+		host: community.instance.host,
+		software: community.instance.software,
+		client_id: null,
+		client_secret: null,
+	});
 
 	/**
 	 * Check instance's Fediseer policy.
