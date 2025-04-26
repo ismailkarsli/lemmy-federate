@@ -8,11 +8,10 @@ import {
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import { HTTPError } from "ky";
-import { LemmyHttp } from "lemmy-js-client";
 import ms from "ms";
 import { ActivityPubClient } from "./activity-pub-client.ts";
 import { getCensuresGiven, getEndorsements } from "./fediseer";
-import { LemmyClient } from "./lemmy";
+import { LemmyClient, LemmyHttpPatched } from "./lemmy";
 import { MbinClient } from "./mbin";
 import { prisma } from "./prisma";
 import { isGenericAP } from "./utils.ts";
@@ -409,7 +408,7 @@ const BOT_PASSWORD = process.env.BOT_PASSWORD;
 if (!BOT_INSTANCE || !BOT_USERNAME || !BOT_PASSWORD) {
 	throw new Error("BOT_INSTANCE, BOT_USERNAME, and BOT_PASSWORD are required");
 }
-let BOT_HTTP_CLIENT: LemmyHttp | undefined; // using standard LemmyHttp for bot
+let BOT_HTTP_CLIENT: LemmyHttpPatched | undefined;
 
 export const sendAuthCode = async (
 	username: string,
@@ -417,7 +416,7 @@ export const sendAuthCode = async (
 	code: string,
 ) => {
 	if (!BOT_HTTP_CLIENT) {
-		BOT_HTTP_CLIENT = new LemmyHttp(`https://${BOT_INSTANCE}`);
+		BOT_HTTP_CLIENT = new LemmyHttpPatched(`https://${BOT_INSTANCE}`);
 		await BOT_HTTP_CLIENT.login({
 			username_or_email: BOT_USERNAME,
 			password: BOT_PASSWORD,

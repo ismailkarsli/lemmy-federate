@@ -52,7 +52,7 @@ export class LemmyClient {
 	protected federatedInstances?: Set<string>;
 	private username?: string;
 	private password?: string;
-	private httpClient?: LemmyHttp;
+	private httpClient?: LemmyHttpPatched;
 	private baseRateLimits?: LocalSiteRateLimit;
 	private rateLimits?: { [key in RateLimitKeys]: number };
 	constructor(host: string, username?: string, password?: string) {
@@ -216,7 +216,7 @@ export class LemmyClient {
 					],
 				},
 			});
-			this.httpClient = new LemmyHttp(`https://${this.host}`, {
+			this.httpClient = new LemmyHttpPatched(`https://${this.host}`, {
 				// bun has `preconnect` which is not part of fetch spec. check this assertion later.
 				fetchFunction: api as unknown as typeof fetch,
 			});
@@ -234,6 +234,38 @@ export class LemmyClient {
 			}
 		}
 		return this.httpClient;
+	}
+}
+
+// On some functions auth token is not included in the request like /community/follow or /private_message
+export class LemmyHttpPatched extends LemmyHttp {
+	public jwt?: string;
+	constructor(
+		baseUrl: string,
+		options?: {
+			fetchFunction?: typeof fetch;
+			headers?: {
+				[key: string]: string;
+			};
+		},
+	) {
+		const fetchToUse = options?.fetchFunction || fetch;
+		// @ts-expect-error bun has some special fetch params that don't work with typescript. ignore until fixed.
+		const fetchFunction: typeof fetch = async (url, init) => {
+			return await fetchToUse(url, {
+				...init,
+				headers: {
+					...init?.headers,
+					Authorization: this.jwt ? `Bearer ${this.jwt}` : "",
+				},
+			});
+		};
+		super(baseUrl, { ...options, fetchFunction });
+	}
+	async login(form: Login): Promise<LoginResponse> {
+		const res = await super.login(form);
+		this.jwt = res.jwt;
+		return res;
 	}
 }
 
