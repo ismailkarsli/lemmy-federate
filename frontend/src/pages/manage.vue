@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useMutation, useQuery } from "@tanstack/vue-query";
-import { useInfiniteScroll } from "@vueuse/core";
 import { computed, ref, useTemplateRef, watchEffect } from "vue";
 import InfoTooltip from "../components/info-tooltip.vue";
 import ObjectVisualizer from "../components/object-visualizer.vue";
@@ -196,41 +195,6 @@ const deleteBlocked = async (id: number) => {
 		} else throw error;
 	}
 };
-
-const logsRef = useTemplateRef<HTMLElement>("logs-ref");
-type Log = Awaited<
-	ReturnType<typeof trpc.instance.logs.find.query>
->["logs"][number] & {
-	content: { [key: string]: unknown } | null;
-};
-const logs = ref<Log[]>([]);
-const logsCount = ref<number>(0);
-async function loadLogs() {
-	const res = await trpc.instance.logs.find.query({
-		skip: logs.value?.length || 0,
-		take: 10,
-	});
-	logs.value.push(
-		...(res.logs.map((i) => {
-			let content = i.content || "";
-			try {
-				content = JSON.parse(content);
-				content = JSON.parse(content);
-			} catch (e) {
-				// for some reason prisma stringifies the content twice. so here we parse it twice. i know it's ugly, but it works. `content` is not type safe so I'm going to ignore this for now.
-			}
-			return {
-				...i,
-				content: content ?? null,
-			};
-		}) as Log[]),
-	);
-	logsCount.value = res.total;
-}
-loadLogs();
-useInfiniteScroll(logsRef, loadLogs, {
-	canLoadMore: () => logs.value.length < logsCount.value,
-});
 </script>
 
 <template>
@@ -472,37 +436,6 @@ useInfiniteScroll(logsRef, loadLogs, {
             </v-chip>
           </v-col>
         </v-row>
-      </v-col>
-      <v-col v-if="logs.length" cols="12">
-        <v-app-bar-title class="mb-2">
-          Logs
-          <info-tooltip text="You can use logs to debug the tool or federation issues." />
-        </v-app-bar-title>
-        <v-list ref="logs-ref" style="height: 32rem; overflow-y: auto;" class="rounded">
-          <v-dialog v-for="item in logs" :key="item.id" max-width="1200">
-            <template v-slot:activator="{ props: activatorProps }">
-              <v-list-item v-bind="activatorProps" :subtitle="new Intl.DateTimeFormat(undefined, {dateStyle: 'medium',timeStyle: 'medium'}).format(new Date(item.createdAt)) + ' - ' + item.operation">
-                <v-list-item-title v-text="item.content?.message || item.content?.name || item.message || item.content"></v-list-item-title>
-              </v-list-item>
-            </template>
-            <template v-slot:default="{ isActive }">
-              <v-card :title="(item.content?.message || item.content?.name || item.message || item.content) + ''">
-                <v-card-text>
-                  <object-visualizer :object="item.content"></object-visualizer>
-                </v-card-text>
-
-                <v-card-actions>
-                  <v-spacer></v-spacer>
-
-                  <v-btn
-                    text="Close"
-                    @click="isActive.value = false"
-                  ></v-btn>
-                </v-card-actions>
-              </v-card>
-            </template>
-          </v-dialog>
-        </v-list>
       </v-col>
     </v-row>
   </v-container>

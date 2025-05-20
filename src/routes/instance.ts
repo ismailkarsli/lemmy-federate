@@ -264,46 +264,4 @@ export const instanceRouter = router({
 				};
 			}),
 	}),
-	logs: router({
-		find: protectedProcedure
-			.input(
-				typia.createAssert<{
-					take?: number;
-					skip?: number;
-				}>(),
-			)
-			.query(async ({ ctx, input }) => {
-				const skip = input?.skip
-					? Number.parseInt(input.skip.toString())
-					: undefined;
-				const take = input?.take
-					? Number.parseInt(input.take.toString())
-					: undefined;
-
-				const [logs, total] = await prisma.$transaction([
-					prisma.instanceLog.findMany({
-						where: {
-							instance: {
-								host: ctx.user.instance,
-							},
-						},
-						skip,
-						take,
-						orderBy: [{ createdAt: "desc" }],
-					}),
-					prisma.instanceLog.count({
-						where: {
-							instance: {
-								host: ctx.user.instance,
-							},
-						},
-					}),
-				]);
-
-				return {
-					logs,
-					total,
-				};
-			}),
-	}),
 });
