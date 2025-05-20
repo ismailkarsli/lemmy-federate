@@ -15,7 +15,7 @@ if (isMain(import.meta.url)) {
 export function startJobs() {
 	loop(updateFollows, ms("1 minute"));
 	loop(addNewCommunities, ms("1 minute")); // fetch newest communities directly from instances
-	loop(addAllCommunities, ms("1 day"));
+	loop(addAllCommunities, ms("1 day")); // fetch all communities from lemmyverse.net
 	loop(clearDeletedCommunities, ms("2 days"));
 }
 
