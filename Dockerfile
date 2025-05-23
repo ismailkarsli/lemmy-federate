@@ -1,7 +1,7 @@
 FROM node:24-alpine AS base
 ENV NODE_ENV=production
 WORKDIR /app
-RUN RUN apk add --no-cache tini openssl curl
+RUN apk add --no-cache tini openssl curl
 COPY package.json ./
 RUN corepack enable && corepack install
 
