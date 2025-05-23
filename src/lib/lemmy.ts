@@ -9,6 +9,7 @@ import {
 	type SubscribedType,
 } from "lemmy-js-client";
 import ms from "ms";
+import pThrottle from "p-throttle";
 
 export type User = {
 	username: string;
@@ -50,6 +51,10 @@ export class LemmyClient {
 		this.host = host;
 		this.username = username;
 		this.password = password;
+	}
+
+	async init() {
+		await this.getHttpClient();
 	}
 
 	/**
@@ -110,40 +115,25 @@ export class LemmyClient {
 	}
 
 	/**
-	 * @returns Authenticated LemmyHttpExtended client for the instance
+	 * @returns Authenticated LemmyHttpPatched client for the instance
 	 */
 	private async getHttpClient() {
 		if (!this.httpClient) {
+			const throttledFetch = pThrottle({
+				limit: 1,
+				interval: 1000,
+			})(fetch);
 			const api = ky.create({
+				fetch: throttledFetch,
 				timeout: ms("10 seconds"),
 				retry: 0,
+				headers: {
+					"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",
+				},
 				hooks: {
-					beforeRequest: [
-						async (req) => {
-							// add `auth` field to query (GET/DELETE) or body (POST/PUT) for 0.18.x compatibility
-							const auth = req.headers.get("authorization")?.split(" ")?.at(1);
-							let newReq = req;
-							if (auth) {
-								if (req.method === "GET" || req.method === "DELETE") {
-									const url = new URL(req.url);
-									url.searchParams.append("auth", auth);
-									const newRequest = new Request(url, req);
-									newReq = newRequest;
-								}
-								if (req.method === "POST" || req.method === "PUT") {
-									const body: unknown = await req.clone().json();
-									if (body && typeof body === "object" && body !== null) {
-										// @ts-expect-error body is not typed
-										body.auth = auth || null;
-									}
-									newReq = new Request(req, { body: JSON.stringify(body) });
-								}
-							}
-							return newReq;
-						},
-					],
 					beforeError: [
 						async (err) => {
+							// return proper statuses
 							if (err.response.status === 400) {
 								const lemmyError = (await err.response
 									.clone()
@@ -168,23 +158,21 @@ export class LemmyClient {
 									);
 								}
 							}
-							if (err.response.status === 429) {
-								// TODO: Implement rate limiting logic here
-							}
 							return err;
 						},
 					],
 				},
 			});
-			this.httpClient = new LemmyHttpPatched(`https://${this.host}`, {
+			const newClient = new LemmyHttpPatched(`https://${this.host}`, {
 				fetchFunction: api,
 			});
 			if (this.username && this.password) {
-				await this.httpClient.login({
+				await newClient.login({
 					username_or_email: this.username,
 					password: this.password,
 				});
 			}
+			this.httpClient = newClient;
 		}
 		return this.httpClient;
 	}

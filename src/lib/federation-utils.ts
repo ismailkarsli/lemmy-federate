@@ -7,11 +7,15 @@ import {
 	NSFW,
 } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import { HTTPError } from "ky";
+import { HTTPError, TimeoutError } from "ky";
 import ms from "ms";
 import { ActivityPubClient } from "./activity-pub-client.ts";
 import { getCensuresGiven, getEndorsements } from "./fediseer.ts";
-import { LemmyClient, LemmyHttpPatched } from "./lemmy.ts";
+import {
+	type Community as Community_,
+	LemmyClient,
+	LemmyHttpPatched,
+} from "./lemmy.ts";
 import { MbinClient } from "./mbin.ts";
 import { prisma } from "./prisma.ts";
 import { isGenericAP } from "./utils.ts";
@@ -26,7 +30,8 @@ const clientCacheMap = new Map<
 		expiration: Date;
 	}
 >();
-export const getClient = ({
+const initializingClients = new Set<string>();
+export const getClient = async ({
 	host,
 	software,
 	client_id,
@@ -37,23 +42,34 @@ export const getClient = ({
 	if (cached && cached.expiration > new Date()) {
 		return cached.client;
 	}
-
-	let client: LemmyClient | MbinClient | ActivityPubClient;
-	const id = client_id ?? undefined;
-	const secret = client_secret ?? undefined;
-	if (software === "LEMMY") {
-		client = new LemmyClient(host, id, secret);
-	} else if (software === "MBIN") {
-		client = new MbinClient(host, id, secret);
-	} else {
-		client = new ActivityPubClient(host);
+	// wait for concurrent client initialization.
+	while (initializingClients.has(key)) {
+		await new Promise((r) => setTimeout(r, 1000));
 	}
+	const cachedNew = clientCacheMap.get(key);
+	if (cachedNew) return cachedNew.client;
+	initializingClients.add(key);
+	try {
+		let client: LemmyClient | MbinClient | ActivityPubClient;
+		const id = client_id ?? undefined;
+		const secret = client_secret ?? undefined;
+		if (software === "LEMMY") {
+			client = new LemmyClient(host, id, secret);
+		} else if (software === "MBIN") {
+			client = new MbinClient(host, id, secret);
+		} else {
+			client = new ActivityPubClient(host);
+		}
+		await client.init();
 
-	clientCacheMap.set(key, {
-		client,
-		expiration: new Date(Date.now() + ms("1 hour")),
-	});
-	return client;
+		clientCacheMap.set(key, {
+			client,
+			expiration: new Date(Date.now() + ms("1 day")),
+		});
+		return client;
+	} finally {
+		initializingClients.delete(key);
+	}
 };
 
 /**
@@ -80,12 +96,6 @@ export const conditionalFollow = async (
 	 * Both instances must be enabled
 	 */
 	if (!instance.enabled || !community.instance.enabled) {
-		return CommunityFollowStatus.NOT_AVAILABLE;
-	}
-	/**
-	 * Both instances must be approved
-	 */
-	if (!(instance.approved && community.instance.approved)) {
 		return CommunityFollowStatus.NOT_AVAILABLE;
 	}
 	/**
@@ -152,31 +162,22 @@ export const conditionalFollow = async (
 	}
 
 	// client of the instance that will subscribe to the community
-	const localClient = getClient(instance);
+	const localClient = await getClient(instance);
 	// instance where the community is hosted
-	const remoteClient = getClient({
-		host: community.instance.host,
-		software: community.instance.software,
-		client_id: null,
-		client_secret: null,
-	});
+	const remoteClient = await getClient(community.instance);
 
 	/**
 	 * Check instance's Fediseer policy.
-	 * Enabled only for Lemmy to Lemmy.
-	 * TODO: change this logic here later.
 	 */
-	if (localClient.type === "LEMMY" && remoteClient.type === "LEMMY") {
-		if (instance.fediseer === FediseerUsage.BLACKLIST_ONLY) {
-			const censures = await getCensuresGiven(instance.host);
-			if (censures.domains.includes(community.instance.host)) {
-				return CommunityFollowStatus.NOT_ALLOWED;
-			}
-		} else if (instance.fediseer === FediseerUsage.WHITELIST_ONLY) {
-			const endorsements = await getEndorsements(community.instance.host);
-			if (!endorsements.domains.includes(instance.host)) {
-				return CommunityFollowStatus.NOT_ALLOWED;
-			}
+	if (instance.fediseer === FediseerUsage.BLACKLIST_ONLY) {
+		const censures = await getCensuresGiven(instance.host);
+		if (censures.domains.includes(community.instance.host)) {
+			return CommunityFollowStatus.NOT_ALLOWED;
+		}
+	} else if (instance.fediseer === FediseerUsage.WHITELIST_ONLY) {
+		const endorsements = await getEndorsements(community.instance.host);
+		if (!endorsements.domains.includes(instance.host)) {
+			return CommunityFollowStatus.NOT_ALLOWED;
 		}
 	}
 
@@ -209,9 +210,19 @@ export const conditionalFollow = async (
 	 * We passed all the checks, now we can fetch the community
 	 */
 
-	const localCommunity = await localClient.getCommunity(
-		`${community.name}@${community.instance.host}`,
-	);
+	let localCommunity: Community_;
+	try {
+		localCommunity = await localClient.getCommunity(
+			`${community.name}@${community.instance.host}`,
+		);
+	} catch (e) {
+		if (e instanceof HTTPError) {
+			if (e.response.status === 404) {
+				return CommunityFollowStatus.NOT_ALLOWED;
+			}
+		}
+		throw e;
+	}
 	const localSubscribers = localCommunity.localSubscribers;
 
 	// We can't retrieve local subscriber count. Just follow until we can.
@@ -222,9 +233,9 @@ export const conditionalFollow = async (
 		return CommunityFollowStatus.IN_PROGRESS;
 	}
 
-	// Community has another subscriber. We can unsubscribe.
+	// Community has 2 another subscribers. We can unsubscribe.
 	if (
-		localSubscribers > (localCommunity.subscribed !== "NotSubscribed" ? 1 : 0)
+		localSubscribers >= (localCommunity.subscribed !== "NotSubscribed" ? 3 : 2)
 	) {
 		if (localCommunity.subscribed !== "NotSubscribed") {
 			await localClient.followCommunity(localCommunity.id, false);
@@ -279,19 +290,16 @@ export const conditionalFollowWithAllInstances = async (
 	await Promise.all(
 		communityFollows.map(async (cf) => {
 			let status: CommunityFollowStatus = CommunityFollowStatus.WAITING;
+			let errorReason: string | null = null;
 			try {
 				status = await conditionalFollow(cf);
 			} catch (e) {
 				status = CommunityFollowStatus.ERROR;
-				handleFederationError(
-					"conditionalFollowWithAllInstances",
-					cf.instanceId,
-					e,
-				);
+				errorReason = getFederationErrorReason(e);
 			} finally {
 				await prisma.communityFollow.update({
 					where: { id: cf.id },
-					data: { status },
+					data: { status, errorReason },
 				});
 			}
 		}),
@@ -315,7 +323,7 @@ export const unfollowWithAllInstances = async (community: Community) => {
 
 	for (const cf of communityFollows) {
 		try {
-			const client = getClient(cf.instance);
+			const client = await getClient(cf.instance);
 
 			const { id } = await client.getCommunity(
 				`${cf.community.name}@${cf.community.instance.host}`,
@@ -330,45 +338,17 @@ export const unfollowWithAllInstances = async (community: Community) => {
 	}
 };
 
-export async function handleFederationError(
-	operation: string,
-	instanceId: number,
-	e: unknown,
-) {
-	let content = JSON.stringify(e);
-	if (e instanceof HTTPError) {
-		content = JSON.stringify({
-			name: e.name,
-			message: e.message,
-			status: e.response.status,
-			url: e.request.url,
-			method: e.request.method,
-			responseBody: e.response
-				? await e.response
-						.json()
-						.catch((e) => `(LF internal) JSON parse error: ${e}`)
-				: null,
-			requestHeaders: Object.fromEntries(e.request.headers.entries()),
-			responseHeaders: Object.fromEntries(e.response.headers.entries()),
-			stack: e.stack,
-		});
+export function getFederationErrorReason(err: unknown): string {
+	if (err instanceof HTTPError) {
+		if (err.response.status === 429) {
+			return "rate limited";
+		}
 	}
-	if (e instanceof TRPCError) {
-		content = JSON.stringify({
-			name: e.name,
-			message: e.message,
-			code: e.code,
-			stack: e.stack,
-		});
+	if (err instanceof TimeoutError) {
+		return "timed out";
 	}
-	await prisma.instanceLog.create({
-		data: {
-			instanceId: instanceId,
-			operation,
-			message: (e as Error)?.message || (e as Error).toString(),
-			content: content,
-		},
-	});
+	console.error(err);
+	return "unknown";
 }
 
 export async function resetSubscriptions(

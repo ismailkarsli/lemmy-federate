@@ -37,7 +37,6 @@ export const InstanceSchema = z.object({
 	client_secret: z.string().nullable(),
 	cross_software: z.boolean(),
 	mode: FederationModeSchema,
-	approved: z.boolean(),
 }) satisfies z.ZodType<Instance>;
 
 export const UserSchema = z.object({

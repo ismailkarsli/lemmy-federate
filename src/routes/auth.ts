@@ -98,7 +98,7 @@ export const authRouter = router({
 			if (!existingUser) {
 				const software = await getInstanceSoftware(host);
 				const isGeneric = isGenericAP(software.name);
-				const client = getClient({
+				const client = await getClient({
 					host,
 					software: software.name.toUpperCase(),
 					client_id: null,
@@ -121,12 +121,16 @@ export const authRouter = router({
 					});
 				}
 
-				let fediseerGuaranteed: boolean;
 				try {
-					fediseerGuaranteed =
+					const guaranteed =
 						((await getGuarantees(host))?.domains?.length ?? 0) > 0;
+					if (!guaranteed) throw new Error();
 				} catch (e) {
-					fediseerGuaranteed = false;
+					throw new TRPCError({
+						code: "FORBIDDEN",
+						message:
+							"Your instance is not guaranteed in Fediseer. Please check fediseer.com",
+					});
 				}
 
 				createdInstance = await prisma.instance.findFirst({ where: { host } });
@@ -135,7 +139,6 @@ export const authRouter = router({
 						data: {
 							host,
 							software: software.name.toUpperCase(),
-							approved: fediseerGuaranteed,
 							...(isGeneric
 								? {
 										auto_add: false,

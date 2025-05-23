@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { computed, ref } from "vue";
+import InfoTooltip from "../components/info-tooltip.vue";
 import { getHumanReadableSoftwareName, isGenericAP } from "../lib/utils";
 import { trpc } from "../trpc";
 

@@ -43,6 +43,8 @@ export class ActivityPubClient {
 		this.host = host;
 	}
 
+	async init() {}
+
 	async getUser(username: string): Promise<User> {
 		const userResponse = await this.fetchWebfinger(username);
 
@@ -156,6 +158,9 @@ export class ActivityPubClient {
 		this.httpClient ??= ky.create({
 			timeout: ms("10 seconds"),
 			retry: 1,
+			headers: {
+				"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",
+			},
 		});
 
 		return this.httpClient;
