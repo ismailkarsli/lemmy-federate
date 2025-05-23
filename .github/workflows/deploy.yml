@@ -45,7 +45,9 @@ jobs:
         with:
           node-version: 24
           cache: "pnpm"
-      - run: pnpm install --frozen-lockfile
+      - run: |
+          pnpm install --frozen-lockfile
+          pnpm run db:generate
       - run: pnpm run check
 
   deploy:
