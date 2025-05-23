@@ -13,7 +13,7 @@ if (isMain(import.meta.url)) {
 }
 
 export async function startJobs() {
-	await new Promise((r) => setTimeout(r, ms("1 hour")));
+	await new Promise((r) => setTimeout(r, ms("3 minutes")));
 	loop(updateFollows, ms("1 minute"));
 	loop(addNewCommunities, ms("1 minute")); // fetch newest communities directly from instances
 	loop(addAllCommunities, ms("1 day")); // fetch all communities from lemmyverse.net
