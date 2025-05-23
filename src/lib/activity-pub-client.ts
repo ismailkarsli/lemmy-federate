@@ -43,6 +43,8 @@ export class ActivityPubClient {
 		this.host = host;
 	}
 
+	async init() {}
+
 	async getUser(username: string): Promise<User> {
 		const userResponse = await this.fetchWebfinger(username);
 

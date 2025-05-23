@@ -50,6 +50,9 @@ importers:
       npm-run-all2:
         specifier: ^8.0.3
         version: 8.0.3
+      p-throttle:
+        specifier: ^7.0.0
+        version: 7.0.0
       pinia:
         specifier: 3.0.2
         version: 3.0.2(typescript@5.8.3)(vue@3.5.14(typescript@5.8.3))
@@ -880,6 +883,10 @@ packages:
     resolution: {integrity: sha512-0mAycidMUMThrLt8AT3LGtOMgfLaMg6/4oUKHTKMU0jDSIsdKBsKp98H8zBFcJylQC4CtOB140UUFbOlFyE9gA==}
     engines: {node: ^20.5.0 || >=22.0.0, npm: '>= 10'}
     hasBin: true
+
+  p-throttle@7.0.0:
+    resolution: {integrity: sha512-aio0v+S0QVkH1O+9x4dHtD4dgCExACcL+3EtNaGqC01GBudS9ijMuUsmN8OVScyV4OOp0jqdLShZFuSlbL/AsA==}
+    engines: {node: '>=18'}
 
   path-browserify@1.0.1:
     resolution: {integrity: sha512-b7uo2UCUOYZcnF/3ID0lulOJi/bafxa1xPe7ZPsammBSpjSWQkjNxlt635YGS2MiR9GjvuXCtz2emr3jbsz98g==}
@@ -1758,6 +1765,8 @@ snapshots:
       read-package-json-fast: 4.0.0
       shell-quote: 1.8.2
       which: 5.0.0
+
+  p-throttle@7.0.0: {}
 
   path-browserify@1.0.1: {}
 

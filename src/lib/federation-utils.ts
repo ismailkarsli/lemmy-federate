@@ -30,7 +30,8 @@ const clientCacheMap = new Map<
 		expiration: Date;
 	}
 >();
-export const getClient = ({
+const initializingClients = new Set<string>();
+export const getClient = async ({
 	host,
 	software,
 	client_id,
@@ -41,23 +42,34 @@ export const getClient = ({
 	if (cached && cached.expiration > new Date()) {
 		return cached.client;
 	}
-
-	let client: LemmyClient | MbinClient | ActivityPubClient;
-	const id = client_id ?? undefined;
-	const secret = client_secret ?? undefined;
-	if (software === "LEMMY") {
-		client = new LemmyClient(host, id, secret);
-	} else if (software === "MBIN") {
-		client = new MbinClient(host, id, secret);
-	} else {
-		client = new ActivityPubClient(host);
+	// wait for concurrent client initialization.
+	while (initializingClients.has(key)) {
+		await new Promise((r) => setTimeout(r, 1000));
 	}
+	const cachedNew = clientCacheMap.get(key);
+	if (cachedNew) return cachedNew.client;
+	initializingClients.add(key);
+	try {
+		let client: LemmyClient | MbinClient | ActivityPubClient;
+		const id = client_id ?? undefined;
+		const secret = client_secret ?? undefined;
+		if (software === "LEMMY") {
+			client = new LemmyClient(host, id, secret);
+		} else if (software === "MBIN") {
+			client = new MbinClient(host, id, secret);
+		} else {
+			client = new ActivityPubClient(host);
+		}
+		await client.init();
 
-	clientCacheMap.set(key, {
-		client,
-		expiration: new Date(Date.now() + ms("1 day")),
-	});
-	return client;
+		clientCacheMap.set(key, {
+			client,
+			expiration: new Date(Date.now() + ms("1 day")),
+		});
+		return client;
+	} finally {
+		initializingClients.delete(key);
+	}
 };
 
 /**
@@ -150,9 +162,9 @@ export const conditionalFollow = async (
 	}
 
 	// client of the instance that will subscribe to the community
-	const localClient = getClient(instance);
+	const localClient = await getClient(instance);
 	// instance where the community is hosted
-	const remoteClient = getClient(community.instance);
+	const remoteClient = await getClient(community.instance);
 
 	/**
 	 * Check instance's Fediseer policy.
@@ -311,7 +323,7 @@ export const unfollowWithAllInstances = async (community: Community) => {
 
 	for (const cf of communityFollows) {
 		try {
-			const client = getClient(cf.instance);
+			const client = await getClient(cf.instance);
 
 			const { id } = await client.getCommunity(
 				`${cf.community.name}@${cf.community.instance.host}`,

@@ -60,7 +60,7 @@ export const communityRouter = router({
 				});
 			}
 
-			const client = getClient(instance);
+			const client = await getClient(instance);
 			const community = await client.getCommunity(name);
 			if (!community) {
 				throw new TRPCError({

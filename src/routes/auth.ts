@@ -98,7 +98,7 @@ export const authRouter = router({
 			if (!existingUser) {
 				const software = await getInstanceSoftware(host);
 				const isGeneric = isGenericAP(software.name);
-				const client = getClient({
+				const client = await getClient({
 					host,
 					software: software.name.toUpperCase(),
 					client_id: null,

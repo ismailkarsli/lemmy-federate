@@ -9,6 +9,7 @@ import {
 	type SubscribedType,
 } from "lemmy-js-client";
 import ms from "ms";
+import pThrottle from "p-throttle";
 
 export type User = {
 	username: string;
@@ -50,6 +51,10 @@ export class LemmyClient {
 		this.host = host;
 		this.username = username;
 		this.password = password;
+	}
+
+	async init() {
+		await this.getHttpClient();
 	}
 
 	/**
@@ -114,13 +119,17 @@ export class LemmyClient {
 	 */
 	private async getHttpClient() {
 		if (!this.httpClient) {
+			const throttledFetch = pThrottle({
+				limit: 1,
+				interval: 1000,
+			})(fetch);
 			const api = ky.create({
+				fetch: throttledFetch,
 				timeout: ms("10 seconds"),
 				retry: 0,
 				headers: {
 					"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",
 				},
-				credentials: "include",
 				hooks: {
 					beforeError: [
 						async (err) => {

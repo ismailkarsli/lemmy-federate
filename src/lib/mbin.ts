@@ -76,6 +76,9 @@ export class MbinClient extends LemmyClient {
 		this.oauthClientId = oauthClientId;
 		this.oauthClientSecret = oauthClientSecret;
 	}
+	async init() {
+		this.getBearerToken();
+	}
 
 	async getUser(username: string): Promise<User> {
 		const user = await api<MbinUser>(
@@ -172,12 +175,12 @@ export class MbinClient extends LemmyClient {
 		if (!this.oauthClientId || !this.oauthClientSecret) {
 			throw new Error("oauth client id and secret are required");
 		}
-		const body = new FormData();
-		body.append("grant_type", "client_credentials");
-		body.append("client_id", this.oauthClientId);
-		body.append("client_secret", this.oauthClientSecret);
-		body.append("scope", BOT_SCOPES.join(" "));
 		if (!this.token || !this.tokenExpires || this.tokenExpires < Date.now()) {
+			const body = new FormData();
+			body.append("grant_type", "client_credentials");
+			body.append("client_id", this.oauthClientId);
+			body.append("client_secret", this.oauthClientSecret);
+			body.append("scope", BOT_SCOPES.join(" "));
 			const res = await api
 				.post<{
 					expires_in: number;
