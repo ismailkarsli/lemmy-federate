@@ -1,0 +1,73 @@
+name: build and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
+
+jobs:
+  build_push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.DOCKER_IMAGE }}
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          push: true
+          tags: ${{ env.DOCKER_IMAGE }}
+          platforms: ${{ matrix.platform }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run check
+
+  deploy:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: lemy
+    needs: [build_push, test]
+    steps:
+      - run: |
+          docker pull ${{ env.DOCKER_IMAGE }}
+          docker stop lemmy-federate || true
+          docker rm lemmy-federate || true
+          docker run \
+            -e APP_URL -e BLACKLISTED_INSTANCES -e CONTACT_EMAIL -e SECRET_KEY -e DATABASE_URL -e REDIS_URL -e BOT_INSTANCE -e BOT_USERNAME -e BOT_PASSWORD \
+            --name lemmy-federate --detach --port 52312:3000 --restart on-failure \
+            $REGISTRY_IMAGE
+        env:
+          APP_URL: ${{ vars.APP_URL }}
+          BLACKLISTED_INSTANCES: ${{ vars.BLACKLISTED_INSTANCES }}
+          CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+          SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
+          BOT_INSTANCE: ${{ secrets.BOT_INSTANCE }}
+          BOT_USERNAME: ${{ secrets.BOT_USERNAME }}
+          BOT_PASSWORD: ${{ secrets.BOT_PASSWORD }}
