@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { keepPreviousData, useQuery } from "@tanstack/vue-query";
 import { computed, ref } from "vue";
-import InfoTooltip from "../components/info-tooltip.vue";
 import { getHumanReadableSoftwareName, isGenericAP } from "../lib/utils";
 import { trpc } from "../trpc";
 
@@ -27,7 +26,8 @@ const { data, isPending } = useQuery({
         <v-card variant="text">
           <p>
             If you want to add your instance to the list, you can login from top
-            right. If you are a user, you can ask your instance admin to add your instance.
+            right. If you are a user, you can ask your instance admin to add
+            your instance.
           </p>
         </v-card>
       </v-col>
@@ -66,8 +66,17 @@ const { data, isPending } = useQuery({
                 <v-chip v-else color="error" class="mr-2">Disabled</v-chip>
               </td>
               <td>
-                <v-chip v-if="isGenericAP(instance.software)" color="blue-grey" class="mr-2">Not applicable</v-chip>
-                <v-chip v-else-if="instance.auto_add" color="success" class="mr-2">
+                <v-chip
+                  v-if="isGenericAP(instance.software)"
+                  color="blue-grey"
+                  class="mr-2"
+                  >Not applicable</v-chip
+                >
+                <v-chip
+                  v-else-if="instance.auto_add"
+                  color="success"
+                  class="mr-2"
+                >
                   Enabled
                 </v-chip>
                 <v-chip v-else color="error" class="mr-2">Disabled</v-chip>

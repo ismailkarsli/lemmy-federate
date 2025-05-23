@@ -1,10 +1,10 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import ms from "ms";
-import { isMain } from "../src/lib/utils";
-import { addAllCommunities } from "./add-all-communities";
-import { addNewCommunities } from "./add-new-communities";
-import { clearDeletedCommunities } from "./clear-deleted-communities";
-import { updateFollows } from "./update-follows";
+import { isMain } from "../src/lib/utils.ts";
+import { addAllCommunities } from "./add-all-communities.ts";
+import { addNewCommunities } from "./add-new-communities.ts";
+import { clearDeletedCommunities } from "./clear-deleted-communities.ts";
+import { updateFollows } from "./update-follows.ts";
 
 // TODO: just use cron
 

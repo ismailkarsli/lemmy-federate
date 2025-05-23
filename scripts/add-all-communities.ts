@@ -1,6 +1,6 @@
-#!/usr/bin/env bun
-import { prisma } from "../src/lib/prisma";
-import { isMain } from "../src/lib/utils";
+#!/usr/bin/env node
+import { prisma } from "../src/lib/prisma.ts";
+import { isMain } from "../src/lib/utils.ts";
 
 if (isMain(import.meta.url)) {
 	addAllCommunities();

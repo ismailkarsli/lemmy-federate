@@ -1,6 +1,4 @@
 <script lang="ts" setup>
-import { VTreeview } from "vuetify/labs/VTreeview";
-
 const props = defineProps<{ object: { [key: string]: unknown } | null }>();
 
 type TreeItem = {
@@ -42,5 +40,6 @@ function getJsonAsTree(
     item-value="id"
     open-all
     density="compact"
-    fluid></v-treeview>
+    fluid
+  ></v-treeview>
 </template>

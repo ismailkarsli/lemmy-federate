@@ -1,7 +1,7 @@
 import { createClient } from "redis";
-import typia from "typia";
+import * as z from "zod/v4";
 
-const url = typia.assert<string>(process.env.REDIS_URL);
+const url = z.url().parse(process.env.REDIS_URL);
 const client = createClient({ url });
 
 client.on("error", (err) => {

@@ -1,9 +1,11 @@
-import { type NodeObject, expand } from "jsonld";
-import type { JsonLdDocument, ValueObject } from "jsonld";
+import type { JsonLdDocument, NodeObject, ValueObject } from "jsonld";
+import jsonld from "jsonld";
 import ky, { type KyInstance } from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
 import type { Community, User } from "./lemmy.ts";
+
+const { expand } = jsonld;
 
 interface WebFingerLink {
 	rel: string;
@@ -135,8 +137,8 @@ export class ActivityPubClient {
 	}
 
 	async followCommunity(
-		community_id: number | string,
-		follow: boolean,
+		_community_id: number | string,
+		_follow: boolean,
 	): Promise<void> {
 		// not possible, maybe at a later date with a private key?
 		throw new Error(
@@ -144,7 +146,7 @@ export class ActivityPubClient {
 		);
 	}
 
-	async listCommunities(query: ListCommunities): Promise<Community[]> {
+	async listCommunities(_query: ListCommunities): Promise<Community[]> {
 		throw new Error(
 			"Listing communities with ActivityPubClient is not possible.",
 		);
@@ -176,7 +178,7 @@ export class ActivityPubClient {
 			);
 		}
 
-		let url: string | undefined = undefined;
+		let url: string | undefined;
 		for (const link of webfingerResponse.links) {
 			if (link.type !== "application/activity+json" || link.rel !== "self") {
 				continue;

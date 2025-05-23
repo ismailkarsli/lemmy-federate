@@ -3,7 +3,7 @@ import { createPinia } from "pinia";
 import { createApp } from "vue";
 import { createRouter, createWebHistory } from "vue-router";
 import { createVuetify } from "vuetify";
-import "vuetify/styles";
+import "vuetify/styles/main.css";
 import "@mdi/font/css/materialdesignicons.css";
 
 import App from "./App.vue";

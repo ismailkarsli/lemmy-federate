@@ -1,0 +1,19 @@
+{
+	"extends": "@vue/tsconfig/tsconfig.dom.json",
+	"compilerOptions": {
+		"module": "esnext",
+		"lib": ["ESNext", "DOM", "DOM.Iterable", "ESNext.Array"],
+		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.frontend.tsbuildinfo",
+		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"erasableSyntaxOnly": true,
+		"noFallthroughCasesInSwitch": true,
+		"noUncheckedSideEffectImports": true
+	},
+	"include": [
+		"frontend/src/**/*.ts",
+		"frontend/src/**/*.tsx",
+		"frontend/src/**/*.vue"
+	]
+}

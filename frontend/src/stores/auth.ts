@@ -1,6 +1,6 @@
 import type { Instance, User } from "@prisma/client";
 import { defineStore } from "pinia";
-import type { Serialize } from "../trpc";
+import type { Serialize } from "../trpc.ts";
 
 export type UserWithInstance = Serialize<
 	Omit<User, "code" | "codeExp"> & {

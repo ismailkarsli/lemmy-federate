@@ -1,11 +1,11 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import type { LemmyErrorType } from "lemmy-js-client";
 import {
 	getClient,
 	unfollowWithAllInstances,
-} from "../src/lib/federation-utils";
-import { prisma } from "../src/lib/prisma";
-import { isMain } from "../src/lib/utils";
+} from "../src/lib/federation-utils.ts";
+import { prisma } from "../src/lib/prisma.ts";
+import { isMain } from "../src/lib/utils.ts";
 
 if (isMain(import.meta.url)) {
 	clearDeletedCommunities();

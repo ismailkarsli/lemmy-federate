@@ -1,13 +1,17 @@
-import type { Instance, User } from "@prisma/client";
+import type { Instance } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import jwt from "jsonwebtoken";
 import ms from "ms";
-import typia from "typia";
-import { getClient, sendAuthCode } from "../lib/federation-utils";
-import { getGuarantees } from "../lib/fediseer";
-import { prisma } from "../lib/prisma";
-import { getInstanceSoftware, isGenericAP, randomNumber } from "../lib/utils";
-import { publicProcedure, router } from "../trpc";
+import * as z from "zod/v4";
+import { getClient, sendAuthCode } from "../lib/federation-utils.ts";
+import { getGuarantees } from "../lib/fediseer.ts";
+import { InstanceSchema, UserSchema, prisma } from "../lib/prisma.ts";
+import {
+	getInstanceSoftware,
+	isGenericAP,
+	randomNumber,
+} from "../lib/utils.ts";
+import { publicProcedure, router } from "../trpc.ts";
 
 const BLACKLISTED_INSTANCES =
 	process.env.BLACKLISTED_INSTANCES?.split(",") || [];
@@ -17,26 +21,25 @@ if (!SECRET_KEY) {
 	throw new Error("SECRET_KEY is required");
 }
 
-type ResponseType =
-	| {
-			user: Omit<User, "code" | "codeExp"> & {
-				instance: Instance;
-			};
-	  }
-	| {
-			message: string;
-	  };
+const ResponseTypeSchema = z.union([
+	z.object({
+		user: UserSchema.omit({ code: true, codeExp: true }).extend({
+			instance: InstanceSchema,
+		}),
+	}),
+	z.object({ message: z.string() }),
+]);
 
 export const authRouter = router({
 	login: publicProcedure
 		.input(
-			typia.createAssert<{
-				instance: string;
-				username: string;
-				code?: string;
-			}>(),
+			z.object({
+				instance: z.string(),
+				username: z.string(),
+				code: z.string().optional(),
+			}),
 		)
-		.output(typia.createAssert<ResponseType>())
+		.output(ResponseTypeSchema)
 		.mutation(async ({ input: body, ctx }) => {
 			const host = body.instance.toLowerCase();
 			const username = body.username.toLowerCase();

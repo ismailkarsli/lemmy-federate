@@ -4,13 +4,11 @@ import {
 	type LemmyErrorType,
 	LemmyHttp,
 	type ListCommunities,
-	type LocalSiteRateLimit,
 	type Login,
 	type LoginResponse,
 	type SubscribedType,
 } from "lemmy-js-client";
 import ms from "ms";
-import type { FilterNotEndingWith } from "../types/FilterNotEndingWith";
 
 export type User = {
 	username: string;
@@ -30,11 +28,6 @@ export type Community = {
 	public: boolean;
 };
 
-type RateLimitKeys = Exclude<
-	FilterNotEndingWith<keyof LocalSiteRateLimit, "per_second">,
-	"local_site_id" | "published" | "updated"
->;
-
 const lemmyCommunityToCommunity = (cv: CommunityView): Community => ({
 	id: cv.community.id,
 	name: cv.community.name,
@@ -53,8 +46,6 @@ export class LemmyClient {
 	private username?: string;
 	private password?: string;
 	private httpClient?: LemmyHttpPatched;
-	private baseRateLimits?: LocalSiteRateLimit;
-	private rateLimits?: { [key in RateLimitKeys]: number };
 	constructor(host: string, username?: string, password?: string) {
 		this.host = host;
 		this.username = username;
@@ -148,23 +139,6 @@ export class LemmyClient {
 									newReq = new Request(req, { body: JSON.stringify(body) });
 								}
 							}
-							if (!(this.baseRateLimits && this.rateLimits)) return newReq;
-							const key = getRateLimitKey(req.url, req.method);
-							if (!key) return newReq;
-							if (this.rateLimits[key] > 0) {
-								this.rateLimits[key] -= 1;
-								return newReq;
-							}
-							// wait till new rate limit period start
-							const date = new Date();
-							const secs =
-								date.getSeconds() +
-								60 * (date.getMinutes() + 60 * date.getHours());
-							const wait = Math.ceil(
-								this.baseRateLimits[`${key}_per_second`] -
-									(secs % this.baseRateLimits[`${key}_per_second`]),
-							);
-							await new Promise((r) => setTimeout(r, wait * 1000));
 							return newReq;
 						},
 					],
@@ -175,14 +149,6 @@ export class LemmyClient {
 									.clone()
 									.json()) as LemmyErrorType;
 								if (lemmyError.error === "rate_limit_error") {
-									// reset local limit
-									if (this.rateLimits) {
-										const key = getRateLimitKey(
-											err.request.url,
-											err.request.method,
-										);
-										if (key) this.rateLimits[key] = 0;
-									}
 									return new HTTPError(
 										new Response(err.response.body, {
 											status: 429,
@@ -203,13 +169,7 @@ export class LemmyClient {
 								}
 							}
 							if (err.response.status === 429) {
-								if (this.rateLimits) {
-									const key = getRateLimitKey(
-										err.request.url,
-										err.request.method,
-									);
-									if (key) this.rateLimits[key] = 0;
-								}
+								// TODO: Implement rate limiting logic here
 							}
 							return err;
 						},
@@ -217,15 +177,8 @@ export class LemmyClient {
 				},
 			});
 			this.httpClient = new LemmyHttpPatched(`https://${this.host}`, {
-				// bun has `preconnect` which is not part of fetch spec. check this assertion later.
-				fetchFunction: api as unknown as typeof fetch,
+				fetchFunction: api,
 			});
-			if (!this.rateLimits) {
-				const rateLimits = await this.httpClient.getSite();
-				this.baseRateLimits = rateLimits.site_view.local_site_rate_limit;
-				this.rateLimits = structuredClone(this.baseRateLimits);
-				this.rateLimits.message -= 1; // we used one already :)
-			}
 			if (this.username && this.password) {
 				await this.httpClient.login({
 					username_or_email: this.username,
@@ -250,7 +203,6 @@ export class LemmyHttpPatched extends LemmyHttp {
 		},
 	) {
 		const fetchToUse = options?.fetchFunction || fetch;
-		// @ts-expect-error bun has some special fetch params that don't work with typescript. ignore until fixed.
 		const fetchFunction: typeof fetch = async (url, init) => {
 			return await fetchToUse(url, {
 				...init,
@@ -267,54 +219,4 @@ export class LemmyHttpPatched extends LemmyHttp {
 		this.jwt = res.jwt;
 		return res;
 	}
-}
-
-function getRateLimitKey(url: string, method: string): RateLimitKeys | null {
-	const { pathname } = new URL(url);
-	const p = pathname.replace("/api/v3", "");
-	const m = method;
-
-	// put these explicit ones on top
-	if (
-		(p === "/community" ||
-			p === "/user/register" ||
-			p === "/user/login" ||
-			p === "/user/password_reset") &&
-		m === "POST"
-	) {
-		return "register";
-	}
-	if ((p === "/post" || p === "/user/get_captcha") && m === "POST") {
-		return "post";
-	}
-	if (p === "/comment" && m === "POST") return "comment";
-	if (p === "/search") return "search";
-	if (p === "/user/export_settings" || p === "/user/import_settings") {
-		return "import_user_settings";
-	}
-
-	// put these on bottom
-	if (
-		p.startsWith("/site") ||
-		p === "/modlog" ||
-		p === "/resolve_object" ||
-		p.startsWith("/community") ||
-		p === "/federated_instances" ||
-		p === "/post" ||
-		p.startsWith("/comment") ||
-		p.startsWith("/private_message") ||
-		p.startsWith("/account") ||
-		p.startsWith("/user") ||
-		p.startsWith("/admin") ||
-		p.startsWith("/custom_emoji") ||
-		p.startsWith("/oauth_provider")
-	) {
-		return "message";
-	}
-
-	if (p.startsWith("/oauth/authenticate")) {
-		return "register";
-	}
-
-	return null;
 }

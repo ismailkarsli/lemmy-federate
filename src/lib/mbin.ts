@@ -1,11 +1,11 @@
 import ky from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
-import typia from "typia";
-import { type Community, LemmyClient, type User } from "./lemmy";
+import * as z from "zod/v4";
+import { type Community, LemmyClient, type User } from "./lemmy.ts";
 
-const CONTACT_EMAIL = typia.assert<string>(process.env.CONTACT_EMAIL);
-const APP_URL = typia.assert<string>(process.env.APP_URL);
+const CONTACT_EMAIL = z.parse(z.email(), process.env.CONTACT_EMAIL);
+const APP_URL = z.parse(z.url(), process.env.APP_URL);
 const BOT_SCOPES = ["read", "magazine", "user:profile"];
 
 type MbinUser = {
@@ -14,10 +14,6 @@ type MbinUser = {
 	createdAt: string;
 	isBot: boolean;
 	isAdmin: boolean;
-};
-
-type MbinFederatedInstances = {
-	instances: { domain: string; software: string; version: string }[];
 };
 
 type MbinMagazine = {
@@ -31,10 +27,12 @@ type MbinMagazine = {
 	localSubscribers?: number | null;
 };
 
-type MbinOauthClient = {
-	identifier: string;
-	secret: string;
-};
+export const MbinOathClientSchema = z.object({
+	identifier: z.string(),
+	secret: z.string(),
+});
+
+type MbinOauthClient = z.Infer<typeof MbinOathClientSchema>;
 
 interface SearchActor {
 	type: "user" | "magazine";
@@ -151,10 +149,11 @@ export class MbinClient extends LemmyClient {
 		activityPubId: string,
 	): Promise<number> {
 		const result = await api
-			.get<{ apActors: SearchActor[] }>(
-				`https://${this.host}/api/search?q=${activityPubId}`,
-				{ headers: { Authorization: `Bearer ${await this.getBearerToken()}` } },
-			)
+			.get<{
+				apActors: SearchActor[];
+			}>(`https://${this.host}/api/search?q=${activityPubId}`, {
+				headers: { Authorization: `Bearer ${await this.getBearerToken()}` },
+			})
 			.json();
 
 		for (const item of result.apActors) {
@@ -179,10 +178,10 @@ export class MbinClient extends LemmyClient {
 		body.append("scope", BOT_SCOPES.join(" "));
 		if (!this.token || !this.tokenExpires || this.tokenExpires < Date.now()) {
 			const res = await api
-				.post<{ expires_in: number; access_token: string }>(
-					`https://${this.host}/token`,
-					{ body },
-				)
+				.post<{
+					expires_in: number;
+					access_token: string;
+				}>(`https://${this.host}/token`, { body })
 				.json();
 			this.token = res.access_token;
 			this.tokenExpires = Date.now() + res.expires_in * 1000;
@@ -204,7 +203,7 @@ export class MbinClient extends LemmyClient {
 				},
 			})
 			.json()
-			.then(typia.createAssert<MbinOauthClient>());
+			.then((oc) => z.parse(MbinOathClientSchema, oc));
 
 		return oauthClient;
 	}

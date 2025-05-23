@@ -10,10 +10,10 @@ import { TRPCError } from "@trpc/server";
 import { HTTPError } from "ky";
 import ms from "ms";
 import { ActivityPubClient } from "./activity-pub-client.ts";
-import { getCensuresGiven, getEndorsements } from "./fediseer";
-import { LemmyClient, LemmyHttpPatched } from "./lemmy";
-import { MbinClient } from "./mbin";
-import { prisma } from "./prisma";
+import { getCensuresGiven, getEndorsements } from "./fediseer.ts";
+import { LemmyClient, LemmyHttpPatched } from "./lemmy.ts";
+import { MbinClient } from "./mbin.ts";
+import { prisma } from "./prisma.ts";
 import { isGenericAP } from "./utils.ts";
 
 /**
@@ -348,8 +348,8 @@ export async function handleFederationError(
 						.json()
 						.catch((e) => `(LF internal) JSON parse error: ${e}`)
 				: null,
-			requestHeaders: e.request.headers.toJSON(),
-			responseHeaders: e.response.headers.toJSON(),
+			requestHeaders: Object.fromEntries(e.request.headers.entries()),
+			responseHeaders: Object.fromEntries(e.response.headers.entries()),
 			stack: e.stack,
 		});
 	}

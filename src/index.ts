@@ -1,17 +1,17 @@
+import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { trpcServer } from "@hono/trpc-server";
 import { Hono } from "hono";
-import { serveStatic } from "hono/bun";
 import { cors } from "hono/cors";
-import typia from "typia";
-import { createContext, router } from "./trpc";
+import * as z from "zod/v4";
+import { startJobs } from "../scripts/start-jobs.ts";
+import { authRouter } from "./routes/auth.ts";
+import { communityRouter } from "./routes/community.ts";
+import { instanceRouter } from "./routes/instance.ts";
+import { createContext, router } from "./trpc.ts";
 
-import { startJobs } from "../scripts/start-jobs";
-import { authRouter } from "./routes/auth";
-import { communityRouter } from "./routes/community";
-import { instanceRouter } from "./routes/instance";
-
-const APP_URL = typia.assert<string>(process.env.APP_URL);
-const NODE_ENV = typia.assert<string>(process.env.NODE_ENV);
+const APP_URL = z.parse(z.string(), process.env.APP_URL);
+const NODE_ENV = z.parse(z.string(), process.env.NODE_ENV);
 
 const app = new Hono();
 
@@ -41,10 +41,6 @@ app.use(
 		router: appRouter,
 		createContext,
 		onError: ({ error }) => {
-			error.message = error.message.replace(
-				"Error on typia.assert()",
-				"Validation error",
-			);
 			if (error.code === "INTERNAL_SERVER_ERROR") {
 				console.error(error);
 			}
@@ -54,15 +50,25 @@ app.use(
 
 if (NODE_ENV === "production") startJobs();
 
-app.all("/assets/*", serveStatic({ root: "/dist/frontend" }));
-app.get("/favicon.ico", serveStatic({ path: "/dist/frontend/favicon.ico" }));
-app.all("*", serveStatic({ path: "/dist/frontend/index.html" }));
+app.all("/assets/*", serveStatic({ root: "/frontend/dist" }));
+app.get("/favicon.ico", serveStatic({ path: "/frontend/dist/favicon.ico" }));
+app.all("*", serveStatic({ path: "/frontend/dist/index.html" }));
 
-export default app;
+const server = serve(app);
 
-process.on("uncaughtException", (error) => {
-	console.error("Uncaught exception:", error, error.stack);
+server.on("listening", () => {
+	console.info(`Listening on ${APP_URL}`);
 });
-process.on("unhandledRejection", (reason) => {
-	console.error("Unhandled rejection:", reason);
+process.on("SIGINT", () => {
+	server.close();
+	process.exit(0);
+});
+process.on("SIGTERM", () => {
+	server.close((err) => {
+		if (err) {
+			console.error(err);
+			process.exit(1);
+		}
+		process.exit(0);
+	});
 });

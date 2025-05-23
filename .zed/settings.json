@@ -1,7 +1,17 @@
 {
+	"format_on_save": "language_server",
 	"formatter": {
 		"language_server": {
 			"name": "biome"
+		}
+	},
+	"lsp": {
+		"biome": {
+			"configuration_path": "./biome.json",
+			"settings": {
+				"config_path": "./biome.json",
+				"configuration_path": "./biome.json"
+			}
 		}
 	},
 	"code_actions_on_format": {

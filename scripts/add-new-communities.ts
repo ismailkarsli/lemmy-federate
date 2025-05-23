@@ -1,11 +1,11 @@
-#!/usr/bin/env bun
+#!/usr/bin/env node
 import {
 	conditionalFollowWithAllInstances,
 	getClient,
 	handleFederationError,
-} from "../src/lib/federation-utils";
-import { prisma } from "../src/lib/prisma";
-import { isGenericAP, isMain } from "../src/lib/utils";
+} from "../src/lib/federation-utils.ts";
+import { prisma } from "../src/lib/prisma.ts";
+import { isGenericAP, isMain } from "../src/lib/utils.ts";
 
 if (isMain(import.meta.url)) {
 	addNewCommunities();

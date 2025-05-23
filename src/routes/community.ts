@@ -1,22 +1,26 @@
 import { CommunityFollowStatus } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import typia from "typia";
+import * as z from "zod/v4";
 import {
 	conditionalFollowWithAllInstances,
 	getClient,
-} from "../lib/federation-utils";
-import { prisma } from "../lib/prisma";
-import { publicProcedure, router } from "../trpc";
+} from "../lib/federation-utils.ts";
+import { prisma } from "../lib/prisma.ts";
+import { publicProcedure, router } from "../trpc.ts";
 
-interface FindArgs {
-	take?: number;
-	skip?: number;
-	instanceId?: number;
-}
+const FindArgsSchema = z.object({
+	take: z.number().min(1).max(100).optional(),
+	skip: z.number().min(0).optional(),
+	instanceId: z.number().optional(),
+});
 
 export const communityRouter = router({
 	add: publicProcedure
-		.input(typia.createAssert<{ community: string }>())
+		.input(
+			z.object({
+				community: z.string(),
+			}),
+		)
 		.mutation(async ({ input }) => {
 			// remove ! prefix if present
 			const symbol = input?.community?.replace(/^!/, "")?.trim();
@@ -118,56 +122,54 @@ export const communityRouter = router({
 				message: "Community added successfully",
 			};
 		}),
-	find: publicProcedure
-		.input(typia.createAssert<FindArgs>())
-		.query(async ({ input }) => {
-			const skip = Number.parseInt(input.skip?.toString() || "0");
-			const take = Number.parseInt(input.take?.toString() || "10");
-			const [communities, communityCount, instanceCount, stats] =
-				await prisma.$transaction([
-					prisma.community.findMany({
-						include: {
-							instance: {
-								select: {
-									id: true,
-									host: true,
-								},
+	find: publicProcedure.input(FindArgsSchema).query(async ({ input }) => {
+		const skip = Number.parseInt(input.skip?.toString() || "0");
+		const take = Number.parseInt(input.take?.toString() || "10");
+		const [communities, communityCount, instanceCount, stats] =
+			await prisma.$transaction([
+				prisma.community.findMany({
+					include: {
+						instance: {
+							select: {
+								id: true,
+								host: true,
 							},
-							follows: {
-								include: {
-									instance: {
-										select: {
-											id: true,
-											host: true,
-										},
+						},
+						follows: {
+							include: {
+								instance: {
+									select: {
+										id: true,
+										host: true,
 									},
 								},
 							},
 						},
-						skip,
-						take,
-						orderBy: { createdAt: "desc" },
-						where: { instanceId: input.instanceId },
-					}),
-					prisma.community.count({ where: { instanceId: input.instanceId } }),
-					prisma.instance.count({
-						where: { enabled: true },
-					}),
-					prisma.$queryRaw`SELECT count(CASE WHEN cf.status = 'FEDERATED_BY_USER' THEN 1 ELSE NULL end)::int as completed, count(CASE WHEN cf.status IN ('FEDERATED_BY_BOT', 'IN_PROGRESS') THEN 1 ELSE NULL end)::int as inprogress from "CommunityFollow" cf`,
-				]);
+					},
+					skip,
+					take,
+					orderBy: { createdAt: "desc" },
+					where: { instanceId: input.instanceId },
+				}),
+				prisma.community.count({ where: { instanceId: input.instanceId } }),
+				prisma.instance.count({
+					where: { enabled: true },
+				}),
+				prisma.$queryRaw`SELECT count(CASE WHEN cf.status = 'FEDERATED_BY_USER' THEN 1 ELSE NULL end)::int as completed, count(CASE WHEN cf.status IN ('FEDERATED_BY_BOT', 'IN_PROGRESS') THEN 1 ELSE NULL end)::int as inprogress from "CommunityFollow" cf`,
+			]);
 
-			return {
-				communities,
-				stats: {
-					communityCount,
-					instanceCount,
-					...(stats as Array<object>).at(0),
-				} as {
-					communityCount: number;
-					instanceCount: number;
-					completed: number;
-					inprogress: number;
-				},
-			};
-		}),
+		return {
+			communities,
+			stats: {
+				communityCount,
+				instanceCount,
+				...(stats as Array<object>).at(0),
+			} as {
+				communityCount: number;
+				instanceCount: number;
+				completed: number;
+				inprogress: number;
+			},
+		};
+	}),
 });

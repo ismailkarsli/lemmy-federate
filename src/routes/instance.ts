@@ -1,17 +1,16 @@
-import type { Instance } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
-import typia from "typia";
-import { resetSubscriptions } from "../lib/federation-utils";
-import { MbinClient } from "../lib/mbin";
-import { prisma } from "../lib/prisma";
-import { isGenericAP } from "../lib/utils";
-import { protectedProcedure, publicProcedure, router } from "../trpc";
+import * as z from "zod/v4";
+import { resetSubscriptions } from "../lib/federation-utils.ts";
+import { MbinClient } from "../lib/mbin.ts";
+import { InstanceSchema, prisma } from "../lib/prisma.ts";
+import { isGenericAP } from "../lib/utils.ts";
+import { protectedProcedure, publicProcedure, router } from "../trpc.ts";
 
-interface FindArgs {
-	take?: number;
-	skip?: number;
-	enabledOnly?: boolean;
-}
+const FindArgsSchema = z.object({
+	take: z.number().min(1).max(100).optional(),
+	skip: z.number().min(0).optional(),
+	enabledOnly: z.boolean().optional(),
+});
 
 export const instanceRouter = router({
 	get: protectedProcedure.query(async ({ ctx }) => {
@@ -29,7 +28,7 @@ export const instanceRouter = router({
 		return instance;
 	}),
 	update: protectedProcedure
-		.input(typia.createAssert<Instance & { id: number }>())
+		.input(InstanceSchema)
 		.mutation(async ({ input, ctx }) => {
 			const instance = await prisma.instance.findFirst({
 				where: { host: ctx.user.instance, id: input.id },
@@ -78,7 +77,7 @@ export const instanceRouter = router({
 			return updated;
 		}),
 	find: publicProcedure
-		.input(typia.createAssert<FindArgs | undefined>())
+		.input(z.optional(FindArgsSchema))
 		.query(async ({ input }) => {
 			const skip = input?.skip
 				? Number.parseInt(input.skip.toString())
@@ -166,7 +165,7 @@ export const instanceRouter = router({
 	}),
 	allowed: router({
 		add: protectedProcedure
-			.input(typia.createAssert<{ instanceId: number }>())
+			.input(z.object({ instanceId: z.number() }))
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {
@@ -190,7 +189,7 @@ export const instanceRouter = router({
 				};
 			}),
 		delete: protectedProcedure
-			.input(typia.createAssert<{ instanceId: number }>())
+			.input(z.object({ instanceId: z.number() }))
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {
@@ -216,7 +215,7 @@ export const instanceRouter = router({
 	}),
 	blocked: router({
 		add: protectedProcedure
-			.input(typia.createAssert<{ instanceId: number }>())
+			.input(z.object({ instanceId: z.number() }))
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {
@@ -240,7 +239,7 @@ export const instanceRouter = router({
 				};
 			}),
 		delete: protectedProcedure
-			.input(typia.createAssert<{ instanceId: number }>())
+			.input(z.object({ instanceId: z.number() }))
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {

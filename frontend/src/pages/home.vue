@@ -118,7 +118,8 @@ const { mutate: submit } = useMutation({
       <v-col cols="12">
         <v-card variant="text">
           <p class="mb-4">
-            Lemmy Federate is a tool to help new threadiverse<sup>1</sup> communities grow.
+            Lemmy Federate is a tool to help new threadiverse<sup>1</sup>
+            communities grow.
             <button
               @click="readMore = !readMore"
               variant="text"
@@ -131,18 +132,24 @@ const { mutate: submit } = useMutation({
           <v-expand-transition>
             <div v-show="readMore">
               <p class="mb-4">
-                Communities on threadiverse are <strong>not federated</strong> by default.
+                Communities on threadiverse are
+                <strong>not federated</strong> by default.
               </p>
               <p class="mb-4">
-                When you create a new community, it will only be available to your instance.
-                To make it accessible to other instances, at least one user from each remote instance must follow it.
+                When you create a new community, it will only be available to
+                your instance. To make it accessible to other instances, at
+                least one user from each remote instance must follow it.
               </p>
               <p class="mb-4">
-                This tool automates this process by following your community from all remote instances until it gains at least one real-user follower.
+                This tool automates this process by following your community
+                from all remote instances until it gains at least one real-user
+                follower.
               </p>
               <p>
                 <cite>
-                  1: Threadiverse refers to Fediverse software that implements "FEP-1b12: group federation". For example, Lemmy, Mbin, Guppe, NodeBB and others...
+                  1: Threadiverse refers to Fediverse software that implements
+                  "FEP-1b12: group federation". For example, Lemmy, Mbin, Guppe,
+                  NodeBB and others...
                 </cite>
               </p>
             </div>
@@ -197,7 +204,7 @@ const { mutate: submit } = useMutation({
           >
             <template #append>
               <v-btn
-              class="mr-3"
+                class="mr-3"
                 type="submit"
                 prepend-icon="mdi-plus"
                 color="primary"
@@ -207,7 +214,11 @@ const { mutate: submit } = useMutation({
               </v-btn>
               <v-menu location="bottom end" :close-on-content-click="false">
                 <template v-slot:activator="{ props }">
-                  <v-btn icon="mdi-filter-variant" density="comfortable" v-bind="props" />
+                  <v-btn
+                    icon="mdi-filter-variant"
+                    density="comfortable"
+                    v-bind="props"
+                  />
                 </template>
                 <v-card min-width="300" class="px-2 py-4">
                   <v-autocomplete
@@ -267,7 +278,12 @@ const { mutate: submit } = useMutation({
                 </a>
               </td>
               <td>
-                <div v-if="item.progress.count === 0 || item.progress.allNotAvailable" class="text-grey">
+                <div
+                  v-if="
+                    item.progress.count === 0 || item.progress.allNotAvailable
+                  "
+                  class="text-grey"
+                >
                   No progress
                 </div>
                 <template v-else>

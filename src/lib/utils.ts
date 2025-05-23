@@ -2,17 +2,27 @@ import { randomInt } from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { TRPCError } from "@trpc/server";
 import ky from "ky";
-import typia from "typia";
+import * as z from "zod/v4";
 
-type NodeInfoSoftware = {
-	name: string;
-	version: string;
-};
-type NodeInfoLinks = { links: { href: string; rel: string }[] };
-type NodeInfo = {
-	version: "2.1" | string;
-	software: NodeInfoSoftware;
-};
+const NodeInfoSoftwareSchema = z.object({
+	name: z.string(),
+	version: z.string(),
+});
+const NodeInfoSchema = z.object({
+	software: NodeInfoSoftwareSchema,
+	version: z.union([z.literal("2.1"), z.string()]),
+});
+const NodeInfoLinksSchema = z.object({
+	links: z.array(
+		z.object({
+			href: z.string(),
+			rel: z.string(),
+		}),
+	),
+});
+type NodeInfoLinks = z.infer<typeof NodeInfoLinksSchema>;
+type NodeInfoSoftware = z.infer<typeof NodeInfoSoftwareSchema>;
+type NodeInfo = z.infer<typeof NodeInfoSchema>;
 
 export const randomNumber = (length: number) => {
 	/// 100000 -> 999999
@@ -29,7 +39,7 @@ export async function getInstanceSoftware(
 		`https://${host}/.well-known/nodeinfo`,
 	)
 		.json()
-		.then(typia.createAssert<NodeInfoLinks>());
+		.then((l) => z.parse(NodeInfoLinksSchema, l));
 	if (nodeInfoLinks.links.length === 0) {
 		throw new Error("No nodeinfo links found");
 	}
@@ -39,7 +49,7 @@ export async function getInstanceSoftware(
 		) || nodeInfoLinks.links[0];
 	const nodeInfo = await ky<NodeInfo>(preferredNodeInfoLink.href)
 		.json()
-		.then(typia.createAssert<NodeInfo>());
+		.then((ni) => z.parse(NodeInfoSchema, ni));
 	const softwareName = nodeInfo.software.name.toUpperCase();
 	if (!softwareName)
 		throw new TRPCError({

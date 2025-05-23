@@ -1,8 +1,7 @@
 import { TRPCError } from "@trpc/server";
 import ky from "ky";
 import ms from "ms";
-import typia from "typia";
-import { redis } from "./redis";
+import { redis } from "./redis.ts";
 
 type FediseerResponse = {
 	domains: string[];
@@ -19,7 +18,7 @@ class Cache {
 	async get() {
 		const cached = await redis.get(this.key);
 		if (!cached) return null;
-		const data = typia.json.assertParse<CachedData>(cached);
+		const data = JSON.parse(cached) as CachedData;
 		if (data && new Date(data.updatedAt).getTime() > Date.now() - ms("24h")) {
 			return data;
 		}
@@ -29,7 +28,7 @@ class Cache {
 	async set(data: FediseerResponse) {
 		await redis.set(
 			this.key,
-			typia.json.assertStringify<CachedData>({
+			JSON.stringify({
 				...data,
 				updatedAt: new Date().toISOString(),
 			}),
