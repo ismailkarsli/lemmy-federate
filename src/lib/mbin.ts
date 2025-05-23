@@ -43,7 +43,7 @@ interface SearchActor {
 }
 
 const api = ky.create({
-	timeout: ms("10 seconds"),
+	timeout: ms("60 seconds"),
 	retry: { limit: 0 },
 	headers: {
 		"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",

@@ -156,7 +156,7 @@ export class ActivityPubClient {
 
 	private async getHttpClient(): Promise<KyInstance> {
 		this.httpClient ??= ky.create({
-			timeout: ms("10 seconds"),
+			timeout: ms("60 seconds"),
 			retry: 1,
 			headers: {
 				"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",

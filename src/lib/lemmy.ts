@@ -125,7 +125,7 @@ export class LemmyClient {
 			})(fetch);
 			const api = ky.create({
 				fetch: throttledFetch,
-				timeout: ms("10 seconds"),
+				timeout: ms("60 seconds"),
 				retry: 0,
 				headers: {
 					"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",
