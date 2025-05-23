@@ -52,7 +52,6 @@ export async function updateFollows() {
 		const nextEligibleTime = new Date(
 			cf.createdAt.getTime() + backoffDays * ms("1d"),
 		);
-		console.log(nextEligibleTime >= new Date(), backoffDays, nextEligibleTime);
 		if (nextEligibleTime >= new Date()) {
 			await prisma.communityFollow.update({
 				where: { id: cf.id },

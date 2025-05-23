@@ -20,8 +20,6 @@ import { MbinClient } from "./mbin.ts";
 import { prisma } from "./prisma.ts";
 import { isGenericAP } from "./utils.ts";
 
-const { NODE_ENV } = process.env;
-
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them
  */
@@ -57,7 +55,7 @@ export const getClient = ({
 
 	clientCacheMap.set(key, {
 		client,
-		expiration: new Date(Date.now() + ms("1 hour")),
+		expiration: new Date(Date.now() + ms("1 day")),
 	});
 	return client;
 };
@@ -284,7 +282,6 @@ export const conditionalFollowWithAllInstances = async (
 			try {
 				status = await conditionalFollow(cf);
 			} catch (e) {
-				if (NODE_ENV === "development") console.error(e);
 				status = CommunityFollowStatus.ERROR;
 				errorReason = getFederationErrorReason(e);
 			} finally {
@@ -338,6 +335,7 @@ export function getFederationErrorReason(err: unknown): string {
 	if (err instanceof TimeoutError) {
 		return "timed out";
 	}
+	console.error(err);
 	return "unknown";
 }
 

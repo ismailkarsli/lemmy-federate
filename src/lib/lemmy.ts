@@ -120,6 +120,7 @@ export class LemmyClient {
 				headers: {
 					"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",
 				},
+				credentials: "include",
 				hooks: {
 					beforeError: [
 						async (err) => {
@@ -153,15 +154,16 @@ export class LemmyClient {
 					],
 				},
 			});
-			this.httpClient = new LemmyHttpPatched(`https://${this.host}`, {
+			const newClient = new LemmyHttpPatched(`https://${this.host}`, {
 				fetchFunction: api,
 			});
 			if (this.username && this.password) {
-				await this.httpClient.login({
+				await newClient.login({
 					username_or_email: this.username,
 					password: this.password,
 				});
 			}
+			this.httpClient = newClient;
 		}
 		return this.httpClient;
 	}
