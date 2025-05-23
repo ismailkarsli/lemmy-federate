@@ -13,7 +13,7 @@ FROM base AS release
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 COPY --from=install /app/node_modules /app/node_modules
 COPY . .
-RUN npx prisma --help > /dev/null # cache prisma cli to avoid re-downloading on startup
+RUN pnpm exec prisma --help > /dev/null # cache prisma cli to avoid re-downloading on startup
 RUN pnpm fe:build && pnpm db:generate
 
 EXPOSE 3000

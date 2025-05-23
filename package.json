@@ -10,7 +10,7 @@
 		"fe:build": "vite build frontend --emptyOutDir --outDir ./dist",
 		"db:generate": "prisma generate",
 		"db:migrate": "prisma migrate dev",
-		"check": "npx vue-tsc --build --noEmit && biome check --write ."
+		"check": "pnpm exec vue-tsc --build --noEmit && biome check --write ."
 	},
 	"dependencies": {
 		"@hono/node-server": "^1.14.2",
