@@ -17,4 +17,4 @@ RUN pnpm exec prisma --help > /dev/null # cache prisma cli to avoid re-downloadi
 RUN pnpm fe:build && pnpm db:generate
 
 EXPOSE 3000
-ENTRYPOINT [ "/usr/bin/tini", "--", "/docker-entrypoint.sh" ]
+ENTRYPOINT [ "/sbin/tini", "--", "/docker-entrypoint.sh" ]
