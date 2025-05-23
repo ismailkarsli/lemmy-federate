@@ -61,7 +61,7 @@ jobs:
           docker rm lemmy-federate || true
           docker run \
             -e APP_URL -e BLACKLISTED_INSTANCES -e CONTACT_EMAIL -e SECRET_KEY -e DATABASE_URL -e REDIS_URL -e BOT_INSTANCE -e BOT_USERNAME -e BOT_PASSWORD \
-            --name lemmy-federate --detach --port 52312:3000 --restart on-failure \
+            --name lemmy-federate --detach -p 52312:3000 --restart on-failure \
             $REGISTRY_IMAGE
         env:
           APP_URL: ${{ vars.APP_URL }}
