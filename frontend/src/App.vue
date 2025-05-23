@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useDisplay } from "vuetify";
+import TheHeaderAuth from "./components/the-header-auth.vue";
 import { useAuthStore } from "./stores/auth";
 
 const authStore = useAuthStore();

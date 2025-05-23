@@ -2,7 +2,6 @@
 import {
 	conditionalFollowWithAllInstances,
 	getClient,
-	handleFederationError,
 } from "../src/lib/federation-utils.ts";
 import { prisma } from "../src/lib/prisma.ts";
 import { isGenericAP, isMain } from "../src/lib/utils.ts";
@@ -60,7 +59,7 @@ export async function addNewCommunities() {
 				}
 			}
 		} catch (error) {
-			handleFederationError("addNewCommunities", instance.id, error);
+			console.error(error);
 		}
 	}
 

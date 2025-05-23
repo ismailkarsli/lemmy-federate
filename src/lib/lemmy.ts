@@ -110,40 +110,20 @@ export class LemmyClient {
 	}
 
 	/**
-	 * @returns Authenticated LemmyHttpExtended client for the instance
+	 * @returns Authenticated LemmyHttpPatched client for the instance
 	 */
 	private async getHttpClient() {
 		if (!this.httpClient) {
 			const api = ky.create({
 				timeout: ms("10 seconds"),
 				retry: 0,
+				headers: {
+					"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",
+				},
 				hooks: {
-					beforeRequest: [
-						async (req) => {
-							// add `auth` field to query (GET/DELETE) or body (POST/PUT) for 0.18.x compatibility
-							const auth = req.headers.get("authorization")?.split(" ")?.at(1);
-							let newReq = req;
-							if (auth) {
-								if (req.method === "GET" || req.method === "DELETE") {
-									const url = new URL(req.url);
-									url.searchParams.append("auth", auth);
-									const newRequest = new Request(url, req);
-									newReq = newRequest;
-								}
-								if (req.method === "POST" || req.method === "PUT") {
-									const body: unknown = await req.clone().json();
-									if (body && typeof body === "object" && body !== null) {
-										// @ts-expect-error body is not typed
-										body.auth = auth || null;
-									}
-									newReq = new Request(req, { body: JSON.stringify(body) });
-								}
-							}
-							return newReq;
-						},
-					],
 					beforeError: [
 						async (err) => {
+							// return proper statuses
 							if (err.response.status === 400) {
 								const lemmyError = (await err.response
 									.clone()
@@ -167,9 +147,6 @@ export class LemmyClient {
 										err.options,
 									);
 								}
-							}
-							if (err.response.status === 429) {
-								// TODO: Implement rate limiting logic here
 							}
 							return err;
 						},

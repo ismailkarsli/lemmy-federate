@@ -29,19 +29,6 @@ model Instance {
   blocked          Instance[]        @relation("InstanceBlocks")
   users            User[]
   communityFollows CommunityFollow[]
-  instanceLogs     InstanceLog[]
-  approved         Boolean           @default(false)
-}
-
-model InstanceLog {
-  id         Int      @id @default(autoincrement())
-  instance   Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-  instanceId Int
-  operation  String   @default("unknown")
-  message    String
-  content    String? // JSON
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @default(now()) @updatedAt
 }
 
 model User {
@@ -70,14 +57,16 @@ model Community {
 }
 
 model CommunityFollow {
-  id          Int                   @id @default(autoincrement())
-  instance    Instance              @relation(fields: [instanceId], references: [id], onDelete: Cascade)
-  instanceId  Int
-  community   Community             @relation(fields: [communityId], references: [id], onDelete: Cascade)
-  communityId Int
-  createdAt   DateTime              @default(now())
-  updatedAt   DateTime              @default(now()) @updatedAt
-  status      CommunityFollowStatus @default(WAITING)
+  id           Int                   @id @default(autoincrement())
+  instance     Instance              @relation(fields: [instanceId], references: [id], onDelete: Cascade)
+  instanceId   Int
+  community    Community             @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  communityId  Int
+  createdAt    DateTime              @default(now())
+  updatedAt    DateTime              @default(now()) @updatedAt
+  status       CommunityFollowStatus @default(WAITING)
+  errorReason  String?
+  attemptCount Int                   @default(0)
 
   @@unique([instanceId, communityId])
 }

@@ -156,6 +156,9 @@ export class ActivityPubClient {
 		this.httpClient ??= ky.create({
 			timeout: ms("10 seconds"),
 			retry: 1,
+			headers: {
+				"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",
+			},
 		});
 
 		return this.httpClient;

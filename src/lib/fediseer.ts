@@ -1,13 +1,9 @@
 import { TRPCError } from "@trpc/server";
-import ky from "ky";
-import ms from "ms";
+import ky, { HTTPError } from "ky";
 import { redis } from "./redis.ts";
 
 type FediseerResponse = {
 	domains: string[];
-};
-type CachedData = FediseerResponse & {
-	updatedAt: string;
 };
 
 class Cache {
@@ -18,21 +14,15 @@ class Cache {
 	async get() {
 		const cached = await redis.get(this.key);
 		if (!cached) return null;
-		const data = JSON.parse(cached) as CachedData;
-		if (data && new Date(data.updatedAt).getTime() > Date.now() - ms("24h")) {
-			return data;
-		}
+		const data = JSON.parse(cached) as FediseerResponse;
+		if (data) return data;
 		return null;
 	}
 
 	async set(data: FediseerResponse) {
-		await redis.set(
-			this.key,
-			JSON.stringify({
-				...data,
-				updatedAt: new Date().toISOString(),
-			}),
-		);
+		await redis.set(this.key, JSON.stringify(data), {
+			expiration: { type: "EX", value: 24 * 60 * 60 },
+		});
 	}
 }
 
@@ -71,6 +61,10 @@ export const getCensuresGiven = async (instance: string) => {
 		await cache.set(censures);
 		return censures;
 	} catch (e) {
+		if (e instanceof HTTPError && e.response.status === 403) {
+			await cache.set({ domains: [] });
+			return { domains: [] } satisfies FediseerResponse;
+		}
 		throw new TRPCError({
 			code: "NOT_FOUND",
 			message: "Failed to fetch censures from Fediseer",
@@ -91,6 +85,10 @@ export const getEndorsements = async (instance: string) => {
 		await cache.set(endorsements);
 		return endorsements;
 	} catch (e) {
+		if (e instanceof HTTPError && e.response.status === 403) {
+			await cache.set({ domains: [] });
+			return { domains: [] } satisfies FediseerResponse;
+		}
 		throw new TRPCError({
 			code: "NOT_FOUND",
 			message: "Failed to fetch endorsements from Fediseer",
