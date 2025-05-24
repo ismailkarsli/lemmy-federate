@@ -243,10 +243,10 @@ export const conditionalFollow = async (
 		return CommunityFollowStatus.FEDERATED_BY_USER;
 	}
 
-	// if stuck in "Pending" state, unfollow and return WAITING. This way we can retry in next run.
+	// if stuck in "Pending" state, unfollow and return IN_PROGRESS. This way we can retry in next run.
 	if (localCommunity.subscribed === "Pending") {
 		await localClient.followCommunity(localCommunity.id, false);
-		return CommunityFollowStatus.WAITING;
+		return CommunityFollowStatus.IN_PROGRESS;
 	}
 
 	// follow if not following already. return in progress state.
