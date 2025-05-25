@@ -100,7 +100,7 @@ export const authRouter = router({
 				const isGeneric = isGenericAP(software.name);
 				const client = await getClient({
 					host,
-					software: software.name.toUpperCase(),
+					software: software.name,
 					client_id: null,
 					client_secret: null,
 				});
@@ -138,7 +138,7 @@ export const authRouter = router({
 					createdInstance = await prisma.instance.create({
 						data: {
 							host,
-							software: software.name.toUpperCase(),
+							software: software.name,
 							...(isGeneric
 								? {
 										auto_add: false,

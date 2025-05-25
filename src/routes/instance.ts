@@ -129,7 +129,7 @@ export const instanceRouter = router({
 				message: "Instance not found",
 			});
 		}
-		if (instance.software !== "MBIN") {
+		if (instance.software !== "mbin") {
 			throw new TRPCError({
 				code: "BAD_REQUEST",
 				message: "Only Mbin instances can create OAuth client",

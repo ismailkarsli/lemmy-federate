@@ -53,9 +53,9 @@ export const getClient = async ({
 		let client: LemmyClient | MbinClient | ActivityPubClient;
 		const id = client_id ?? undefined;
 		const secret = client_secret ?? undefined;
-		if (software === "LEMMY") {
+		if (software === "lemmy") {
 			client = new LemmyClient(host, id, secret);
-		} else if (software === "MBIN") {
+		} else if (software === "mbin") {
 			client = new MbinClient(host, id, secret);
 		} else {
 			client = new ActivityPubClient(host);

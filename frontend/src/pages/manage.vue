@@ -227,7 +227,7 @@ const deleteBlocked = async (id: number) => {
                                 tick this option to follow instances other than
                                 {{ getHumanReadableSoftwareName(instance.software) }}
                                 such as
-                                {{ getHumanReadableSoftwareName(instance.software === "LEMMY" ? "MBIN" : "LEMMY") }},
+                                {{ getHumanReadableSoftwareName(instance.software === "lemmy" ? "mbin" : "lemmy") }},
                                 Mastodon.
                             </p>
                         </info-tooltip>
@@ -310,22 +310,22 @@ const deleteBlocked = async (id: number) => {
                     </v-row>
                 </v-col>
                 <v-col v-if="!isGeneric" cols="12" md="6">
-                    <v-text-field :label="instance?.software === 'LEMMY'
-                        ? 'Bot username'
-                        : 'OAuth client id'
+                    <v-text-field :label="instance?.software === 'mbin'
+                        ? 'OAuth client id'
+                        : 'Bot username'
                         " v-model="instance.client_id" hide-details />
                 </v-col>
                 <v-col v-if="!isGeneric" cols="12" md="6">
                     <v-text-field :append-inner-icon="showPassword ? 'mdi-eye' : 'mdi-eye-off'"
                         :type="showPassword ? 'text' : 'password'" @click:append-inner="showPassword = !showPassword"
-                        :label="instance?.software === 'LEMMY'
-                            ? 'Bot password'
-                            : 'OAuth client secret'
+                        :label="instance?.software === 'mbin'
+                            ? 'OAuth client secret'
+                            : 'Bot password'
                             " v-model="instance.client_secret" hide-details autocomplete="off" />
                 </v-col>
                 <v-col cols="12">
                     <v-btn type="submit" color="primary">Save</v-btn>
-                    <v-menu v-if="instance.software === 'MBIN'" location="bottom">
+                    <v-menu v-if="instance.software === 'mbin'" location="bottom">
                         <template v-slot:activator="{ props }">
                             <v-btn class="ml-4" append-icon="mdi-information" v-bind="props" color="blue" type="button">
                                 Create OAuth Client

@@ -50,7 +50,7 @@ export async function getInstanceSoftware(
 	const nodeInfo = await ky<NodeInfo>(preferredNodeInfoLink.href)
 		.json()
 		.then((ni) => z.parse(NodeInfoSchema, ni));
-	const softwareName = nodeInfo.software.name.toUpperCase();
+	const softwareName = nodeInfo.software.name;
 	if (!softwareName)
 		throw new TRPCError({
 			code: "CONFLICT",
