@@ -80,4 +80,9 @@ export async function updateFollows() {
 		}
 	});
 	await Promise.all(jobs);
+	if (communityFollows.length) {
+		console.info(
+			`Updated community follows from ${communityFollows[0].updatedAt.toISOString()} to ${communityFollows[communityFollows.length - 1].updatedAt.toISOString()}`,
+		);
+	}
 }
