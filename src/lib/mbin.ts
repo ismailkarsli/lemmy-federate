@@ -143,6 +143,7 @@ export class MbinClient extends LemmyClient {
 					federation: query.type_ === "All" ? "all" : "local",
 					sort,
 				},
+				headers: { Authorization: `Bearer ${await this.getBearerToken()}` },
 			})
 			.json();
 
