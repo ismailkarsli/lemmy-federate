@@ -62,7 +62,7 @@ const mbinMagazineToCommunity = (magazine: MbinMagazine): Community => ({
 });
 
 export class MbinClient extends LemmyClient {
-	public type = "MBIN";
+	public type = "mbin";
 	private oauthClientId?: string;
 	private oauthClientSecret?: string;
 	private token?: string;

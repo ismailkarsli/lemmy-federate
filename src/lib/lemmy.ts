@@ -41,7 +41,7 @@ const lemmyCommunityToCommunity = (cv: CommunityView): Community => ({
 });
 
 export class LemmyClient {
-	public type = "LEMMY";
+	public type = "lemmy";
 	public host: string;
 	protected federatedInstances?: Set<string>;
 	private username?: string;
