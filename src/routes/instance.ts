@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import * as z from "zod/v4";
 import { resetSubscriptions } from "../lib/federation-utils.ts";
@@ -7,9 +8,11 @@ import { isGenericAP } from "../lib/utils.ts";
 import { protectedProcedure, publicProcedure, router } from "../trpc.ts";
 
 const FindArgsSchema = z.object({
+	search: z.string().optional(),
 	take: z.number().min(1).max(100).optional(),
 	skip: z.number().min(0).optional(),
 	enabledOnly: z.boolean().optional(),
+	software: z.string().nullable().optional(),
 });
 
 export const instanceRouter = router({
@@ -79,13 +82,17 @@ export const instanceRouter = router({
 	find: publicProcedure
 		.input(z.optional(FindArgsSchema))
 		.query(async ({ input }) => {
-			const skip = input?.skip
-				? Number.parseInt(input.skip.toString())
-				: undefined;
-			const take = input?.take
-				? Number.parseInt(input.take.toString())
-				: undefined;
-			const [instances, total] = await prisma.$transaction([
+			const where: Prisma.InstanceWhereInput = {};
+			if (input?.enabledOnly) {
+				where.enabled = true;
+			}
+			if (input?.search) {
+				where.host = { contains: input.search };
+			}
+			if (input?.software) {
+				where.software = input.software || undefined;
+			}
+			const [instances, total, softwares] = await prisma.$transaction([
 				prisma.instance.findMany({
 					select: {
 						id: true,
@@ -94,16 +101,21 @@ export const instanceRouter = router({
 						auto_add: true,
 						software: true,
 					},
-					skip,
-					take,
+					skip: input?.skip,
+					take: input?.take,
 					orderBy: [{ enabled: "desc" }, { id: "asc" }],
-					where: input?.enabledOnly ? { enabled: true } : undefined,
+					where,
 				}),
 				prisma.instance.count(),
+				prisma.instance.findMany({
+					distinct: ["software"],
+					select: { software: true },
+				}),
 			]);
 			return {
 				instances,
 				total,
+				softwares: softwares.map((s) => s.software),
 			};
 		}),
 	createOauthClient: protectedProcedure.mutation(async ({ ctx }) => {
