@@ -67,7 +67,7 @@ export const authRouter = router({
 					throw new TRPCError({
 						code: "UNAUTHORIZED",
 						message:
-							"DNS TXT record verification failed. The provided public key does not match any records.",
+							"DNS TXT record verification failed. The provided public key doesn't match any existing records. This may be due to DNS propagation delays—please wait for a while and try again.",
 					});
 				}
 
