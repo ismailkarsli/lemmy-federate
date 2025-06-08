@@ -7,6 +7,7 @@ import "vuetify/styles/main.css";
 import "@mdi/font/css/materialdesignicons.css";
 
 import App from "./App.vue";
+import AuthenticatePage from "./pages/authenticate.vue";
 import HomePage from "./pages/home.vue";
 import InstancesPage from "./pages/instances.vue";
 import ManagePage from "./pages/manage.vue";
@@ -29,6 +30,7 @@ const routes = [
 	{ path: "/", component: HomePage },
 	{ path: "/instances", component: InstancesPage },
 	{ path: "/manage", component: ManagePage },
+	{ path: "/authenticate", component: AuthenticatePage },
 ];
 
 const router = createRouter({

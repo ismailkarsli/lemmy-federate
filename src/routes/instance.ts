@@ -19,7 +19,7 @@ export const instanceRouter = router({
 	get: protectedProcedure.query(async ({ ctx }) => {
 		const instance = await prisma.instance.findFirst({
 			where: {
-				host: ctx.user.instance,
+				host: ctx.instance.sub,
 			},
 			include: {
 				allowed: { select: { id: true, host: true } },
@@ -34,13 +34,13 @@ export const instanceRouter = router({
 		.input(InstanceSchema)
 		.mutation(async ({ input, ctx }) => {
 			const instance = await prisma.instance.findFirst({
-				where: { host: ctx.user.instance, id: input.id },
+				where: { host: ctx.instance.sub, id: input.id },
 			});
 			if (!instance) throw new TRPCError({ code: "NOT_FOUND" });
 			const isGeneric = isGenericAP(instance.software);
 			const updated = await prisma.instance.update({
 				where: {
-					host: ctx.user.instance,
+					host: ctx.instance.sub,
 					id: input.id,
 				},
 				data: {
@@ -120,7 +120,7 @@ export const instanceRouter = router({
 		}),
 	createOauthClient: protectedProcedure.mutation(async ({ ctx }) => {
 		const instance = await prisma.instance.findFirst({
-			where: { host: ctx.user.instance },
+			where: { host: ctx.instance.sub },
 			omit: { client_id: false, client_secret: false },
 		});
 		if (!instance) {
@@ -150,7 +150,7 @@ export const instanceRouter = router({
 	resetSubscriptions: protectedProcedure.query(async ({ ctx }) => {
 		const instance = await prisma.instance.findFirst({
 			where: {
-				host: ctx.user.instance,
+				host: ctx.instance.sub,
 			},
 			omit: { client_id: false, client_secret: false },
 		});
@@ -174,7 +174,7 @@ export const instanceRouter = router({
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {
-						host: ctx.user.instance,
+						host: ctx.instance.sub,
 					},
 					data: {
 						allowed: {
@@ -198,7 +198,7 @@ export const instanceRouter = router({
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {
-						host: ctx.user.instance,
+						host: ctx.instance.sub,
 					},
 					data: {
 						allowed: {
@@ -224,7 +224,7 @@ export const instanceRouter = router({
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {
-						host: ctx.user.instance,
+						host: ctx.instance.sub,
 					},
 					data: {
 						blocked: {
@@ -248,7 +248,7 @@ export const instanceRouter = router({
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {
-						host: ctx.user.instance,
+						host: ctx.instance.sub,
 					},
 					data: {
 						blocked: {

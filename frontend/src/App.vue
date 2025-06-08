@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { onMounted } from "vue";
 import { useDisplay } from "vuetify";
-import TheHeaderAuth from "./components/the-header-auth.vue";
 import { useAuthStore } from "./stores/auth";
 
 const authStore = useAuthStore();
@@ -33,7 +32,11 @@ const { mobile: isMobile } = useDisplay();
                     <v-icon v-if="isMobile">mdi-server-network</v-icon>
                     <span v-else>Instances</span>
                 </v-btn>
-                <TheHeaderAuth />
+                <v-btn to="/manage" class="mx-1">
+                    <v-icon v-if="isMobile">mdi-plus</v-icon>
+                    <span v-else-if="authStore.authenticated">{{`Manage ${authStore.instance?.host}`}}</span>
+                    <span v-else>Manage Instance</span>
+                </v-btn>
             </template>
         </v-app-bar>
         <v-main style="min-height: 300px" class="my-4">

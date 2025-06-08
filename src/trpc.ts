@@ -3,9 +3,8 @@ import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import cookie, { type SerializeOptions } from "cookie";
 import jwt from "jsonwebtoken";
 
-type JWTUser = {
-	username: string;
-	instance: string;
+export type JWTInstance = {
+	sub: string; // instance host
 	iss: "lemmy-federate";
 	iat: number;
 	exp: number;
@@ -30,10 +29,10 @@ export async function createContext({
 		resHeaders.append("Set-Cookie", cookie.serialize(name, value, options));
 	}
 	const token = getCookie("token");
-	let user: JWTUser | null = null;
+	let instance: JWTInstance | null = null;
 	if (token) {
 		try {
-			user = jwt.verify(token, SECRET_KEY) as JWTUser;
+			instance = jwt.verify(token, SECRET_KEY) as JWTInstance;
 		} catch (e) {
 			setCookie("token", "", {
 				maxAge: -1,
@@ -49,7 +48,7 @@ export async function createContext({
 	}
 
 	return {
-		user,
+		instance,
 		getCookie,
 		setCookie,
 		protocol:
@@ -71,7 +70,7 @@ const t = initTRPC.context<Context>().create();
 export const router = t.router;
 export const publicProcedure = t.procedure;
 export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
-	if (!ctx.user) {
+	if (!ctx.instance) {
 		ctx.setCookie("token", "", {
 			maxAge: -1,
 			httpOnly: true,
@@ -84,5 +83,5 @@ export const protectedProcedure = t.procedure.use(async ({ ctx, next }) => {
 		});
 	}
 
-	return next({ ctx: { user: ctx.user } });
+	return next({ ctx: { instance: ctx.instance } });
 });

@@ -1,29 +1,24 @@
-import type { Instance, User } from "@prisma/client";
+import type { Instance } from "@prisma/client";
 import { defineStore } from "pinia";
-import type { Serialize } from "../trpc.ts";
-
-export type UserWithInstance = Serialize<
-	Omit<User, "code" | "codeExp"> & {
-		instance: Instance;
-	}
->;
+import { type Serialize, trpc } from "../trpc.ts";
 
 export const useAuthStore = defineStore("auth", {
 	state: (): {
 		authenticated: boolean;
-		user: UserWithInstance | null;
+		instance: Serialize<Instance> | null;
 	} => ({
 		authenticated: false,
-		user: null,
+		instance: null,
 	}),
 	actions: {
-		authenticate(user: UserWithInstance) {
+		authenticate(instance: Serialize<Instance>) {
 			this.authenticated = true;
-			this.user = user;
+			this.instance = instance;
 		},
-		logout() {
+		async logout() {
+			await trpc.auth.logout.mutate();
 			this.authenticated = false;
-			this.user = null;
+			this.instance = null;
 		},
 	},
 });

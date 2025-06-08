@@ -1,7 +1,6 @@
 import { type TRPCLink, createTRPCClient, httpBatchLink } from "@trpc/client";
 import { observable } from "@trpc/server/observable";
 import type { AppRouter } from "../../src/index.ts";
-import { useAuthStore } from "./stores/auth.ts";
 
 // Link to handle errors globally
 export const errorHandler: TRPCLink<AppRouter> = () => {
@@ -13,10 +12,6 @@ export const errorHandler: TRPCLink<AppRouter> = () => {
 				},
 				error(err) {
 					observer.error(err);
-					if (err?.data?.code === "UNAUTHORIZED") {
-						const authStore = useAuthStore();
-						authStore.logout();
-					}
 				},
 				complete() {
 					observer.complete();
