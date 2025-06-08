@@ -60,7 +60,6 @@ export const authRouter = router({
 					});
 				}
 				const txtRecords = await getDnsTxtRecords(host);
-				console.log(txtRecords);
 				const keyIsValid = txtRecords.find((r) =>
 					r.includes(`lemmy-federate-verification=${verification.publicKey}`),
 				);
