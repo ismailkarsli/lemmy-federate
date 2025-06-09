@@ -1,17 +1,17 @@
-import type { Instance } from "@prisma/client";
+import crypto from "node:crypto";
 import { TRPCError } from "@trpc/server";
 import jwt from "jsonwebtoken";
 import ms from "ms";
 import * as z from "zod/v4";
-import { getClient, sendAuthCode } from "../lib/federation-utils.ts";
 import { getGuarantees } from "../lib/fediseer.ts";
-import { InstanceSchema, UserSchema, prisma } from "../lib/prisma.ts";
+import { InstanceSchema, prisma } from "../lib/prisma.ts";
 import {
+	getDnsTxtRecords,
 	getInstanceSoftware,
 	isGenericAP,
-	randomNumber,
+	randomString,
 } from "../lib/utils.ts";
-import { publicProcedure, router } from "../trpc.ts";
+import { type JWTInstance, publicProcedure, router } from "../trpc.ts";
 
 const BLACKLISTED_INSTANCES =
 	process.env.BLACKLISTED_INSTANCES?.split(",") || [];
@@ -22,12 +22,8 @@ if (!SECRET_KEY) {
 }
 
 const ResponseTypeSchema = z.union([
-	z.object({
-		user: UserSchema.omit({ code: true, codeExp: true }).extend({
-			instance: InstanceSchema,
-		}),
-	}),
-	z.object({ message: z.string() }),
+	z.object({ instance: InstanceSchema }),
+	z.object({ privateKey: z.string(), publicKey: z.string() }),
 ]);
 
 export const authRouter = router({
@@ -35,14 +31,12 @@ export const authRouter = router({
 		.input(
 			z.object({
 				instance: z.string(),
-				username: z.string(),
-				code: z.string().optional(),
+				apiKey: z.string().optional(),
 			}),
 		)
 		.output(ResponseTypeSchema)
 		.mutation(async ({ input: body, ctx }) => {
 			const host = body.instance.toLowerCase();
-			const username = body.username.toLowerCase();
 			if (BLACKLISTED_INSTANCES.includes(host)) {
 				throw new TRPCError({
 					code: "CONFLICT",
@@ -50,21 +44,30 @@ export const authRouter = router({
 				});
 			}
 
-			const existingUser = await prisma.user.findFirst({
-				where: { instance: { host }, username },
-				include: {
-					instance: { omit: { client_id: false, client_secret: false } },
-				},
+			let instance = await prisma.instance.findFirst({
+				where: { host },
+				omit: { client_id: false, client_secret: false },
 			});
 
-			if (existingUser && body.code) {
-				if (
-					body.code !== existingUser.code ||
-					existingUser.codeExp < new Date()
-				) {
+			if (instance && body.apiKey) {
+				const verification = await prisma.verification.findFirst({
+					where: { instanceId: instance.id, privateKey: body.apiKey },
+				});
+				if (!verification) {
 					throw new TRPCError({
 						code: "UNAUTHORIZED",
-						message: "Invalid code",
+						message: "Invalid api key",
+					});
+				}
+				const txtRecords = await getDnsTxtRecords(host);
+				const keyIsValid = txtRecords.find((r) =>
+					r.includes(`lemmy-federate-verification=${verification.publicKey}`),
+				);
+				if (!keyIsValid) {
+					throw new TRPCError({
+						code: "UNAUTHORIZED",
+						message:
+							"DNS TXT record verification failed. The provided public key doesn't match any existing records. This may be due to DNS propagation delays—please wait for a while and try again.",
 					});
 				}
 
@@ -73,13 +76,12 @@ export const authRouter = router({
 				const exp = Math.floor((Date.now() + valid) / 1000);
 				const token = jwt.sign(
 					{
-						username: existingUser.username,
-						instance: existingUser.instance.host,
+						sub: instance.host,
 						iss: "lemmy-federate",
 						iat,
 						exp,
 						nbf: iat,
-					},
+					} satisfies JWTInstance,
 					SECRET_KEY,
 				);
 				ctx.setCookie("token", token, {
@@ -90,36 +92,13 @@ export const authRouter = router({
 				});
 
 				return {
-					user: existingUser,
+					instance,
 				};
 			}
 
-			let createdInstance: Instance | null = null;
-			if (!existingUser) {
+			if (!instance) {
 				const software = await getInstanceSoftware(host);
 				const isGeneric = isGenericAP(software.name);
-				const client = await getClient({
-					host,
-					software: software.name,
-					client_id: null,
-					client_secret: null,
-				});
-				const user_ = await client.getUser(username);
-				const canLogin = user_.isAdmin && !user_.isBanned;
-				if (!canLogin) {
-					// if we can't verify user is an admin and it's a generic ActivityPub instance, return specific message for that.
-					if (isGeneric) {
-						throw new TRPCError({
-							code: "CONFLICT",
-							message:
-								"We were unable to verify that you are an admin. Please contact to iso@lemy.lol for manual registration.",
-						});
-					}
-					throw new TRPCError({
-						code: "FORBIDDEN",
-						message: "You are not an admin on this instance",
-					});
-				}
 
 				try {
 					const guaranteed =
@@ -133,47 +112,39 @@ export const authRouter = router({
 					});
 				}
 
-				createdInstance = await prisma.instance.findFirst({ where: { host } });
-				if (!createdInstance) {
-					createdInstance = await prisma.instance.create({
-						data: {
-							host,
-							software: software.name,
-							...(isGeneric
-								? {
-										auto_add: false,
-										cross_software: true,
-										mode: "SEED",
-										nsfw: "BLOCK",
-										fediseer: "NONE",
-									}
-								: {}),
-						},
-					});
-				}
+				instance = await prisma.instance.create({
+					data: {
+						host,
+						software: software.name,
+						...(isGeneric
+							? {
+									auto_add: false,
+									cross_software: true,
+									mode: "SEED",
+									nsfw: "BLOCK",
+									fediseer: "NONE",
+								}
+							: {}),
+					},
+				});
 			}
 
-			const instanceId = createdInstance?.id || existingUser?.instanceId;
-			if (!instanceId) {
-				throw new Error("instanceId is null. it should be impossible.");
-			}
-			const code = randomNumber(8).toString();
-			const codeExp = new Date(Date.now() + ms("5 minutes"));
-			await prisma.user.upsert({
-				where: {
-					username_instanceId: { username, instanceId },
-				},
-				update: { code, codeExp },
-				create: {
-					username,
-					instanceId,
-					code,
-					codeExp,
-				},
+			const privateKey = randomString(16);
+			const publicKey = crypto.randomBytes(16).toString("hex");
+			await prisma.verification.create({
+				data: { instanceId: instance.id, privateKey, publicKey },
 			});
-
-			await sendAuthCode(username, host, code);
-
-			return { message: `Code sent to @${username}@${host}.` };
+			return {
+				privateKey,
+				publicKey,
+			};
 		}),
+	logout: publicProcedure.mutation(async ({ ctx }) => {
+		ctx.setCookie("token", "", {
+			maxAge: 0,
+			httpOnly: true,
+			sameSite: "strict",
+			secure: ctx.protocol === "https",
+		});
+	}),
 });

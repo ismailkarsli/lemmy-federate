@@ -4,7 +4,6 @@ import {
 	Mode,
 	NSFW,
 	PrismaClient,
-	type User,
 } from "@prisma/client";
 import { z } from "zod/v4";
 
@@ -38,13 +37,3 @@ export const InstanceSchema = z.object({
 	cross_software: z.boolean(),
 	mode: FederationModeSchema,
 }) satisfies z.ZodType<Instance>;
-
-export const UserSchema = z.object({
-	id: z.number(),
-	username: z.string(),
-	instanceId: z.number(),
-	createdAt: z.date(),
-	updatedAt: z.date(),
-	code: z.string(),
-	codeExp: z.date(),
-}) satisfies z.ZodType<User>;

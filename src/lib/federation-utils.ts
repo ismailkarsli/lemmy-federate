@@ -6,16 +6,11 @@ import {
 	type Instance,
 	NSFW,
 } from "@prisma/client";
-import { TRPCError } from "@trpc/server";
 import { HTTPError, TimeoutError } from "ky";
 import ms from "ms";
 import { ActivityPubClient } from "./activity-pub-client.ts";
 import { getCensuresGiven, getEndorsements } from "./fediseer.ts";
-import {
-	type Community as Community_,
-	LemmyClient,
-	LemmyHttpPatched,
-} from "./lemmy.ts";
+import { type Community as Community_, LemmyClient } from "./lemmy.ts";
 import { MbinClient } from "./mbin.ts";
 import { prisma } from "./prisma.ts";
 import { isGenericAP } from "./utils.ts";
@@ -386,41 +381,3 @@ export async function resetSubscriptions(
 		}
 	}
 }
-
-const BOT_INSTANCE = process.env.BOT_INSTANCE;
-const BOT_USERNAME = process.env.BOT_USERNAME;
-const BOT_PASSWORD = process.env.BOT_PASSWORD;
-if (!BOT_INSTANCE || !BOT_USERNAME || !BOT_PASSWORD) {
-	throw new Error("BOT_INSTANCE, BOT_USERNAME, and BOT_PASSWORD are required");
-}
-let BOT_HTTP_CLIENT: LemmyHttpPatched | undefined;
-
-export const sendAuthCode = async (
-	username: string,
-	instance: string,
-	code: string,
-) => {
-	if (!BOT_HTTP_CLIENT) {
-		BOT_HTTP_CLIENT = new LemmyHttpPatched(`https://${BOT_INSTANCE}`);
-		await BOT_HTTP_CLIENT.login({
-			username_or_email: BOT_USERNAME,
-			password: BOT_PASSWORD,
-		});
-	}
-	const personQuery = await BOT_HTTP_CLIENT.resolveObject({
-		q: `${username}@${instance}`,
-	});
-	const person = personQuery.person?.person;
-	if (!person) {
-		throw new TRPCError({
-			code: "INTERNAL_SERVER_ERROR",
-			message: "Person not found",
-		});
-	}
-
-	const message = `Your authentication code to login Lemmy Federate is: ${code}`;
-	await BOT_HTTP_CLIENT.createPrivateMessage({
-		content: message,
-		recipient_id: person.id,
-	});
-};

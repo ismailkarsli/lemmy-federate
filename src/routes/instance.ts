@@ -2,7 +2,6 @@ import type { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import * as z from "zod/v4";
 import { resetSubscriptions } from "../lib/federation-utils.ts";
-import { MbinClient } from "../lib/mbin.ts";
 import { InstanceSchema, prisma } from "../lib/prisma.ts";
 import { isGenericAP } from "../lib/utils.ts";
 import { protectedProcedure, publicProcedure, router } from "../trpc.ts";
@@ -19,7 +18,7 @@ export const instanceRouter = router({
 	get: protectedProcedure.query(async ({ ctx }) => {
 		const instance = await prisma.instance.findFirst({
 			where: {
-				host: ctx.user.instance,
+				host: ctx.instance.sub,
 			},
 			include: {
 				allowed: { select: { id: true, host: true } },
@@ -34,13 +33,13 @@ export const instanceRouter = router({
 		.input(InstanceSchema)
 		.mutation(async ({ input, ctx }) => {
 			const instance = await prisma.instance.findFirst({
-				where: { host: ctx.user.instance, id: input.id },
+				where: { host: ctx.instance.sub, id: input.id },
 			});
 			if (!instance) throw new TRPCError({ code: "NOT_FOUND" });
 			const isGeneric = isGenericAP(instance.software);
 			const updated = await prisma.instance.update({
 				where: {
-					host: ctx.user.instance,
+					host: ctx.instance.sub,
 					id: input.id,
 				},
 				data: {
@@ -118,39 +117,10 @@ export const instanceRouter = router({
 				softwares: softwares.map((s) => s.software),
 			};
 		}),
-	createOauthClient: protectedProcedure.mutation(async ({ ctx }) => {
-		const instance = await prisma.instance.findFirst({
-			where: { host: ctx.user.instance },
-			omit: { client_id: false, client_secret: false },
-		});
-		if (!instance) {
-			throw new TRPCError({
-				code: "NOT_FOUND",
-				message: "Instance not found",
-			});
-		}
-		if (instance.software !== "mbin") {
-			throw new TRPCError({
-				code: "BAD_REQUEST",
-				message: "Only Mbin instances can create OAuth client",
-			});
-		}
-
-		const oauthClient = await MbinClient.getMbinOauthClient(instance.host);
-		await prisma.instance.update({
-			where: { id: instance.id },
-			data: {
-				client_id: oauthClient.identifier,
-				client_secret: oauthClient.secret,
-			},
-		});
-
-		return { message: "OAuth client successfuly created." };
-	}),
 	resetSubscriptions: protectedProcedure.query(async ({ ctx }) => {
 		const instance = await prisma.instance.findFirst({
 			where: {
-				host: ctx.user.instance,
+				host: ctx.instance.sub,
 			},
 			omit: { client_id: false, client_secret: false },
 		});
@@ -174,7 +144,7 @@ export const instanceRouter = router({
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {
-						host: ctx.user.instance,
+						host: ctx.instance.sub,
 					},
 					data: {
 						allowed: {
@@ -198,7 +168,7 @@ export const instanceRouter = router({
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {
-						host: ctx.user.instance,
+						host: ctx.instance.sub,
 					},
 					data: {
 						allowed: {
@@ -224,7 +194,7 @@ export const instanceRouter = router({
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {
-						host: ctx.user.instance,
+						host: ctx.instance.sub,
 					},
 					data: {
 						blocked: {
@@ -248,7 +218,7 @@ export const instanceRouter = router({
 			.mutation(async ({ ctx, input }) => {
 				const instance = await prisma.instance.update({
 					where: {
-						host: ctx.user.instance,
+						host: ctx.instance.sub,
 					},
 					data: {
 						blocked: {

@@ -1,4 +1,4 @@
-import { randomInt } from "node:crypto";
+import crypto from "node:crypto";
 import { fileURLToPath } from "node:url";
 import { TRPCError } from "@trpc/server";
 import ky from "ky";
@@ -23,11 +23,6 @@ const NodeInfoLinksSchema = z.object({
 type NodeInfoLinks = z.infer<typeof NodeInfoLinksSchema>;
 type NodeInfoSoftware = z.infer<typeof NodeInfoSoftwareSchema>;
 type NodeInfo = z.infer<typeof NodeInfoSchema>;
-
-export const randomNumber = (length: number) => {
-	/// 100000 -> 999999
-	return randomInt(10 ** (length - 1), 10 ** length - 1);
-};
 
 const softwareCache = new Map<string, NodeInfoSoftware>();
 export async function getInstanceSoftware(
@@ -79,4 +74,34 @@ export function isMain(moduleUrl: string) {
 	const modulePath = fileURLToPath(moduleUrl);
 	const [_binPath, mainScriptPath] = process.argv;
 	return modulePath === mainScriptPath;
+}
+
+interface DNSResponse {
+	Answer: { data: string }[];
+}
+export async function getDnsTxtRecords(domain: string) {
+	const googleURL = `https://dns.google/resolve?name=${domain}&type=TXT`;
+	const cloudflareURL = `https://cloudflare-dns.com/dns-query?name=${domain}&type=TXT`;
+	const [googleRes, cloudflareRes] = await Promise.all([
+		ky.get<DNSResponse>(googleURL).json(),
+		ky
+			.get<DNSResponse>(cloudflareURL, {
+				headers: { Accept: "application/dns-json" },
+			})
+			.json(),
+	]);
+	const merged = [...googleRes.Answer, ...cloudflareRes.Answer];
+	const records = Array.from(new Set(merged.map((r) => r.data)));
+	return records;
+}
+
+export function randomString(length: number) {
+	const chars =
+		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?";
+	let result = "";
+	const bytes = crypto.randomBytes(length);
+	for (let i = 0; i < length; i++) {
+		result += chars[bytes[i] % chars.length];
+	}
+	return result;
 }

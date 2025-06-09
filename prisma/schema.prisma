@@ -27,21 +27,19 @@ model Instance {
   allowed          Instance[]        @relation("InstanceAllows")
   blockedBy        Instance[]        @relation("InstanceBlocks")
   blocked          Instance[]        @relation("InstanceBlocks")
-  users            User[]
+  verifications            Verification[]
   communityFollows CommunityFollow[]
 }
 
-model User {
-  id         Int      @id @default(autoincrement())
-  username   String
+model Verification {
   instance   Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId Int
+  privateKey String
+  publicKey String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
-  code       String
-  codeExp    DateTime
 
-  @@unique([username, instanceId])
+  @@id([instanceId, privateKey])
 }
 
 model Community {
