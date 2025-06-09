@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useMutation, useQuery } from "@tanstack/vue-query";
 import { computed, ref, watchEffect } from "vue";
+import { watch } from "vue";
 import { useRouter } from "vue-router";
 import InfoTooltip from "../components/info-tooltip.vue";
 import { getHumanReadableSoftwareName, isGenericAP } from "../lib/utils";
@@ -22,7 +23,7 @@ watchEffect(async () => {
 		instance.value = JSON.parse(JSON.stringify(data.value));
 	}
 });
-watchEffect(async () => {
+watch(error, async () => {
 	if (error.value?.message.includes("Unauthorized")) {
 		await authStore.logout();
 		router.push("/authenticate");
