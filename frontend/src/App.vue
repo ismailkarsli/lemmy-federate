@@ -39,7 +39,7 @@ const { mobile: isMobile } = useDisplay();
         </v-btn>
       </template>
     </v-app-bar>
-    <v-main class="flex-grow-1 my-4">
+    <v-main class="flex-grow-1 my-4" style="margin: 0 auto; width: 100%; max-width: 1200px;">
       <RouterView />
     </v-main>
     <v-footer class="flex-grow-0 mb-2 bg-transparent text-no-wrap d-flex flex-column flex-sm-row"
