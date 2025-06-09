@@ -2,7 +2,6 @@ import type { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import * as z from "zod/v4";
 import { resetSubscriptions } from "../lib/federation-utils.ts";
-import { MbinClient } from "../lib/mbin.ts";
 import { InstanceSchema, prisma } from "../lib/prisma.ts";
 import { isGenericAP } from "../lib/utils.ts";
 import { protectedProcedure, publicProcedure, router } from "../trpc.ts";
@@ -118,35 +117,6 @@ export const instanceRouter = router({
 				softwares: softwares.map((s) => s.software),
 			};
 		}),
-	createOauthClient: protectedProcedure.mutation(async ({ ctx }) => {
-		const instance = await prisma.instance.findFirst({
-			where: { host: ctx.instance.sub },
-			omit: { client_id: false, client_secret: false },
-		});
-		if (!instance) {
-			throw new TRPCError({
-				code: "NOT_FOUND",
-				message: "Instance not found",
-			});
-		}
-		if (instance.software !== "mbin") {
-			throw new TRPCError({
-				code: "BAD_REQUEST",
-				message: "Only Mbin instances can create OAuth client",
-			});
-		}
-
-		const oauthClient = await MbinClient.getMbinOauthClient(instance.host);
-		await prisma.instance.update({
-			where: { id: instance.id },
-			data: {
-				client_id: oauthClient.identifier,
-				client_secret: oauthClient.secret,
-			},
-		});
-
-		return { message: "OAuth client successfuly created." };
-	}),
 	resetSubscriptions: protectedProcedure.query(async ({ ctx }) => {
 		const instance = await prisma.instance.findFirst({
 			where: {

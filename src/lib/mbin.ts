@@ -4,8 +4,6 @@ import ms from "ms";
 import * as z from "zod/v4";
 import { type Community, LemmyClient, type User } from "./lemmy.ts";
 
-const CONTACT_EMAIL = z.parse(z.email(), process.env.CONTACT_EMAIL);
-const APP_URL = z.parse(z.url(), process.env.APP_URL);
 const BOT_SCOPES = ["read", "magazine", "user:profile"];
 
 type MbinUser = {
@@ -31,8 +29,6 @@ export const MbinOathClientSchema = z.object({
 	identifier: z.string(),
 	secret: z.string(),
 });
-
-type MbinOauthClient = z.Infer<typeof MbinOathClientSchema>;
 
 interface SearchActor {
 	type: "user" | "magazine";
@@ -192,24 +188,5 @@ export class MbinClient extends LemmyClient {
 			this.tokenExpires = Date.now() + res.expires_in * 1000;
 		}
 		return this.token;
-	}
-
-	static async getMbinOauthClient(host: string): Promise<MbinOauthClient> {
-		const oauthClient = await api
-			.post<MbinOauthClient>(`https://${host}/api/client`, {
-				json: {
-					name: "Lemmy Federate",
-					contactEmail: CONTACT_EMAIL,
-					description: APP_URL,
-					public: false,
-					username: "mbin_federate_bot",
-					grants: ["client_credentials"],
-					scopes: BOT_SCOPES,
-				},
-			})
-			.json()
-			.then((oc) => z.parse(MbinOathClientSchema, oc));
-
-		return oauthClient;
 	}
 }

@@ -95,26 +95,6 @@ const { mutate: resetSubscriptions } = useMutation({
 	},
 });
 
-const { mutate: createOauthClient } = useMutation({
-	mutationKey: ["instance", "createOauthClient"],
-	mutationFn: () => trpc.instance.createOauthClient.mutate(),
-	onSuccess(data) {
-		snackbar.value = {
-			value: true,
-			success: true,
-			message: data.message,
-		};
-		refetch();
-	},
-	onError(error) {
-		snackbar.value = {
-			value: true,
-			success: false,
-			message: error.message,
-		};
-	},
-});
-
 watchEffect(async () => {
 	try {
 		if (allowedInstance.value) {
@@ -310,39 +290,6 @@ const logout = () => {
         </v-col>
         <v-col cols="12">
           <v-btn type="submit" color="primary">Save</v-btn>
-          <v-menu v-if="instance.software === 'mbin'" location="bottom">
-            <template v-slot:activator="{ props }">
-              <v-btn class="ml-4" append-icon="mdi-information" v-bind="props" color="blue" type="button">
-                Create OAuth Client
-              </v-btn>
-            </template>
-
-            <v-card min-width="300">
-              <v-card-text>
-                <p>
-                  Lemmy Federate will try to create a OAuth client with default
-                  credentials.
-                </p>
-                <p>
-                  If your instance is limiting client creations to admins, then
-                  you <b>can't</b> use this option.
-                </p>
-                <p>
-                  You can also create your own OAuth client and use it instead.
-                </p>
-                <p>
-                  Make sure it has <b>client_credentials</b> grant type and
-                  <b>"read", "magazine", "user:profile"</b> scopes.
-                </p>
-              </v-card-text>
-              <v-card-actions>
-                <v-spacer></v-spacer>
-                <v-btn variant="text">Cancel</v-btn>
-                <v-btn color="primary" variant="text" @click="createOauthClient">Create
-                </v-btn>
-              </v-card-actions>
-            </v-card>
-          </v-menu>
           <v-menu v-if="!isGeneric" location="bottom">
             <template v-slot:activator="{ props }">
               <v-btn class="ml-4" v-bind="props" color="error">

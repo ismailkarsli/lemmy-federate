@@ -57,7 +57,7 @@ app.all("*", serveStatic({ path: "/frontend/dist/index.html" }));
 const server = serve(app);
 
 server.on("listening", () => {
-	console.info(`Listening on ${APP_URL}`);
+	console.info(`Serving on ${APP_URL}`);
 });
 process.on("SIGINT", () => {
 	server.close();
