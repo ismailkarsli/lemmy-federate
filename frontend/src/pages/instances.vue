@@ -43,7 +43,7 @@ const { data, isPending, isLoading, isFetching } = useQuery({
                 </template>
                 <v-card min-width="300" class="px-2 py-2">
                   <v-autocomplete v-model="software" clearable variant="filled" hide-details label="Filter by software"
-                    :items="data?.softwares" />
+                    :items="data?.softwares.map(i => ({ title: getHumanReadableSoftwareName(i), value: i }))" />
                   <v-checkbox v-model="enabledOnly" label="Enabled only" hide-details></v-checkbox>
                 </v-card>
               </v-menu>
