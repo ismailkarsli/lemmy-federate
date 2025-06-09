@@ -58,11 +58,17 @@ const { mutate: submit, isPending } = useMutation({
           v-model="instance"
           label="Instance"
           :loading="isPending"
+          id="username"
+          name="username"
+          autocomplete="username"
         />
         <v-text-field
           v-model="apiKey"
           label="API Key (optional)"
           :loading="isPending"
+          id="current-password"
+          name="current-password"
+          autocomplete="current-password"
         />
 
         <v-card-actions>

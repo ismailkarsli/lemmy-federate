@@ -42,7 +42,8 @@ const { mobile: isMobile } = useDisplay();
     <v-main class="flex-grow-1 my-4">
       <RouterView />
     </v-main>
-    <v-footer class="flex-grow-0 mb-2 bg-transparent text-no-wrap d-flex flex-column flex-sm-row">
+    <v-footer class="flex-grow-0 mb-2 bg-transparent text-no-wrap d-flex flex-column flex-sm-row"
+      style="margin: 0 auto; width: 100%; max-width: 1200px;">
       <div>
         <v-btn href="https://github.com/ismailkarsli/lemmy-federate" variant="text" class="text-none" target="_blank">
           <v-icon size="x-large" class="mr-2">mdi-github</v-icon>
@@ -54,7 +55,7 @@ const { mobile: isMobile } = useDisplay();
         </v-btn>
       </div>
       <v-divider></v-divider>
-      <div>
+      <div style="padding-right: 16px;">
         <strong>Lemmy Federate</strong>
       </div>
     </v-footer>
