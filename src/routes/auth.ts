@@ -112,18 +112,10 @@ export const authRouter = router({
 					});
 				}
 
-				const privateKey = randomString(16);
-				const publicKey = crypto.randomBytes(16).toString("hex");
 				instance = await prisma.instance.create({
 					data: {
 						host,
 						software: software.name,
-						verifications: {
-							create: {
-								privateKey,
-								publicKey,
-							},
-						},
 						...(isGeneric
 							? {
 									auto_add: false,
@@ -135,8 +127,6 @@ export const authRouter = router({
 							: {}),
 					},
 				});
-
-				return { privateKey, publicKey };
 			}
 
 			const privateKey = randomString(16);
