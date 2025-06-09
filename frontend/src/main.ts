@@ -5,6 +5,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import { createVuetify } from "vuetify";
 import "vuetify/styles/main.css";
 import "@mdi/font/css/materialdesignicons.css";
+import "./assets/global.css";
 
 import App from "./App.vue";
 import AuthenticatePage from "./pages/authenticate.vue";
