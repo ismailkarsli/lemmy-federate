@@ -60,12 +60,13 @@ jobs:
           docker stop lemmy-federate || true
           docker rm lemmy-federate || true
           docker run \
-            -e APP_URL -e BLACKLISTED_INSTANCES -e SECRET_KEY -e DATABASE_URL -e REDIS_URL \
+            -e APP_URL -e BLACKLISTED_INSTANCES -e SECRET_KEY -e MASTER_KEY -e DATABASE_URL -e REDIS_URL \
             --name lemmy-federate --detach -p 52312:3000 --restart on-failure --network lemylol_default \
             $DOCKER_IMAGE
         env:
           APP_URL: ${{ vars.APP_URL }}
           BLACKLISTED_INSTANCES: ${{ vars.BLACKLISTED_INSTANCES }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
+          MASTER_KEY: ${{ secrets.MASTER_KEY }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           REDIS_URL: ${{ secrets.REDIS_URL }}

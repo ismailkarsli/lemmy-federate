@@ -16,6 +16,7 @@ import { type JWTInstance, publicProcedure, router } from "../trpc.ts";
 const BLACKLISTED_INSTANCES =
 	process.env.BLACKLISTED_INSTANCES?.split(",") || [];
 const SECRET_KEY = process.env.SECRET_KEY;
+const MASTER_KEY = process.env.MASTER_KEY;
 
 if (!SECRET_KEY) {
 	throw new Error("SECRET_KEY is required");
@@ -50,25 +51,37 @@ export const authRouter = router({
 			});
 
 			if (instance && body.apiKey) {
-				const verification = await prisma.verification.findFirst({
-					where: { instanceId: instance.id, privateKey: body.apiKey },
-				});
-				if (!verification) {
-					throw new TRPCError({
-						code: "UNAUTHORIZED",
-						message: "Invalid api key",
+				const encoder = new TextEncoder();
+				if (
+					MASTER_KEY &&
+					MASTER_KEY.length === body.apiKey.length &&
+					crypto.timingSafeEqual(
+						encoder.encode(MASTER_KEY),
+						encoder.encode(body.apiKey),
+					)
+				) {
+					// pass
+				} else {
+					const verification = await prisma.verification.findFirst({
+						where: { instanceId: instance.id, privateKey: body.apiKey },
 					});
-				}
-				const txtRecords = await getDnsTxtRecords(host);
-				const keyIsValid = txtRecords.find((r) =>
-					r.includes(`lemmy-federate-verification=${verification.publicKey}`),
-				);
-				if (!keyIsValid) {
-					throw new TRPCError({
-						code: "UNAUTHORIZED",
-						message:
-							"DNS TXT record verification failed. The provided public key doesn't match any existing records. This may be due to DNS propagation delays—please wait for a while and try again.",
-					});
+					if (!verification) {
+						throw new TRPCError({
+							code: "UNAUTHORIZED",
+							message: "Invalid api key",
+						});
+					}
+					const txtRecords = await getDnsTxtRecords(host);
+					const keyIsValid = txtRecords.find((r) =>
+						r.includes(`lemmy-federate-verification=${verification.publicKey}`),
+					);
+					if (!keyIsValid) {
+						throw new TRPCError({
+							code: "UNAUTHORIZED",
+							message:
+								"DNS TXT record verification failed. The provided public key doesn't match any existing records. This may be due to DNS propagation delays—please wait for a while and try again.",
+						});
+					}
 				}
 
 				const valid = ms("90 days");
