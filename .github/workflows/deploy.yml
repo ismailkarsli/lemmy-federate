@@ -57,8 +57,10 @@ jobs:
     steps:
       - run: |
           docker pull ${{ env.DOCKER_IMAGE }}
-          docker stop lemmy-federate || true
-          docker rm lemmy-federate || true
+          if [ "$(docker ps -aq -f name=lemmy-federate)" ]; then
+            docker stop lemmy-federate
+            docker rm lemmy-federate
+          fi
           docker run \
             -e APP_URL -e BLACKLISTED_INSTANCES -e SECRET_KEY -e MASTER_KEY -e DATABASE_URL -e REDIS_URL \
             --name lemmy-federate --detach -p 52312:3000 --restart on-failure --network lemylol_default \
