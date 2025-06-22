@@ -1,6 +1,7 @@
 import ky from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
+import pThrottle from "p-throttle";
 import * as z from "zod/v4";
 import { type Community, LemmyClient, type User } from "./lemmy.ts";
 
@@ -39,6 +40,10 @@ interface SearchActor {
 }
 
 const api = ky.create({
+	fetch: pThrottle({
+		limit: 1,
+		interval: 1000,
+	})(fetch),
 	timeout: ms("60 seconds"),
 	retry: { limit: 0 },
 	headers: {

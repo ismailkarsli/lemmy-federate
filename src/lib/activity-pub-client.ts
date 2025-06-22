@@ -3,6 +3,7 @@ import jsonld from "jsonld";
 import ky, { type KyInstance } from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
+import pThrottle from "p-throttle";
 import type { Community, User } from "./lemmy.ts";
 
 const { expand } = jsonld;
@@ -156,6 +157,10 @@ export class ActivityPubClient {
 
 	private async getHttpClient(): Promise<KyInstance> {
 		this.httpClient ??= ky.create({
+			fetch: pThrottle({
+				limit: 1,
+				interval: 1000,
+			})(fetch),
 			timeout: ms("60 seconds"),
 			retry: 1,
 			headers: {
