@@ -61,7 +61,7 @@ model CommunityFollow {
   community    Community             @relation(fields: [communityId], references: [id], onDelete: Cascade)
   communityId  Int
   createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @default(now()) @updatedAt
+  updatedAt    DateTime              @default(dbgenerated("'2000-01-01T00:00:00Z'::timestamp")) @updatedAt
   status       CommunityFollowStatus @default(WAITING)
   errorReason  String?
   attemptCount Int                   @default(0)
