@@ -57,24 +57,6 @@ export class LemmyClient {
 		await this.getHttpClient();
 	}
 
-	/**
-	 * @param username local username
-	 * @returns Simplified user object
-	 */
-	async getUser(username: string): Promise<User> {
-		const client = await this.getHttpClient();
-		const user = await client.getPersonDetails({ username });
-		return {
-			username: user.person_view.person.name,
-			isAdmin:
-				user.person_view.is_admin ??
-				// @ts-expect-error In 0.18.x instances it is `admin`.
-				user.person_view.person.admin,
-			isBanned: user.person_view.person.banned,
-			isBot: user.person_view.person.bot_account,
-		};
-	}
-
 	async getCommunity(name: string): Promise<Community> {
 		const client = await this.getHttpClient();
 		const community = await client.getCommunity({ name });

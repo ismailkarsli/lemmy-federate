@@ -4,7 +4,7 @@ import ky, { type KyInstance } from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
 import pThrottle from "p-throttle";
-import type { Community, User } from "./lemmy.ts";
+import type { Community } from "./lemmy.ts";
 
 const { expand } = jsonld;
 
@@ -45,31 +45,6 @@ export class ActivityPubClient {
 	}
 
 	async init() {}
-
-	async getUser(username: string): Promise<User> {
-		const userResponse = await this.fetchWebfinger(username);
-
-		const expanded = await expand(userResponse);
-		const expandedItem = expanded[0];
-
-		return {
-			username: this.getValue(
-				expandedItem[
-					"https://www.w3.org/ns/activitystreams#preferredUsername"
-				] as ValueObject[],
-			) as string,
-			isAdmin:
-				this.getValue<string>(
-					(expandedItem["https://schema.org/roleName"] ?? null) as
-						| ValueObject[]
-						| null,
-				)?.toLowerCase() === "administrator",
-			isBot:
-				(expandedItem["@type"] as string[])[0] !==
-				"https://www.w3.org/ns/activitystreams#Person",
-			isBanned: false,
-		};
-	}
 
 	async getCommunity(communityName: string): Promise<Community> {
 		const [name, host] = communityName.split("@");

@@ -3,17 +3,9 @@ import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
 import pThrottle from "p-throttle";
 import * as z from "zod/v4";
-import { type Community, LemmyClient, type User } from "./lemmy.ts";
+import { type Community, LemmyClient } from "./lemmy.ts";
 
 const BOT_SCOPES = ["read", "magazine", "user:profile"];
-
-type MbinUser = {
-	userId: number;
-	username: string;
-	createdAt: string;
-	isBot: boolean;
-	isAdmin: boolean;
-};
 
 type MbinMagazine = {
 	magazineId: number;
@@ -79,18 +71,6 @@ export class MbinClient extends LemmyClient {
 	}
 	async init() {
 		this.getBearerToken();
-	}
-
-	async getUser(username: string): Promise<User> {
-		const user = await api<MbinUser>(
-			`https://${this.host}/api/users/name/${username}`,
-		).json();
-		return {
-			username: user.username,
-			isAdmin: user.isAdmin,
-			isBanned: false,
-			isBot: user.isBot,
-		};
 	}
 
 	async getCommunity(name: string): Promise<Community> {
