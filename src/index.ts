@@ -50,9 +50,9 @@ app.use(
 
 if (NODE_ENV === "production") startJobs();
 
-app.all("/assets/*", serveStatic({ root: "/frontend/dist" }));
-app.get("/favicon.ico", serveStatic({ path: "/frontend/dist/favicon.ico" }));
-app.all("*", serveStatic({ path: "/frontend/dist/index.html" }));
+app.all("/assets/*", serveStatic({ root: "./frontend/dist" }));
+app.get("/favicon.ico", serveStatic({ path: "./frontend/dist/favicon.ico" }));
+app.all("*", serveStatic({ path: "./frontend/dist/index.html" }));
 
 const server = serve(app);
 
