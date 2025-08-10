@@ -1,9 +1,9 @@
-import ky from "ky";
+import ky, { type KyInstance } from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
 import pThrottle from "p-throttle";
 import * as z from "zod/v4";
-import { type Community, LemmyClient } from "./lemmy.ts";
+import type { LFClient, LFCommunity } from "../types/LFClient.ts";
 
 const BOT_SCOPES = ["read", "magazine", "user:profile"];
 
@@ -31,19 +31,7 @@ interface SearchActor {
 	};
 }
 
-const api = ky.create({
-	fetch: pThrottle({
-		limit: 1,
-		interval: 1000,
-	})(fetch),
-	timeout: ms("60 seconds"),
-	retry: { limit: 0 },
-	headers: {
-		"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",
-	},
-});
-
-const mbinMagazineToCommunity = (magazine: MbinMagazine): Community => ({
+const mbinMagazineToCommunity = (magazine: MbinMagazine): LFCommunity => ({
 	id: magazine.magazineId,
 	name: magazine.name,
 	nsfw: magazine.isAdult,
@@ -54,29 +42,30 @@ const mbinMagazineToCommunity = (magazine: MbinMagazine): Community => ({
 	isRemoved: false,
 });
 
-export class MbinClient extends LemmyClient {
+export class MbinClient implements LFClient {
 	public type = "mbin";
+	private host: string;
 	private oauthClientId?: string;
 	private oauthClientSecret?: string;
 	private token?: string;
 	private tokenExpires?: number;
+	private httpClient: KyInstance | null = null;
+
 	constructor(
 		host: string,
 		oauthClientId?: string,
 		oauthClientSecret?: string,
 	) {
-		super(host);
+		this.host = host;
 		this.oauthClientId = oauthClientId;
 		this.oauthClientSecret = oauthClientSecret;
 	}
-	async init() {
-		this.getBearerToken();
-	}
 
-	async getCommunity(name: string): Promise<Community> {
+	async getCommunity(name: string): Promise<LFCommunity> {
+		const httpClient = this.getHttpClient();
 		const sName = name.includes("@") ? name : `${name}@${this.host}`;
 		const actors = (
-			await api<{
+			await httpClient<{
 				apActors?: { type: "magazine"; object: MbinMagazine }[];
 			}>(`https://${this.host}/api/search`, {
 				searchParams: { q: sName, p: 1, perPage: 1 },
@@ -89,6 +78,7 @@ export class MbinClient extends LemmyClient {
 	}
 
 	async followCommunity(community_id: number | string, follow: boolean) {
+		const httpClient = this.getHttpClient();
 		let resolvedCommunityId = community_id;
 
 		if (typeof resolvedCommunityId === "string") {
@@ -98,13 +88,14 @@ export class MbinClient extends LemmyClient {
 		}
 
 		const endpoint = follow ? "subscribe" : "unsubscribe";
-		await api.put(
+		await httpClient.put(
 			`https://${this.host}/api/magazine/${resolvedCommunityId}/${endpoint}`,
 			{ headers: { Authorization: `Bearer ${await this.getBearerToken()}` } },
 		);
 	}
 
-	async listCommunities(query: ListCommunities): Promise<Community[]> {
+	async listCommunities(query: ListCommunities): Promise<LFCommunity[]> {
+		const httpClient = this.getHttpClient();
 		const endpoint =
 			query.type_ === "Subscribed" ? "magazine/subscribed" : "magazines";
 		let sort: "active" | "hot" | "newest" = "active";
@@ -115,7 +106,7 @@ export class MbinClient extends LemmyClient {
 		} else {
 			sort = "active";
 		}
-		const magazines = await api
+		const magazines = await httpClient
 			.get<{ items: MbinMagazine[] }>(`https://${this.host}/api/${endpoint}`, {
 				searchParams: {
 					p: query.page || 1,
@@ -134,7 +125,8 @@ export class MbinClient extends LemmyClient {
 	private async getCommunityIdFromApIdMbin(
 		activityPubId: string,
 	): Promise<number> {
-		const result = await api
+		const httpClient = this.getHttpClient();
+		const result = await httpClient
 			.get<{
 				apActors: SearchActor[];
 			}>(`https://${this.host}/api/search?q=${activityPubId}`, {
@@ -153,7 +145,23 @@ export class MbinClient extends LemmyClient {
 		throw new Error("Could not resolve magazine by its ActivityPub id.");
 	}
 
+	private getHttpClient(): KyInstance {
+		this.httpClient ??= ky.create({
+			fetch: pThrottle({
+				limit: 1,
+				interval: 1000,
+			})(fetch),
+			timeout: ms("60 seconds"),
+			retry: { limit: 0 },
+			headers: {
+				"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",
+			},
+		});
+		return this.httpClient;
+	}
+
 	private async getBearerToken(): Promise<string> {
+		const httpClient = this.getHttpClient();
 		if (!this.oauthClientId || !this.oauthClientSecret) {
 			throw new Error("oauth client id and secret are required");
 		}
@@ -163,7 +171,7 @@ export class MbinClient extends LemmyClient {
 			body.append("client_id", this.oauthClientId);
 			body.append("client_secret", this.oauthClientSecret);
 			body.append("scope", BOT_SCOPES.join(" "));
-			const res = await api
+			const res = await httpClient
 				.post<{
 					expires_in: number;
 					access_token: string;

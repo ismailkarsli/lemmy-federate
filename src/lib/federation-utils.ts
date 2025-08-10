@@ -8,9 +8,10 @@ import {
 } from "@prisma/client";
 import { HTTPError, TimeoutError } from "ky";
 import ms from "ms";
+import type { LFClient, LFCommunity } from "../types/LFClient.ts";
 import { ActivityPubClient } from "./activity-pub-client.ts";
 import { getCensuresGiven, getEndorsements } from "./fediseer.ts";
-import { type Community as Community_, LemmyClient } from "./lemmy.ts";
+import { LemmyClient } from "./lemmy.ts";
 import { MbinClient } from "./mbin.ts";
 import { prisma } from "./prisma.ts";
 import { isGenericAP } from "./utils.ts";
@@ -21,11 +22,10 @@ import { isGenericAP } from "./utils.ts";
 const clientCacheMap = new Map<
 	string,
 	{
-		client: LemmyClient | MbinClient | ActivityPubClient;
+		client: LFClient;
 		expiration: Date;
 	}
 >();
-const initializingClients = new Set<string>();
 export const getClient = async ({
 	host,
 	software,
@@ -37,34 +37,24 @@ export const getClient = async ({
 	if (cached && cached.expiration > new Date()) {
 		return cached.client;
 	}
-	// wait for concurrent client initialization.
-	while (initializingClients.has(key)) {
-		await new Promise((r) => setTimeout(r, 1000));
-	}
 	const cachedNew = clientCacheMap.get(key);
 	if (cachedNew) return cachedNew.client;
-	initializingClients.add(key);
-	try {
-		let client: LemmyClient | MbinClient | ActivityPubClient;
-		const id = client_id ?? undefined;
-		const secret = client_secret ?? undefined;
-		if (software === "lemmy") {
-			client = new LemmyClient(host, id, secret);
-		} else if (software === "mbin") {
-			client = new MbinClient(host, id, secret);
-		} else {
-			client = new ActivityPubClient(host);
-		}
-		await client.init();
-
-		clientCacheMap.set(key, {
-			client,
-			expiration: new Date(Date.now() + ms("1 day")),
-		});
-		return client;
-	} finally {
-		initializingClients.delete(key);
+	let client: LFClient;
+	const id = client_id ?? undefined;
+	const secret = client_secret ?? undefined;
+	if (software === "lemmy") {
+		client = new LemmyClient(host, id, secret);
+	} else if (software === "mbin") {
+		client = new MbinClient(host, id, secret);
+	} else {
+		client = new ActivityPubClient(host);
 	}
+
+	clientCacheMap.set(key, {
+		client,
+		expiration: new Date(Date.now() + ms("1 day")),
+	});
+	return client;
 };
 
 /**
@@ -205,7 +195,7 @@ export const conditionalFollow = async (
 	 * We passed all the checks, now we can fetch the community
 	 */
 
-	let localCommunity: Community_;
+	let localCommunity: LFCommunity;
 	try {
 		localCommunity = await localClient.getCommunity(
 			`${community.name}@${community.instance.host}`,

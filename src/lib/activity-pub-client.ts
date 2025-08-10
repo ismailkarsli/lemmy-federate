@@ -4,7 +4,7 @@ import ky, { type KyInstance } from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
 import pThrottle from "p-throttle";
-import type { Community } from "./lemmy.ts";
+import type { LFClient, LFCommunity } from "../types/LFClient.ts";
 
 const { expand } = jsonld;
 
@@ -33,7 +33,7 @@ interface CollectionPage<T> extends Collection<T> {
 	prev: CollectionPage<T> | string;
 }
 
-export class ActivityPubClient {
+export class ActivityPubClient implements LFClient {
 	public type = "activity_pub";
 
 	public host: string;
@@ -44,9 +44,7 @@ export class ActivityPubClient {
 		this.host = host;
 	}
 
-	async init() {}
-
-	async getCommunity(communityName: string): Promise<Community> {
+	async getCommunity(communityName: string): Promise<LFCommunity> {
 		const [name, host] = communityName.split("@");
 		if (host && host !== this.host) {
 			throw new Error(
@@ -124,13 +122,13 @@ export class ActivityPubClient {
 		);
 	}
 
-	async listCommunities(_query: ListCommunities): Promise<Community[]> {
+	async listCommunities(_query: ListCommunities): Promise<LFCommunity[]> {
 		throw new Error(
 			"Listing communities with ActivityPubClient is not possible.",
 		);
 	}
 
-	private async getHttpClient(): Promise<KyInstance> {
+	private getHttpClient(): KyInstance {
 		this.httpClient ??= ky.create({
 			fetch: pThrottle({
 				limit: 1,
@@ -142,14 +140,13 @@ export class ActivityPubClient {
 				"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",
 			},
 		});
-
 		return this.httpClient;
 	}
 
 	private async fetchWebfinger(name: string): Promise<JsonLdDocument> {
 		const acct = `acct:${name}@${this.host}`;
 		const webfingerUrl = `https://${this.host}/.well-known/webfinger?resource=${acct}`;
-		const httpClient = await this.getHttpClient();
+		const httpClient = this.getHttpClient();
 
 		const response = httpClient.get<WebfingerResponse>(webfingerUrl, {
 			headers: {
@@ -185,7 +182,7 @@ export class ActivityPubClient {
 	private async resolveCollection<T>(
 		collectionOrLink: Collection<T> | string,
 	): Promise<T[] | null> {
-		const httpClient = await this.getHttpClient();
+		const httpClient = this.getHttpClient();
 
 		let collection: Collection<T>;
 
@@ -230,7 +227,7 @@ export class ActivityPubClient {
 			return page;
 		}
 
-		const httpClient = await this.getHttpClient();
+		const httpClient = this.getHttpClient();
 		const response = await httpClient.get<CollectionPage<T>>(page, {
 			headers: { Accept: "application/activity+json" },
 		});
@@ -242,9 +239,7 @@ export class ActivityPubClient {
 		if (value === null) {
 			return null;
 		}
-
 		const singleItem = Array.isArray(value) ? value[0] : value;
-
 		return singleItem["@value"] as T | null;
 	}
 }

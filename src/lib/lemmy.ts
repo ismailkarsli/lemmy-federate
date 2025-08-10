@@ -6,30 +6,12 @@ import {
 	type ListCommunities,
 	type Login,
 	type LoginResponse,
-	type SubscribedType,
 } from "lemmy-js-client";
 import ms from "ms";
 import pThrottle from "p-throttle";
+import type { LFClient, LFCommunity } from "../types/LFClient.ts";
 
-export type User = {
-	username: string;
-	isBanned: boolean;
-	isBot: boolean;
-	isAdmin: boolean;
-};
-
-export type Community = {
-	id: number | string;
-	name: string;
-	isDeleted: boolean;
-	isRemoved: boolean;
-	nsfw: boolean;
-	localSubscribers: number | null;
-	subscribed: SubscribedType;
-	public: boolean;
-};
-
-const lemmyCommunityToCommunity = (cv: CommunityView): Community => ({
+const lemmyCommunityToCommunity = (cv: CommunityView): LFCommunity => ({
 	id: cv.community.id,
 	name: cv.community.name,
 	isDeleted: cv.community.deleted,
@@ -40,7 +22,7 @@ const lemmyCommunityToCommunity = (cv: CommunityView): Community => ({
 	public: cv.community.visibility ? cv.community.visibility === "Public" : true,
 });
 
-export class LemmyClient {
+export class LemmyClient implements LFClient {
 	public type = "lemmy";
 	public host: string;
 	protected federatedInstances?: Set<string>;
@@ -53,11 +35,7 @@ export class LemmyClient {
 		this.password = password;
 	}
 
-	async init() {
-		await this.getHttpClient();
-	}
-
-	async getCommunity(name: string): Promise<Community> {
+	async getCommunity(name: string): Promise<LFCommunity> {
 		const client = await this.getHttpClient();
 		const community = await client.getCommunity({ name });
 		return lemmyCommunityToCommunity(community.community_view);
@@ -76,7 +54,7 @@ export class LemmyClient {
 		await client.followCommunity({ community_id: resolvedCommunityId, follow });
 	}
 
-	async listCommunities(query: ListCommunities): Promise<Community[]> {
+	async listCommunities(query: ListCommunities): Promise<LFCommunity[]> {
 		const client = await this.getHttpClient();
 		const communities = await client.listCommunities(query);
 		return communities.communities.map(lemmyCommunityToCommunity);
