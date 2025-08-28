@@ -1,5 +1,6 @@
 import type { JsonLdDocument, NodeObject, ValueObject } from "jsonld";
 import jsonld from "jsonld";
+import type { RemoteDocument } from "jsonld/jsonld-spec.js";
 import ky, { type KyInstance } from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
@@ -7,6 +8,19 @@ import pThrottle from "p-throttle";
 import type { LFClient, LFCommunity } from "../types/LFClient.ts";
 
 const { expand } = jsonld;
+
+// patch jsonld to not ddos w3 servers
+// @ts-expect-error this actually exists but has no typing on library side.
+const nodeDocumentLoader = jsonld.documentLoaders.node();
+const jsonldCache = new Map<string, RemoteDocument>();
+const customLoader = async (url: string) => {
+	if (jsonldCache.has(url)) return jsonldCache.get(url);
+	const result = await nodeDocumentLoader(url);
+	jsonldCache.set(url, result);
+	return result;
+};
+// @ts-expect-error
+jsonld.documentLoader = customLoader;
 
 interface WebFingerLink {
 	rel: string;
