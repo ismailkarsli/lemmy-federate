@@ -5,6 +5,7 @@ import ky, { type KyInstance } from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
 import pThrottle from "p-throttle";
+import { redis } from "../lib/redis.ts";
 import type { LFClient, LFCommunity } from "../types/LFClient.ts";
 
 const { expand } = jsonld;
@@ -12,12 +13,24 @@ const { expand } = jsonld;
 // patch jsonld to not ddos w3 servers
 // @ts-expect-error this actually exists but has no typing on library side.
 const nodeDocumentLoader = jsonld.documentLoaders.node();
-const jsonldCache = new Map<string, RemoteDocument>();
-const customLoader = async (url: string) => {
-	if (jsonldCache.has(url)) return jsonldCache.get(url);
-	const result = await nodeDocumentLoader(url);
-	jsonldCache.set(url, result);
-	return result;
+// keep the resolved document for 180 days and try to refresh it after 30 days. if we can't refresh it, use the old cached version.
+const customLoader = async (url: string): Promise<RemoteDocument> => {
+	const key = `json-ld-cache:${url}`;
+	const cached = await redis.multi().json.get(key).ttl(key).exec();
+	const [doc, ttl] = cached as unknown as [RemoteDocument, number];
+	if (doc && ttl > ms("150 days") / 1000) return doc;
+	try {
+		const result = await nodeDocumentLoader(url);
+		await redis
+			.multi()
+			.json.set(key, "$", result)
+			.expire(key, ms("180 days") / 1000)
+			.exec();
+		return result;
+	} catch (error) {
+		if (doc) return doc;
+		throw error;
+	}
 };
 // @ts-expect-error
 jsonld.documentLoader = customLoader;
