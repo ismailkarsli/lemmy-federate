@@ -222,7 +222,7 @@ const logout = () => {
             <v-checkbox v-if="!isGeneric" label="Auto add communities" v-model="instance.auto_add" hide-details />
             <v-checkbox v-if="!isGeneric" label="Cross software" v-model="instance.cross_software" hide-details />
           </v-row>
-          <v-alert v-if="showHints" type="info" color="primary" variant="text" density="compact" class="mt-2">
+          <v-alert v-if="showHints && !isGeneric" type="info" color="primary" variant="text" density="compact" class="mt-2">
             <p>
               <strong>Auto add communities</strong>: Lemmy Federate will regularly check your instance and add any
               communities it finds automatically.
@@ -308,7 +308,7 @@ const logout = () => {
               </v-card-actions>
             </v-card>
           </v-menu>
-          <v-alert v-if="showHints" type="info" color="primary" variant="text" density="compact">
+          <v-alert v-if="showHints && !isGeneric" type="info" color="primary" variant="text" density="compact">
             <strong>Reset subscriptions</strong>:
             The bot will unsubscribe from all communities. This can be useful when you want to disable the tool.
             If the tool is enabled, then it will re-subscribe later.
