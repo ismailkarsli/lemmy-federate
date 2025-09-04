@@ -10,10 +10,10 @@ importers:
     dependencies:
       '@hono/node-server':
         specifier: ^1.18.1
-        version: 1.18.1(hono@4.9.0)
+        version: 1.18.1(hono@4.9.6)
       '@hono/trpc-server':
         specifier: 0.3.4
-        version: 0.3.4(@trpc/server@11.4.4(typescript@5.8.3))(hono@4.9.0)
+        version: 0.3.4(@trpc/server@11.4.4(typescript@5.8.3))(hono@4.9.6)
       '@mdi/font':
         specifier: 7.4.47
         version: 7.4.47
@@ -30,8 +30,8 @@ importers:
         specifier: 1.0.2
         version: 1.0.2
       hono:
-        specifier: ^4.9.0
-        version: 4.9.0
+        specifier: ^4.9.6
+        version: 4.9.6
       jsonld:
         specifier: 8.3.3
         version: 8.3.3(web-streams-polyfill@3.3.3)
@@ -766,8 +766,8 @@ packages:
     resolution: {integrity: sha512-F/1DnUGPopORZi0ni+CvrCgHQ5FyEAHRLSApuYWMmrbSwoN2Mn/7k+Gl38gJnR7yyDZk6WLXwiGod1JOWNDKGw==}
     hasBin: true
 
-  hono@4.9.0:
-    resolution: {integrity: sha512-JAUc4Sqi3lhby2imRL/67LMcJFKiCu7ZKghM7iwvltVZzxEC5bVJCsAa4NTnSfmWGb+N2eOVtFE586R+K3fejA==}
+  hono@4.9.6:
+    resolution: {integrity: sha512-doVjXhSFvYZ7y0dNokjwwSahcrAfdz+/BCLvAMa/vHLzjj8+CFyV5xteThGUsKdkaasgN+gF2mUxao+SGLpUeA==}
     engines: {node: '>=16.9.0'}
 
   hookable@5.5.3:
@@ -1277,14 +1277,14 @@ snapshots:
 
   '@fastify/busboy@2.1.1': {}
 
-  '@hono/node-server@1.18.1(hono@4.9.0)':
+  '@hono/node-server@1.18.1(hono@4.9.6)':
     dependencies:
-      hono: 4.9.0
+      hono: 4.9.6
 
-  '@hono/trpc-server@0.3.4(@trpc/server@11.4.4(typescript@5.8.3))(hono@4.9.0)':
+  '@hono/trpc-server@0.3.4(@trpc/server@11.4.4(typescript@5.8.3))(hono@4.9.6)':
     dependencies:
       '@trpc/server': 11.4.4(typescript@5.8.3)
-      hono: 4.9.0
+      hono: 4.9.6
 
   '@jridgewell/sourcemap-codec@1.5.4': {}
 
@@ -1674,7 +1674,7 @@ snapshots:
 
   he@1.2.0: {}
 
-  hono@4.9.0: {}
+  hono@4.9.6: {}
 
   hookable@5.5.3: {}
 
