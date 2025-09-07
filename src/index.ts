@@ -17,28 +17,28 @@ const NODE_ENV = z.parse(z.string(), process.env.NODE_ENV);
 const app = new Hono();
 
 app.use(
-  "/api/*",
-  cors({
-    origin:
-      NODE_ENV === "production"
-        ? APP_URL
-        : [APP_URL, "http://localhost:3000", "http://localhost:5173"],
-    credentials: true,
-  }),
+	"/api/*",
+	cors({
+		origin:
+			NODE_ENV === "production"
+				? APP_URL
+				: [APP_URL, "http://localhost:3000", "http://localhost:5173"],
+		credentials: true,
+	}),
 );
 app.use(
-  rateLimiter({
-    windowMs: 15 * 60 * 1000,
-    limit: 10,
-    keyGenerator: (c) =>
-      c.req.header("x-forwarded-for") ?? c.req.header("remote-addr") ?? "guest",
-  }),
+	rateLimiter({
+		windowMs: 15 * 60 * 1000,
+		limit: NODE_ENV === "production" ? 100 : 1000,
+		keyGenerator: (c) =>
+			c.req.header("x-forwarded-for") ?? c.req.header("remote-addr") ?? "guest",
+	}),
 );
 
 const appRouter = router({
-  auth: authRouter,
-  community: communityRouter,
-  instance: instanceRouter,
+	auth: authRouter,
+	community: communityRouter,
+	instance: instanceRouter,
 });
 
 // Export type router type signature,
@@ -46,16 +46,16 @@ const appRouter = router({
 export type AppRouter = typeof appRouter;
 
 app.use(
-  "/api/*",
-  trpcServer({
-    router: appRouter,
-    createContext,
-    onError: ({ error }) => {
-      if (error.code === "INTERNAL_SERVER_ERROR") {
-        console.error(error);
-      }
-    },
-  }),
+	"/api/*",
+	trpcServer({
+		router: appRouter,
+		createContext,
+		onError: ({ error }) => {
+			if (error.code === "INTERNAL_SERVER_ERROR") {
+				console.error(error);
+			}
+		},
+	}),
 );
 
 if (NODE_ENV === "production") startJobs();
@@ -67,18 +67,18 @@ app.all("*", serveStatic({ path: "./frontend/dist/index.html" }));
 const server = serve(app);
 
 server.on("listening", () => {
-  console.info(`Serving on ${APP_URL}`);
+	console.info(`Serving on ${APP_URL}`);
 });
 process.on("SIGINT", () => {
-  server.close();
-  process.exit(0);
+	server.close();
+	process.exit(0);
 });
 process.on("SIGTERM", () => {
-  server.close((err) => {
-    if (err) {
-      console.error(err);
-      process.exit(1);
-    }
-    process.exit(0);
-  });
+	server.close((err) => {
+		if (err) {
+			console.error(err);
+			process.exit(1);
+		}
+		process.exit(0);
+	});
 });
