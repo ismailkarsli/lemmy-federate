@@ -9,7 +9,8 @@
 		"verbatimModuleSyntax": true,
 		"skipLibCheck": true,
 		"strictNullChecks": true,
-		"strict": true
+		"strict": true,
+		"noUncheckedIndexedAccess": false
 	},
 	"include": ["src", "scripts"]
 }
