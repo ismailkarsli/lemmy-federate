@@ -28,10 +28,14 @@ app.use(
 );
 app.use(
 	rateLimiter({
-		windowMs: 15 * 60 * 1000,
+		windowMs: 60 * 1000,
 		limit: NODE_ENV === "production" ? 100 : 1000,
 		keyGenerator: (c) =>
-			c.req.header("x-forwarded-for") ?? c.req.header("remote-addr") ?? "guest",
+			c.req.header("x-forwarded-for") ??
+			c.req.header("x-real-ip") ??
+			c.req.header("remote-addr") ??
+			c.req.header("cf-connecting-ip") ??
+			"anon",
 	}),
 );
 
