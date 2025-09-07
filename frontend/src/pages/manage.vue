@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useMutation, useQuery } from "@tanstack/vue-query";
-import { computed, ref, watchEffect } from "vue";
-import { watch } from "vue";
+import { computed, ref, watch, watchEffect } from "vue";
 import { useRouter } from "vue-router";
 import { getHumanReadableSoftwareName, isGenericAP } from "../lib/utils";
 import { useAuthStore } from "../stores/auth";

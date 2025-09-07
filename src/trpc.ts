@@ -1,4 +1,4 @@
-import { TRPCError, initTRPC } from "@trpc/server";
+import { initTRPC, TRPCError } from "@trpc/server";
 import type { FetchCreateContextFnOptions } from "@trpc/server/adapters/fetch";
 import cookie, { type SerializeOptions } from "cookie";
 import jwt from "jsonwebtoken";
@@ -33,7 +33,7 @@ export async function createContext({
 	if (token) {
 		try {
 			instance = jwt.verify(token, SECRET_KEY) as JWTInstance;
-		} catch (e) {
+		} catch (_e) {
 			setCookie("token", "", {
 				maxAge: -1,
 				httpOnly: true,

@@ -117,7 +117,7 @@ export const authRouter = router({
 					const guaranteed =
 						((await getGuarantees(host))?.domains?.length ?? 0) > 0;
 					if (!guaranteed) throw new Error();
-				} catch (e) {
+				} catch (_e) {
 					throw new TRPCError({
 						code: "FORBIDDEN",
 						message:
