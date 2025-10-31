@@ -1,21 +1,47 @@
 {
-	"format_on_save": "language_server",
-	"formatter": {
-		"language_server": {
-			"name": "biome"
-		}
-	},
 	"lsp": {
 		"biome": {
-			"configuration_path": "./biome.json",
+			"binary": {
+				"path": "./node_modules/@biomejs/biome/bin/biome",
+				"arguments": ["lsp-proxy"]
+			},
 			"settings": {
 				"config_path": "./biome.json",
-				"configuration_path": "./biome.json"
+				"require_config_file": true
 			}
 		}
 	},
-	"code_actions_on_format": {
-		"source.fixAll.biome": true,
-		"source.organizeImports.biome": true
+	"languages": {
+		"JavaScript": {
+			"formatter": { "language_server": { "name": "biome" } },
+			"code_actions_on_format": {
+				"source.fixAll.biome": true,
+				"source.organizeImports.biome": true
+			}
+		},
+		"TypeScript": {
+			"formatter": { "language_server": { "name": "biome" } },
+			"code_actions_on_format": {
+				"source.fixAll.biome": true,
+				"source.organizeImports.biome": true
+			}
+		},
+		"TSX": {
+			"formatter": { "language_server": { "name": "biome" } },
+			"code_actions_on_format": {
+				"source.fixAll.biome": true,
+				"source.organizeImports.biome": true
+			}
+		},
+		"Vue.js": {
+			"formatter": { "language_server": { "name": "biome" } },
+			"code_actions_on_format": {
+				"source.fixAll.biome": true,
+				"source.organizeImports.biome": true
+			}
+		},
+		"JSON": { "formatter": { "language_server": { "name": "biome" } } },
+		"JSONC": { "formatter": { "language_server": { "name": "biome" } } },
+		"CSS": { "formatter": { "language_server": { "name": "biome" } } }
 	}
 }
