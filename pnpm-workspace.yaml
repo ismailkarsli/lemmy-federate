@@ -1,8 +1,10 @@
 ignoredBuiltDependencies:
   - esbuild
+  - msgpackr-extract
   - vue-demi
+
 onlyBuiltDependencies:
-  - "@biomejs/biome"
-  - "@prisma/client"
-  - "@prisma/engines"
+  - '@biomejs/biome'
+  - '@prisma/client'
+  - '@prisma/engines'
   - prisma
