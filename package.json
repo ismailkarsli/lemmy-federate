@@ -38,7 +38,7 @@
 		"zod": "^4.1.5"
 	},
 	"devDependencies": {
-		"@biomejs/biome": "2.2.3",
+		"@biomejs/biome": "2.3.2",
 		"@tanstack/vue-query": "5.87.1",
 		"@types/jsonld": "1.5.15",
 		"@types/jsonwebtoken": "9.0.10",
