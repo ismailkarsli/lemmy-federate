@@ -5,7 +5,7 @@ import {
 	NSFW,
 	PrismaClient,
 } from "@prisma/client";
-import { z } from "zod/v4";
+import { z } from "zod";
 
 const globalForPrisma = globalThis as unknown as { prisma: PrismaClient };
 
