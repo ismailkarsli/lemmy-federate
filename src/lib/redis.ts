@@ -1,4 +1,3 @@
-import { Redis as IORedis } from "ioredis";
 import { createClient } from "redis";
 import * as z from "zod/v4";
 
@@ -11,4 +10,3 @@ client.on("error", (err) => {
 
 await client.connect();
 export const redis = client;
-export const ioredis = new IORedis(url); // used in bullmq
