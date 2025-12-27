@@ -1,0 +1,33 @@
+name = "lemmy-federate"
+main = "src/index.ts"
+compatibility_date = "2024-12-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Static assets from frontend build
+assets = { directory = "frontend/dist" }
+
+# D1 Database
+[[d1_databases]]
+binding = "DB"
+database_name = "lemmy-federate-db"
+database_id = "2bbdee73-54a2-4366-b50e-e53b4221ef60"
+migrations_dir = "prisma/migrations"
+
+# KV Namespace for caching
+[[kv_namespaces]]
+binding = "CACHE"
+id = "b833ea68933f4bc58d8e9496ca3df22c"
+
+# Environment variables (secrets set via `wrangler secret put`)
+# SECRET_KEY, MASTER_KEY, BLACKLISTED_INSTANCES
+
+[vars]
+NODE_ENV = "production"
+
+# Cron triggers for background jobs
+[triggers]
+crons = [
+  "*/1 * * * *",  # updateFollows, addNewCommunities - every minute
+  "0 0 * * *",    # addAllCommunities - daily at midnight
+  "0 0 */2 * *",  # clearDeletedCommunities - every 2 days
+]

@@ -1,19 +1,16 @@
-#!/usr/bin/env node
 import { CommunityFollowStatus } from "@prisma/client";
 import ms from "ms";
 import {
 	conditionalFollow,
 	getFederationErrorReason,
 } from "../src/lib/federation-utils.ts";
-import { prisma } from "../src/lib/prisma.ts";
-import { isMain } from "../src/lib/utils.ts";
+import { KVCache } from "../src/lib/kv.ts";
+import { getPrisma } from "../src/lib/prisma.ts";
 
-if (isMain(import.meta.url)) {
-	await updateFollows();
-	process.exit(0);
-}
+export async function updateFollows(env: CloudflareBindings) {
+	const prisma = getPrisma(env);
+	const kv = new KVCache(env.CACHE);
 
-export async function updateFollows() {
 	const communityFollows = await prisma.communityFollow.findMany({
 		take: 100,
 		where: {
@@ -60,7 +57,7 @@ export async function updateFollows() {
 			return;
 		}
 		try {
-			const status = await conditionalFollow(cf);
+			const status = await conditionalFollow(cf, kv);
 			await prisma.communityFollow.update({
 				where: {
 					id: cf.id,

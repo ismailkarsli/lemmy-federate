@@ -1,19 +1,18 @@
-#!/usr/bin/env node
 import {
 	conditionalFollowWithAllInstances,
 	getClient,
 } from "../src/lib/federation-utils.ts";
-import { prisma } from "../src/lib/prisma.ts";
-import { isGenericAP, isMain } from "../src/lib/utils.ts";
-
-if (isMain(import.meta.url)) {
-	addNewCommunities();
-}
+import { KVCache } from "../src/lib/kv.ts";
+import { getPrisma } from "../src/lib/prisma.ts";
+import { isGenericAP } from "../src/lib/utils.ts";
 
 /**
  * Fetch 50 newest communities from instances and add them to the database if they don't exist
  */
-export async function addNewCommunities() {
+export async function addNewCommunities(env: CloudflareBindings) {
+	const prisma = getPrisma(env);
+	const kv = new KVCache(env.CACHE);
+
 	console.info("Adding communities");
 	const instances = await prisma.instance.findMany({
 		where: {
@@ -28,7 +27,7 @@ export async function addNewCommunities() {
 		try {
 			// Seed-only instances can't list or follow communities
 			if (isGenericAP(instance.software)) continue;
-			const client = await getClient(instance);
+			const client = await getClient(instance, kv);
 
 			const communities = await client.listCommunities({
 				type_: "Local",
@@ -55,7 +54,7 @@ export async function addNewCommunities() {
 							instance: { omit: { client_id: false, client_secret: false } },
 						},
 					});
-					conditionalFollowWithAllInstances(addedCommunity);
+					conditionalFollowWithAllInstances(addedCommunity, prisma, kv);
 				}
 			}
 		} catch (error) {

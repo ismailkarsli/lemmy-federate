@@ -1,41 +1,22 @@
-import { serve } from "@hono/node-server";
-import { serveStatic } from "@hono/node-server/serve-static";
 import { trpcServer } from "@hono/trpc-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { rateLimiter } from "hono-rate-limiter";
-import * as z from "zod/v4";
-import { startJobs } from "../scripts/start-jobs.ts";
 import { authRouter } from "./routes/auth.ts";
 import { communityRouter } from "./routes/community.ts";
 import { instanceRouter } from "./routes/instance.ts";
 import { createContext, router } from "./trpc.ts";
 
-const APP_URL = z.parse(z.string(), process.env.APP_URL);
-const NODE_ENV = z.parse(z.string(), process.env.NODE_ENV);
-
-const app = new Hono();
+const app = new Hono<{ Bindings: CloudflareBindings }>();
 
 app.use(
 	"/api/*",
 	cors({
-		origin:
-			NODE_ENV === "production"
-				? APP_URL
-				: [APP_URL, "http://localhost:3000", "http://localhost:5173"],
+		origin: (origin) => {
+			// In production, allow requests from the same origin
+			// Workers automatically handle same-origin requests
+			return origin;
+		},
 		credentials: true,
-	}),
-);
-app.use(
-	rateLimiter({
-		windowMs: 60 * 1000,
-		limit: NODE_ENV === "production" ? 100 : 1000,
-		keyGenerator: (c) =>
-			c.req.header("x-forwarded-for") ??
-			c.req.header("x-real-ip") ??
-			c.req.header("remote-addr") ??
-			c.req.header("cf-connecting-ip") ??
-			"anon",
 	}),
 );
 
@@ -62,27 +43,44 @@ app.use(
 	}),
 );
 
-if (NODE_ENV === "production") startJobs();
+// Scheduled handler for cron jobs
+async function scheduled(
+	event: ScheduledEvent,
+	env: CloudflareBindings,
+	_ctx: ExecutionContext,
+) {
+	// Import job functions dynamically to avoid circular dependencies
+	const { updateFollows } = await import("../scripts/update-follows.ts");
+	const { addNewCommunities } = await import(
+		"../scripts/add-new-communities.ts"
+	);
+	const { addAllCommunities } = await import(
+		"../scripts/add-all-communities.ts"
+	);
+	const { clearDeletedCommunities } = await import(
+		"../scripts/clear-deleted-communities.ts"
+	);
 
-app.all("/assets/*", serveStatic({ root: "./frontend/dist" }));
-app.get("/favicon.ico", serveStatic({ path: "./frontend/dist/favicon.ico" }));
-app.all("*", serveStatic({ path: "./frontend/dist/index.html" }));
+	const hour = new Date(event.scheduledTime).getUTCHours();
+	const day = new Date(event.scheduledTime).getUTCDate();
 
-const server = serve(app);
+	// Every minute jobs
+	await updateFollows(env);
+	await addNewCommunities(env);
 
-server.on("listening", () => {
-	console.info(`Serving on ${APP_URL}`);
-});
-process.on("SIGINT", () => {
-	server.close();
-	process.exit(0);
-});
-process.on("SIGTERM", () => {
-	server.close((err) => {
-		if (err) {
-			console.error(err);
-			process.exit(1);
+	// Daily at midnight (hour 0)
+	if (hour === 0) {
+		await addAllCommunities(env);
+
+		// Every 2 days (odd days)
+		if (day % 2 === 1) {
+			await clearDeletedCommunities(env);
 		}
-		process.exit(0);
-	});
-});
+	}
+}
+
+// Export for Cloudflare Workers
+export default {
+	fetch: app.fetch,
+	scheduled,
+};

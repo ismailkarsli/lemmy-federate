@@ -1,5 +1,3 @@
-import crypto from "node:crypto";
-import { fileURLToPath } from "node:url";
 import { TRPCError } from "@trpc/server";
 import ky from "ky";
 import * as z from "zod/v4";
@@ -70,12 +68,6 @@ export function isGenericAP(name: string): boolean {
 	}
 }
 
-export function isMain(moduleUrl: string) {
-	const modulePath = fileURLToPath(moduleUrl);
-	const [_binPath, mainScriptPath] = process.argv;
-	return modulePath === mainScriptPath;
-}
-
 interface DNSResponse {
 	Answer: { data: string }[];
 }
@@ -95,13 +87,28 @@ export async function getDnsTxtRecords(domain: string) {
 	return records;
 }
 
+// Web Crypto API compatible random string generator
 export function randomString(length: number) {
 	const chars =
 		"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?";
+	const bytes = new Uint8Array(length);
+	crypto.getRandomValues(bytes);
 	let result = "";
-	const bytes = crypto.randomBytes(length);
 	for (let i = 0; i < length; i++) {
 		result += chars[bytes[i] % chars.length];
 	}
 	return result;
+}
+
+// Constant-time comparison for security-sensitive comparisons
+export function timingSafeEqual(a: string, b: string): boolean {
+	if (a.length !== b.length) return false;
+	const encoder = new TextEncoder();
+	const aBytes = encoder.encode(a);
+	const bBytes = encoder.encode(b);
+	let result = 0;
+	for (let i = 0; i < aBytes.length; i++) {
+		result |= aBytes[i] ^ bBytes[i];
+	}
+	return result === 0;
 }

@@ -2,7 +2,7 @@ import type { Prisma } from "@prisma/client";
 import { TRPCError } from "@trpc/server";
 import * as z from "zod/v4";
 import { resetSubscriptions } from "../lib/federation-utils.ts";
-import { InstanceSchema, prisma } from "../lib/prisma.ts";
+import { InstanceSchema } from "../lib/prisma.ts";
 import { isGenericAP } from "../lib/utils.ts";
 import { protectedProcedure, publicProcedure, router } from "../trpc.ts";
 
@@ -16,7 +16,7 @@ const FindArgsSchema = z.object({
 
 export const instanceRouter = router({
 	get: protectedProcedure.query(async ({ ctx }) => {
-		const instance = await prisma.instance.findFirst({
+		const instance = await ctx.prisma.instance.findFirst({
 			where: {
 				host: ctx.instance.sub,
 			},
@@ -32,12 +32,12 @@ export const instanceRouter = router({
 	update: protectedProcedure
 		.input(InstanceSchema)
 		.mutation(async ({ input, ctx }) => {
-			const instance = await prisma.instance.findFirst({
+			const instance = await ctx.prisma.instance.findFirst({
 				where: { host: ctx.instance.sub, id: input.id },
 			});
 			if (!instance) throw new TRPCError({ code: "NOT_FOUND" });
 			const isGeneric = isGenericAP(instance.software);
-			const updated = await prisma.instance.update({
+			const updated = await ctx.prisma.instance.update({
 				where: {
 					host: ctx.instance.sub,
 					id: input.id,
@@ -66,7 +66,7 @@ export const instanceRouter = router({
 			});
 
 			if (input.enabled === false) {
-				await prisma.community.deleteMany({
+				await ctx.prisma.community.deleteMany({
 					where: {
 						instance,
 					},
@@ -74,13 +74,13 @@ export const instanceRouter = router({
 			}
 
 			// soft reset subscriptions to re-check with up to date settings.
-			resetSubscriptions(updated, { soft: true });
+			resetSubscriptions(updated, ctx.prisma, { soft: true });
 
 			return updated;
 		}),
 	find: publicProcedure
 		.input(z.optional(FindArgsSchema))
-		.query(async ({ input }) => {
+		.query(async ({ input, ctx }) => {
 			const where: Prisma.InstanceWhereInput = {};
 			if (input?.enabledOnly) {
 				where.enabled = true;
@@ -91,8 +91,8 @@ export const instanceRouter = router({
 			if (input?.software) {
 				where.software = input.software || undefined;
 			}
-			const [instances, total, softwares] = await prisma.$transaction([
-				prisma.instance.findMany({
+			const [instances, total, softwares] = await Promise.all([
+				ctx.prisma.instance.findMany({
 					select: {
 						id: true,
 						host: true,
@@ -105,8 +105,8 @@ export const instanceRouter = router({
 					orderBy: [{ enabled: "desc" }, { id: "asc" }],
 					where,
 				}),
-				prisma.instance.count(),
-				prisma.instance.findMany({
+				ctx.prisma.instance.count(),
+				ctx.prisma.instance.findMany({
 					distinct: ["software"],
 					select: { software: true },
 				}),
@@ -118,7 +118,7 @@ export const instanceRouter = router({
 			};
 		}),
 	resetSubscriptions: protectedProcedure.query(async ({ ctx }) => {
-		const instance = await prisma.instance.findFirst({
+		const instance = await ctx.prisma.instance.findFirst({
 			where: {
 				host: ctx.instance.sub,
 			},
@@ -132,7 +132,7 @@ export const instanceRouter = router({
 			});
 		}
 
-		resetSubscriptions(instance);
+		resetSubscriptions(instance, ctx.prisma);
 
 		return {
 			message: "Started resetting subscriptions. This may take a while.",
@@ -142,7 +142,7 @@ export const instanceRouter = router({
 		add: protectedProcedure
 			.input(z.object({ instanceId: z.number() }))
 			.mutation(async ({ ctx, input }) => {
-				const instance = await prisma.instance.update({
+				const instance = await ctx.prisma.instance.update({
 					where: {
 						host: ctx.instance.sub,
 					},
@@ -157,7 +157,7 @@ export const instanceRouter = router({
 				});
 
 				// soft reset subscriptions to re-check with up to date settings.
-				resetSubscriptions(instance, { soft: true });
+				resetSubscriptions(instance, ctx.prisma, { soft: true });
 
 				return {
 					message: "Instance added to allowed list",
@@ -166,7 +166,7 @@ export const instanceRouter = router({
 		delete: protectedProcedure
 			.input(z.object({ instanceId: z.number() }))
 			.mutation(async ({ ctx, input }) => {
-				const instance = await prisma.instance.update({
+				const instance = await ctx.prisma.instance.update({
 					where: {
 						host: ctx.instance.sub,
 					},
@@ -181,7 +181,7 @@ export const instanceRouter = router({
 				});
 
 				// soft reset subscriptions to re-check with up to date settings.
-				resetSubscriptions(instance, { soft: true });
+				resetSubscriptions(instance, ctx.prisma, { soft: true });
 
 				return {
 					message: "Instance removed from allowed list",
@@ -192,7 +192,7 @@ export const instanceRouter = router({
 		add: protectedProcedure
 			.input(z.object({ instanceId: z.number() }))
 			.mutation(async ({ ctx, input }) => {
-				const instance = await prisma.instance.update({
+				const instance = await ctx.prisma.instance.update({
 					where: {
 						host: ctx.instance.sub,
 					},
@@ -207,7 +207,7 @@ export const instanceRouter = router({
 				});
 
 				// soft reset subscriptions to re-check with up to date settings.
-				resetSubscriptions(instance, { soft: true });
+				resetSubscriptions(instance, ctx.prisma, { soft: true });
 
 				return {
 					message: "Instance added to blocked list",
@@ -216,7 +216,7 @@ export const instanceRouter = router({
 		delete: protectedProcedure
 			.input(z.object({ instanceId: z.number() }))
 			.mutation(async ({ ctx, input }) => {
-				const instance = await prisma.instance.update({
+				const instance = await ctx.prisma.instance.update({
 					where: {
 						host: ctx.instance.sub,
 					},
@@ -231,7 +231,7 @@ export const instanceRouter = router({
 				});
 
 				// soft reset subscriptions to re-check with up to date settings.
-				resetSubscriptions(instance, { soft: true });
+				resetSubscriptions(instance, ctx.prisma, { soft: true });
 
 				return {
 					message: "Instance removed from blocked list",

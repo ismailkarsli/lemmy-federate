@@ -4,36 +4,56 @@ import type { RemoteDocument } from "jsonld/jsonld-spec.js";
 import ky, { type KyInstance } from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
-import pThrottle from "p-throttle";
-import { redis } from "../lib/redis.ts";
 import type { LFClient, LFCommunity } from "../types/LFClient.ts";
+import type { KVCache } from "./kv.ts";
 
 const { expand } = jsonld;
 
-// patch jsonld to not ddos w3 servers
-// @ts-expect-error this actually exists but has no typing on library side.
-const nodeDocumentLoader = jsonld.documentLoaders.node();
-// keep the resolved document for 180 days and try to refresh it after 30 days. if we can't refresh it, use the old cached version.
-const customLoader = async (url: string): Promise<RemoteDocument> => {
-	const key = `json-ld-cache:${url}`;
-	const cached = await redis.multi().json.get(key).ttl(key).exec();
-	const [doc, ttl] = cached as unknown as [RemoteDocument, number];
-	if (doc && ttl > ms("150 days") / 1000) return doc;
-	try {
-		const result = await nodeDocumentLoader(url);
-		await redis
-			.multi()
-			.json.set(key, "$", result)
-			.expire(key, ms("180 days") / 1000)
-			.exec();
-		return result;
-	} catch (error) {
-		if (doc) return doc;
-		throw error;
-	}
-};
-// @ts-expect-error
-jsonld.documentLoader = customLoader;
+// Custom document loader using fetch (Workers-compatible, replaces Node.js loader)
+const createCustomLoader =
+	(kv: KVCache) =>
+	async (url: string): Promise<RemoteDocument> => {
+		const key = `json-ld-cache:${url}`;
+		const TTL_SECONDS = Math.floor(ms("180 days") / 1000);
+
+		// Try to get cached document
+		const cached = await kv.get<RemoteDocument>(key);
+		if (cached) {
+			// Return cached version - KV handles expiration automatically
+			// We'll try to refresh in background, but for now return cached
+			return cached;
+		}
+
+		try {
+			// Fetch fresh document
+			const response = await fetch(url, {
+				headers: {
+					Accept: "application/ld+json, application/json",
+					"User-Agent": "LemmyFederate/1.0 (+https://lemmy-federate.com)",
+				},
+			});
+
+			if (!response.ok) {
+				throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+			}
+
+			const document =
+				(await response.json()) as import("jsonld/jsonld-spec.js").JsonLd;
+			const result: RemoteDocument = {
+				contextUrl: undefined,
+				document,
+				documentUrl: url,
+			};
+
+			// Cache the result
+			await kv.set(key, result, TTL_SECONDS);
+			return result;
+		} catch (error) {
+			// If we have a cached version, return it even if expired
+			if (cached) return cached;
+			throw error;
+		}
+	};
 
 interface WebFingerLink {
 	rel: string;
@@ -66,9 +86,11 @@ export class ActivityPubClient implements LFClient {
 	public host: string;
 
 	private httpClient: KyInstance | null = null;
+	private customLoader: (url: string) => Promise<RemoteDocument>;
 
-	constructor(host: string) {
+	constructor(host: string, kv: KVCache) {
 		this.host = host;
+		this.customLoader = createCustomLoader(kv);
 	}
 
 	async getCommunity(communityName: string): Promise<LFCommunity> {
@@ -84,59 +106,68 @@ export class ActivityPubClient implements LFClient {
 			followers: Collection<string> | string;
 		};
 
-		const expanded = await expand(communityResponse);
-		const expandedItem = expanded[0];
+		// Use custom loader that works with KV cache
+		const originalLoader = (jsonld as any).documentLoader;
+		(jsonld as any).documentLoader = this.customLoader;
 
-		if (
-			(expandedItem["@type"] as string[])[0] !==
-			"https://www.w3.org/ns/activitystreams#Group"
-		) {
-			throw new Error("The fetched community is not of the Group type.");
+		try {
+			const expanded = await expand(communityResponse);
+			const expandedItem = expanded[0];
+
+			if (
+				(expandedItem["@type"] as string[])[0] !==
+				"https://www.w3.org/ns/activitystreams#Group"
+			) {
+				throw new Error("The fetched community is not of the Group type.");
+			}
+
+			const followers = (expandedItem[
+				"https://www.w3.org/ns/activitystreams#followers"
+			] ?? null) as NodeObject[] | null;
+			let followersCollection: string[] | null;
+			if (typeof followers?.[0]?.["@id"] !== "undefined") {
+				followersCollection = await this.resolveCollection(
+					(followers as NodeObject[])?.[0]?.["@id"] as string,
+				);
+			} else if (
+				followers?.[0]?.["@type"]?.[0] ===
+					"https://www.w3.org/ns/activitystreams#Collection" ||
+				followers?.[0]?.["@type"]?.[0] ===
+					"https://www.w3.org/ns/activitystreams#OrderedCollection"
+			) {
+				followersCollection = await this.resolveCollection(
+					communityResponse.followers as Collection<string>,
+				);
+			} else {
+				followersCollection = null;
+			}
+
+			return {
+				id: expandedItem["@id"] as string,
+				name: this.getValue(
+					expandedItem[
+						"https://www.w3.org/ns/activitystreams#preferredUsername"
+					] as ValueObject[],
+				) as string,
+				isDeleted: false,
+				isRemoved: false,
+				nsfw:
+					this.getValue(
+						(expandedItem["https://www.w3.org/ns/activitystreams#sensitive"] ??
+							null) as ValueObject[] | null,
+					) ?? false,
+				public: true,
+				subscribed: "NotSubscribed", // not possible to determine, there's no current user
+				localSubscribers:
+					followersCollection?.filter((item) => {
+						const url = new URL(item);
+						return url.host === this.host;
+					})?.length ?? null,
+			};
+		} finally {
+			// Restore original loader
+			(jsonld as any).documentLoader = originalLoader;
 		}
-
-		const followers = (expandedItem[
-			"https://www.w3.org/ns/activitystreams#followers"
-		] ?? null) as NodeObject[] | null;
-		let followersCollection: string[] | null;
-		if (typeof followers?.[0]?.["@id"] !== "undefined") {
-			followersCollection = await this.resolveCollection(
-				(followers as NodeObject[])?.[0]?.["@id"] as string,
-			);
-		} else if (
-			followers?.[0]?.["@type"]?.[0] ===
-				"https://www.w3.org/ns/activitystreams#Collection" ||
-			followers?.[0]?.["@type"]?.[0] ===
-				"https://www.w3.org/ns/activitystreams#OrderedCollection"
-		) {
-			followersCollection = await this.resolveCollection(
-				communityResponse.followers as Collection<string>,
-			);
-		} else {
-			followersCollection = null;
-		}
-
-		return {
-			id: expandedItem["@id"] as string,
-			name: this.getValue(
-				expandedItem[
-					"https://www.w3.org/ns/activitystreams#preferredUsername"
-				] as ValueObject[],
-			) as string,
-			isDeleted: false,
-			isRemoved: false,
-			nsfw:
-				this.getValue(
-					(expandedItem["https://www.w3.org/ns/activitystreams#sensitive"] ??
-						null) as ValueObject[] | null,
-				) ?? false,
-			public: true,
-			subscribed: "NotSubscribed", // not possible to determine, there's no current user
-			localSubscribers:
-				followersCollection?.filter((item) => {
-					const url = new URL(item);
-					return url.host === this.host;
-				})?.length ?? null,
-		};
 	}
 
 	async followCommunity(
@@ -157,10 +188,6 @@ export class ActivityPubClient implements LFClient {
 
 	private getHttpClient(): KyInstance {
 		this.httpClient ??= ky.create({
-			fetch: pThrottle({
-				limit: 1,
-				interval: 1000,
-			})(fetch),
 			timeout: ms("60 seconds"),
 			retry: 1,
 			headers: {

@@ -5,7 +5,6 @@ import {
 	conditionalFollowWithAllInstances,
 	getClient,
 } from "../lib/federation-utils.ts";
-import { prisma } from "../lib/prisma.ts";
 import { publicProcedure, router } from "../trpc.ts";
 
 const FindArgsSchema = z.object({
@@ -21,7 +20,7 @@ export const communityRouter = router({
 				community: z.string(),
 			}),
 		)
-		.mutation(async ({ input }) => {
+		.mutation(async ({ input, ctx }) => {
 			// remove ! prefix if present
 			const symbol = input?.community?.replace(/^!/, "")?.trim();
 
@@ -41,7 +40,7 @@ export const communityRouter = router({
 				});
 			}
 
-			const instance = await prisma.instance.findUnique({
+			const instance = await ctx.prisma.instance.findUnique({
 				where: {
 					host,
 				},
@@ -60,7 +59,7 @@ export const communityRouter = router({
 				});
 			}
 
-			const client = await getClient(instance);
+			const client = await getClient(instance, ctx.kv);
 			const community = await client.getCommunity(name);
 			if (!community) {
 				throw new TRPCError({
@@ -81,7 +80,7 @@ export const communityRouter = router({
 				});
 			}
 
-			const addedCommunity = await prisma.community.upsert({
+			const addedCommunity = await ctx.prisma.community.upsert({
 				where: {
 					name_instanceId: {
 						name,
@@ -107,7 +106,7 @@ export const communityRouter = router({
 				},
 			});
 
-			await prisma.communityFollow.updateMany({
+			await ctx.prisma.communityFollow.updateMany({
 				where: {
 					community: addedCommunity,
 				},
@@ -116,18 +115,18 @@ export const communityRouter = router({
 				},
 			});
 
-			conditionalFollowWithAllInstances(addedCommunity);
+			conditionalFollowWithAllInstances(addedCommunity, ctx.prisma, ctx.kv);
 
 			return {
 				message: "Community added successfully",
 			};
 		}),
-	find: publicProcedure.input(FindArgsSchema).query(async ({ input }) => {
+	find: publicProcedure.input(FindArgsSchema).query(async ({ input, ctx }) => {
 		const skip = Number.parseInt(input.skip?.toString() || "0");
 		const take = Number.parseInt(input.take?.toString() || "10");
 		const [communities, communityCount, instanceCount, stats] =
-			await prisma.$transaction([
-				prisma.community.findMany({
+			await Promise.all([
+				ctx.prisma.community.findMany({
 					include: {
 						instance: {
 							select: {
@@ -151,11 +150,15 @@ export const communityRouter = router({
 					orderBy: { createdAt: "desc" },
 					where: { instanceId: input.instanceId },
 				}),
-				prisma.community.count({ where: { instanceId: input.instanceId } }),
-				prisma.instance.count({
+				ctx.prisma.community.count({ where: { instanceId: input.instanceId } }),
+				ctx.prisma.instance.count({
 					where: { enabled: true },
 				}),
-				prisma.$queryRaw`SELECT count(CASE WHEN cf.status = 'FEDERATED_BY_USER' THEN 1 ELSE NULL end)::int as completed, count(CASE WHEN cf.status IN ('FEDERATED_BY_BOT', 'IN_PROGRESS') THEN 1 ELSE NULL end)::int as inprogress from "CommunityFollow" cf`,
+				// SQLite-compatible query (replaced PostgreSQL ::int cast)
+				ctx.prisma.$queryRaw`SELECT 
+					CAST(SUM(CASE WHEN cf.status = 'FEDERATED_BY_USER' THEN 1 ELSE 0 END) AS INTEGER) as completed, 
+					CAST(SUM(CASE WHEN cf.status IN ('FEDERATED_BY_BOT', 'IN_PROGRESS') THEN 1 ELSE 0 END) AS INTEGER) as inprogress 
+				FROM "CommunityFollow" cf`,
 			]);
 
 		return {

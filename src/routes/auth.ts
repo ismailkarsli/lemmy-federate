@@ -1,26 +1,16 @@
-import crypto from "node:crypto";
 import { TRPCError } from "@trpc/server";
-import jwt from "jsonwebtoken";
 import ms from "ms";
 import * as z from "zod/v4";
 import { getGuarantees } from "../lib/fediseer.ts";
-import { InstanceSchema, prisma } from "../lib/prisma.ts";
+import { InstanceSchema } from "../lib/prisma.ts";
 import {
 	getDnsTxtRecords,
 	getInstanceSoftware,
 	isGenericAP,
 	randomString,
+	timingSafeEqual,
 } from "../lib/utils.ts";
-import { type JWTInstance, publicProcedure, router } from "../trpc.ts";
-
-const BLACKLISTED_INSTANCES =
-	process.env.BLACKLISTED_INSTANCES?.split(",") || [];
-const SECRET_KEY = process.env.SECRET_KEY;
-const MASTER_KEY = process.env.MASTER_KEY;
-
-if (!SECRET_KEY) {
-	throw new Error("SECRET_KEY is required");
-}
+import { type JWTInstance, publicProcedure, router, signJWT } from "../trpc.ts";
 
 const ResponseTypeSchema = z.union([
 	z.object({ instance: InstanceSchema }),
@@ -38,6 +28,11 @@ export const authRouter = router({
 		.output(ResponseTypeSchema)
 		.mutation(async ({ input: body, ctx }) => {
 			const host = body.instance.toLowerCase();
+			const BLACKLISTED_INSTANCES =
+				ctx.env.BLACKLISTED_INSTANCES?.split(",") || [];
+			const SECRET_KEY = ctx.env.SECRET_KEY;
+			const MASTER_KEY = ctx.env.MASTER_KEY;
+
 			if (BLACKLISTED_INSTANCES.includes(host)) {
 				throw new TRPCError({
 					code: "CONFLICT",
@@ -45,24 +40,20 @@ export const authRouter = router({
 				});
 			}
 
-			let instance = await prisma.instance.findFirst({
+			let instance = await ctx.prisma.instance.findFirst({
 				where: { host },
 				omit: { client_id: false, client_secret: false },
 			});
 
 			if (instance && body.apiKey) {
-				const encoder = new TextEncoder();
 				if (
 					MASTER_KEY &&
 					MASTER_KEY.length === body.apiKey.length &&
-					crypto.timingSafeEqual(
-						encoder.encode(MASTER_KEY),
-						encoder.encode(body.apiKey),
-					)
+					timingSafeEqual(MASTER_KEY, body.apiKey)
 				) {
 					// pass
 				} else {
-					const verification = await prisma.verification.findFirst({
+					const verification = await ctx.prisma.verification.findFirst({
 						where: { instanceId: instance.id, privateKey: body.apiKey },
 					});
 					if (!verification) {
@@ -87,7 +78,7 @@ export const authRouter = router({
 				const valid = ms("90 days");
 				const iat = Math.floor(Date.now() / 1000);
 				const exp = Math.floor((Date.now() + valid) / 1000);
-				const token = jwt.sign(
+				const token = await signJWT(
 					{
 						sub: instance.host,
 						iss: "lemmy-federate",
@@ -115,7 +106,7 @@ export const authRouter = router({
 
 				try {
 					const guaranteed =
-						((await getGuarantees(host))?.domains?.length ?? 0) > 0;
+						((await getGuarantees(host, ctx.kv))?.domains?.length ?? 0) > 0;
 					if (!guaranteed) throw new Error();
 				} catch (_e) {
 					throw new TRPCError({
@@ -125,7 +116,7 @@ export const authRouter = router({
 					});
 				}
 
-				instance = await prisma.instance.create({
+				instance = await ctx.prisma.instance.create({
 					data: {
 						host,
 						software: software.name,
@@ -143,8 +134,13 @@ export const authRouter = router({
 			}
 
 			const privateKey = randomString(16);
-			const publicKey = crypto.randomBytes(16).toString("hex");
-			await prisma.verification.create({
+			// Use Web Crypto for random bytes
+			const randomBytes = new Uint8Array(16);
+			crypto.getRandomValues(randomBytes);
+			const publicKey = Array.from(randomBytes)
+				.map((b) => b.toString(16).padStart(2, "0"))
+				.join("");
+			await ctx.prisma.verification.create({
 				data: { instanceId: instance.id, privateKey, publicKey },
 			});
 			return {

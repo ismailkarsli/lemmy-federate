@@ -1,74 +1,30 @@
-name: build and deploy
+name: Deploy to Cloudflare Workers
 
 on:
   push:
     branches: [main]
   workflow_dispatch:
 
-env:
-  DOCKER_IMAGE: ghcr.io/${{ github.repository }}:latest
-
 jobs:
-  build_push:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/checkout@v4
-      - id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: ${{ env.DOCKER_IMAGE }}
-      - uses: docker/setup-qemu-action@v3
-      - uses: docker/setup-buildx-action@v3
-      - uses: docker/login-action@v3
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: docker/build-push-action@v6
-        with:
-          push: true
-          tags: ${{ env.DOCKER_IMAGE }}
-          platforms: linux/amd64,linux/arm64
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  test:
+  deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: 24
           cache: "pnpm"
-      - run: |
-          pnpm install --frozen-lockfile
-          pnpm run db:generate
-      - run: pnpm run check
-
-  deploy:
-    if: github.ref_name == github.event.repository.default_branch
-    runs-on: lemy
-    needs: [build_push, test]
-    steps:
-      - run: |
-          docker pull ${{ env.DOCKER_IMAGE }}
-          if [ "$(docker ps -aq -f name=lemmy-federate)" ]; then
-            docker stop lemmy-federate
-            docker rm lemmy-federate
-          fi
-          docker run \
-            -e APP_URL -e BLACKLISTED_INSTANCES -e SECRET_KEY -e MASTER_KEY -e DATABASE_URL -e REDIS_URL \
-            --name lemmy-federate --detach -p 52312:3000 --restart on-failure --network lemylol_default \
-            $DOCKER_IMAGE
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm run db:generate
+      - run: pnpm run fe:build
+      - name: Deploy to Cloudflare Workers
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          secrets: |
+            SECRET_KEY
+            MASTER_KEY
         env:
-          APP_URL: ${{ vars.APP_URL }}
-          BLACKLISTED_INSTANCES: ${{ vars.BLACKLISTED_INSTANCES }}
           SECRET_KEY: ${{ secrets.SECRET_KEY }}
           MASTER_KEY: ${{ secrets.MASTER_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}

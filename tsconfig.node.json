@@ -4,6 +4,7 @@
 		"noEmit": true,
 		"target": "esnext",
 		"module": "nodenext",
+		"types": ["./src/types/worker-bindings.d.ts"],
 		"rewriteRelativeImportExtensions": true,
 		"erasableSyntaxOnly": true,
 		"verbatimModuleSyntax": true,

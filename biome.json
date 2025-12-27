@@ -31,6 +31,12 @@
 	},
 	"overrides": [
 		{
+			"includes": ["src/types/worker-bindings.d.ts"],
+			"linter": {
+				"enabled": false
+			}
+		},
+		{
 			"includes": ["**/*.vue"],
 			"linter": {
 				"rules": {

@@ -5,6 +5,7 @@
 		"lib": ["ESNext", "DOM", "DOM.Iterable", "ESNext.Array"],
 		"tsBuildInfoFile": "./node_modules/.tmp/tsconfig.frontend.tsbuildinfo",
 		"strict": true,
+		"types": ["./src/types/worker-bindings.d.ts"],
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,
 		"erasableSyntaxOnly": true,

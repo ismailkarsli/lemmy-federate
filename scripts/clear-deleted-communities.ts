@@ -1,20 +1,18 @@
-#!/usr/bin/env node
 import type { LemmyErrorType } from "lemmy-js-client";
 import {
 	getClient,
 	unfollowWithAllInstances,
 } from "../src/lib/federation-utils.ts";
-import { prisma } from "../src/lib/prisma.ts";
-import { isMain } from "../src/lib/utils.ts";
-
-if (isMain(import.meta.url)) {
-	clearDeletedCommunities();
-}
+import { KVCache } from "../src/lib/kv.ts";
+import { getPrisma } from "../src/lib/prisma.ts";
 
 /**
  * Check all communities and remove those that are deleted or removed
  */
-export async function clearDeletedCommunities() {
+export async function clearDeletedCommunities(env: CloudflareBindings) {
+	const prisma = getPrisma(env);
+	const kv = new KVCache(env.CACHE);
+
 	console.info("Clearing deleted communities");
 	const communities = await prisma.community.findMany({
 		include: {
@@ -26,7 +24,7 @@ export async function clearDeletedCommunities() {
 	for (const community of communities) {
 		let remove = false;
 		try {
-			const client = await getClient(community.instance);
+			const client = await getClient(community.instance, kv);
 			const c = await client.getCommunity(community.name);
 			// if the community is deleted/removed by user/admin or is not public, delete it
 			if (c.isRemoved || c.isDeleted || !c.public) {
@@ -43,7 +41,7 @@ export async function clearDeletedCommunities() {
 			}
 		}
 		if (remove) {
-			await unfollowWithAllInstances(community);
+			await unfollowWithAllInstances(community, prisma, kv);
 			await prisma.community.delete({
 				where: {
 					id: community.id,
