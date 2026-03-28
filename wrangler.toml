@@ -24,7 +24,7 @@ id = "b833ea68933f4bc58d8e9496ca3df22c"
 # Cron triggers for background jobs
 [triggers]
 crons = [
-  "*/1 * * * *",  # updateFollows, addNewCommunities - every minute
+  "* * * * *",  # updateFollows, addNewCommunities - every minute
   "0 0 * * *",    # addAllCommunities - daily at midnight
   "0 0 */2 * *",  # clearDeletedCommunities - every 2 days
 ]

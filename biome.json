@@ -38,17 +38,13 @@
 	},
 	"overrides": [
 		{
-			"includes": [
-				"src/types/worker-bindings.d.ts"
-			],
+			"includes": ["src/types/worker-bindings.d.ts"],
 			"linter": {
 				"enabled": false
 			}
 		},
 		{
-			"includes": [
-				"**/*.vue"
-			],
+			"includes": ["**/*.vue"],
 			"linter": {
 				"rules": {
 					"correctness": {

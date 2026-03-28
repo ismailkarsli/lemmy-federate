@@ -1,6 +1,10 @@
 import { trpcServer } from "@hono/trpc-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
+import { addAllCommunities } from "../scripts/add-all-communities.ts";
+import { addNewCommunities } from "../scripts/add-new-communities.ts";
+import { clearDeletedCommunities } from "../scripts/clear-deleted-communities.ts";
+import { updateFollows } from "../scripts/update-follows.ts";
 import { authRouter } from "./routes/auth.ts";
 import { communityRouter } from "./routes/community.ts";
 import { instanceRouter } from "./routes/instance.ts";
@@ -45,37 +49,20 @@ app.use(
 
 // Scheduled handler for cron jobs
 async function scheduled(
-	event: ScheduledEvent,
+	controller: ScheduledController,
 	env: CloudflareBindings,
-	_ctx: ExecutionContext,
+	ctx: ExecutionContext,
 ) {
-	// Import job functions dynamically to avoid circular dependencies
-	const { updateFollows } = await import("../scripts/update-follows.ts");
-	const { addNewCommunities } = await import(
-		"../scripts/add-new-communities.ts"
-	);
-	const { addAllCommunities } = await import(
-		"../scripts/add-all-communities.ts"
-	);
-	const { clearDeletedCommunities } = await import(
-		"../scripts/clear-deleted-communities.ts"
-	);
-
-	const hour = new Date(event.scheduledTime).getUTCHours();
-	const day = new Date(event.scheduledTime).getUTCDate();
-
-	// Every minute jobs
-	await updateFollows(env);
-	await addNewCommunities(env);
-
-	// Daily at midnight (hour 0)
-	if (hour === 0) {
-		await addAllCommunities(env);
-
-		// Every 2 days (odd days)
-		if (day % 2 === 1) {
-			await clearDeletedCommunities(env);
-		}
+	switch (controller.cron) {
+		case "* * * * *":
+			ctx.waitUntil(Promise.all([updateFollows(env), addNewCommunities(env)]));
+			break;
+		case "0 0 * * *":
+			ctx.waitUntil(addAllCommunities(env));
+			break;
+		case "0 0 */2 * *":
+			ctx.waitUntil(clearDeletedCommunities(env));
+			break;
 	}
 }
 
