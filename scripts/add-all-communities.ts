@@ -1,11 +1,15 @@
-import { getPrisma } from "../src/lib/prisma.ts";
+#!/usr/bin/env node
+import { prisma } from "../src/lib/prisma.ts";
+import { isMain } from "../src/lib/utils.ts";
+
+if (isMain(import.meta.url)) {
+	addAllCommunities();
+}
 
 /**
  * Fetch all communities from Lemmyverse.net and add them to the database if they don't exist
  */
-export async function addAllCommunities(env: CloudflareBindings) {
-	const prisma = getPrisma(env);
-
+export async function addAllCommunities() {
 	console.info("Adding communities from Lemmyverse");
 	const instances = await prisma.instance.findMany({
 		where: {
@@ -22,7 +26,7 @@ export async function addAllCommunities(env: CloudflareBindings) {
 		"https://data.lemmyverse.net/data/community.json",
 	)
 		.then((r) => r.json())
-		.then((r) => (r as { count: number }).count);
+		.then((r) => r.count);
 
 	if (!pageCount) {
 		throw new Error("No page count found");

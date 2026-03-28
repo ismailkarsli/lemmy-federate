@@ -8,6 +8,7 @@ import {
 	type LoginResponse,
 } from "lemmy-js-client";
 import ms from "ms";
+import pThrottle from "p-throttle";
 import type { LFClient, LFCommunity } from "../types/LFClient.ts";
 
 const lemmyCommunityToCommunity = (cv: CommunityView): LFCommunity => ({
@@ -78,7 +79,12 @@ export class LemmyClient implements LFClient {
 	 */
 	private async getHttpClient() {
 		if (!this.httpClient) {
+			const throttledFetch = pThrottle({
+				limit: 1,
+				interval: 1000,
+			})(fetch);
 			const api = ky.create({
+				fetch: throttledFetch,
 				timeout: ms("60 seconds"),
 				retry: 0,
 				headers: {

@@ -6,12 +6,8 @@
 		"useIgnoreFile": true,
 		"defaultBranch": "main"
 	},
-	"assist": {
-		"actions": {
-			"source": {
-				"organizeImports": "on"
-			}
-		}
+	"files": {
+		"ignoreUnknown": true
 	},
 	"formatter": {
 		"enabled": true
@@ -26,9 +22,6 @@
 		}
 	},
 	"html": {
-		"formatter": {
-			"enabled": true
-		},
 		"experimentalFullSupportEnabled": true
 	},
 	"css": {
@@ -37,12 +30,6 @@
 		}
 	},
 	"overrides": [
-		{
-			"includes": ["src/types/worker-bindings.d.ts"],
-			"linter": {
-				"enabled": false
-			}
-		},
 		{
 			"includes": ["**/*.vue"],
 			"linter": {

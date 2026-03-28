@@ -1,26 +1,41 @@
+import { serve } from "@hono/node-server";
+import { serveStatic } from "@hono/node-server/serve-static";
 import { trpcServer } from "@hono/trpc-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
-import { addAllCommunities } from "../scripts/add-all-communities.ts";
-import { addNewCommunities } from "../scripts/add-new-communities.ts";
-import { clearDeletedCommunities } from "../scripts/clear-deleted-communities.ts";
-import { updateFollows } from "../scripts/update-follows.ts";
+import { rateLimiter } from "hono-rate-limiter";
+import * as z from "zod/v4";
+import { startJobs } from "../scripts/start-jobs.ts";
 import { authRouter } from "./routes/auth.ts";
 import { communityRouter } from "./routes/community.ts";
 import { instanceRouter } from "./routes/instance.ts";
 import { createContext, router } from "./trpc.ts";
 
-const app = new Hono<{ Bindings: CloudflareBindings }>();
+const APP_URL = z.parse(z.string(), process.env.APP_URL);
+const NODE_ENV = z.parse(z.string(), process.env.NODE_ENV);
+
+const app = new Hono();
 
 app.use(
 	"/api/*",
 	cors({
-		origin: (origin) => {
-			// In production, allow requests from the same origin
-			// Workers automatically handle same-origin requests
-			return origin;
-		},
+		origin:
+			NODE_ENV === "production"
+				? APP_URL
+				: [APP_URL, "http://localhost:3000", "http://localhost:5173"],
 		credentials: true,
+	}),
+);
+app.use(
+	rateLimiter({
+		windowMs: 60 * 1000,
+		limit: NODE_ENV === "production" ? 100 : 1000,
+		keyGenerator: (c) =>
+			c.req.header("x-forwarded-for") ??
+			c.req.header("x-real-ip") ??
+			c.req.header("remote-addr") ??
+			c.req.header("cf-connecting-ip") ??
+			"anon",
 	}),
 );
 
@@ -47,27 +62,27 @@ app.use(
 	}),
 );
 
-// Scheduled handler for cron jobs
-async function scheduled(
-	controller: ScheduledController,
-	env: CloudflareBindings,
-	ctx: ExecutionContext,
-) {
-	switch (controller.cron) {
-		case "* * * * *":
-			ctx.waitUntil(Promise.all([updateFollows(env), addNewCommunities(env)]));
-			break;
-		case "0 0 * * *":
-			ctx.waitUntil(addAllCommunities(env));
-			break;
-		case "0 0 */2 * *":
-			ctx.waitUntil(clearDeletedCommunities(env));
-			break;
-	}
-}
+if (NODE_ENV === "production") startJobs();
 
-// Export for Cloudflare Workers
-export default {
-	fetch: app.fetch,
-	scheduled,
-};
+app.all("/assets/*", serveStatic({ root: "./frontend/dist" }));
+app.get("/favicon.ico", serveStatic({ path: "./frontend/dist/favicon.ico" }));
+app.all("*", serveStatic({ path: "./frontend/dist/index.html" }));
+
+const server = serve(app);
+
+server.on("listening", () => {
+	console.info(`Serving on ${APP_URL}`);
+});
+process.on("SIGINT", () => {
+	server.close();
+	process.exit(0);
+});
+process.on("SIGTERM", () => {
+	server.close((err) => {
+		if (err) {
+			console.error(err);
+			process.exit(1);
+		}
+		process.exit(0);
+	});
+});

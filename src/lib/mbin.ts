@@ -1,6 +1,7 @@
 import ky, { type KyInstance } from "ky";
 import type { ListCommunities } from "lemmy-js-client";
 import ms from "ms";
+import pThrottle from "p-throttle";
 import * as z from "zod/v4";
 import type { LFClient, LFCommunity } from "../types/LFClient.ts";
 
@@ -146,6 +147,10 @@ export class MbinClient implements LFClient {
 
 	private getHttpClient(): KyInstance {
 		this.httpClient ??= ky.create({
+			fetch: pThrottle({
+				limit: 1,
+				interval: 1000,
+			})(fetch),
 			timeout: ms("60 seconds"),
 			retry: { limit: 0 },
 			headers: {

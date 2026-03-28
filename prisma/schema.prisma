@@ -6,7 +6,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model Instance {
@@ -26,7 +27,7 @@ model Instance {
   allowed          Instance[]        @relation("InstanceAllows")
   blockedBy        Instance[]        @relation("InstanceBlocks")
   blocked          Instance[]        @relation("InstanceBlocks")
-  verifications    Verification[]
+  verifications            Verification[]
   communityFollows CommunityFollow[]
 }
 
@@ -34,7 +35,7 @@ model Verification {
   instance   Instance @relation(fields: [instanceId], references: [id], onDelete: Cascade)
   instanceId Int
   privateKey String
-  publicKey  String
+  publicKey String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @default(now()) @updatedAt
 
@@ -60,7 +61,7 @@ model CommunityFollow {
   community    Community             @relation(fields: [communityId], references: [id], onDelete: Cascade)
   communityId  Int
   createdAt    DateTime              @default(now())
-  updatedAt    DateTime              @default(now()) @updatedAt
+  updatedAt    DateTime              @default(dbgenerated("'2000-01-01T00:00:00Z'::timestamp")) @updatedAt
   status       CommunityFollowStatus @default(WAITING)
   errorReason  String?
   attemptCount Int                   @default(0)

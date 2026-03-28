@@ -5,16 +5,15 @@ import {
 	FediseerUsage,
 	type Instance,
 	NSFW,
-	type PrismaClient,
 } from "@prisma/client";
 import { HTTPError, TimeoutError } from "ky";
 import ms from "ms";
 import type { LFClient, LFCommunity } from "../types/LFClient.ts";
 import { ActivityPubClient } from "./activity-pub-client.ts";
 import { getCensuresGiven, getEndorsements } from "./fediseer.ts";
-import type { KVCache } from "./kv.ts";
 import { LemmyClient } from "./lemmy.ts";
 import { MbinClient } from "./mbin.ts";
+import { prisma } from "./prisma.ts";
 import { isGenericAP } from "./utils.ts";
 
 /**
@@ -27,15 +26,12 @@ const clientCacheMap = new Map<
 		expiration: Date;
 	}
 >();
-export const getClient = async (
-	{
-		host,
-		software,
-		client_id,
-		client_secret,
-	}: Pick<Instance, "host" | "client_id" | "client_secret" | "software">,
-	kv: KVCache,
-) => {
+export const getClient = async ({
+	host,
+	software,
+	client_id,
+	client_secret,
+}: Pick<Instance, "host" | "client_id" | "client_secret" | "software">) => {
 	const key = client_id ? `${host}-${client_id}` : host;
 	const cached = clientCacheMap.get(key);
 	if (cached && cached.expiration > new Date()) {
@@ -51,7 +47,7 @@ export const getClient = async (
 	} else if (software === "mbin") {
 		client = new MbinClient(host, id, secret);
 	} else {
-		client = new ActivityPubClient(host, kv);
+		client = new ActivityPubClient(host);
 	}
 
 	clientCacheMap.set(key, {
@@ -79,7 +75,6 @@ export const conditionalFollow = async (
 			};
 		};
 	},
-	kv: KVCache,
 ): Promise<CommunityFollowStatus> => {
 	const { instance, community } = communityFollow;
 	/**
@@ -152,20 +147,20 @@ export const conditionalFollow = async (
 	}
 
 	// client of the instance that will subscribe to the community
-	const localClient = await getClient(instance, kv);
+	const localClient = await getClient(instance);
 	// instance where the community is hosted
-	const remoteClient = await getClient(community.instance, kv);
+	const remoteClient = await getClient(community.instance);
 
 	/**
 	 * Check instance's Fediseer policy.
 	 */
 	if (instance.fediseer === FediseerUsage.BLACKLIST_ONLY) {
-		const censures = await getCensuresGiven(instance.host, kv);
+		const censures = await getCensuresGiven(instance.host);
 		if (censures.domains.includes(community.instance.host)) {
 			return CommunityFollowStatus.NOT_ALLOWED;
 		}
 	} else if (instance.fediseer === FediseerUsage.WHITELIST_ONLY) {
-		const endorsements = await getEndorsements(community.instance.host, kv);
+		const endorsements = await getEndorsements(community.instance.host);
 		if (!endorsements.domains.includes(instance.host)) {
 			return CommunityFollowStatus.NOT_ALLOWED;
 		}
@@ -250,8 +245,6 @@ export const conditionalFollowWithAllInstances = async (
 	community: Community & {
 		instance: Instance;
 	},
-	prisma: PrismaClient,
-	kv: KVCache,
 ) => {
 	const communityFollows = await prisma.communityFollow.findMany({
 		where: {
@@ -284,7 +277,7 @@ export const conditionalFollowWithAllInstances = async (
 			let status: CommunityFollowStatus = CommunityFollowStatus.WAITING;
 			let errorReason: string | null = null;
 			try {
-				status = await conditionalFollow(cf, kv);
+				status = await conditionalFollow(cf);
 			} catch (e) {
 				status = CommunityFollowStatus.ERROR;
 				errorReason = getFederationErrorReason(e);
@@ -298,11 +291,7 @@ export const conditionalFollowWithAllInstances = async (
 	);
 };
 
-export const unfollowWithAllInstances = async (
-	community: Community,
-	prisma: PrismaClient,
-	kv: KVCache,
-) => {
+export const unfollowWithAllInstances = async (community: Community) => {
 	const communityFollows = await prisma.communityFollow.findMany({
 		where: {
 			communityId: community.id,
@@ -319,7 +308,7 @@ export const unfollowWithAllInstances = async (
 
 	for (const cf of communityFollows) {
 		try {
-			const client = await getClient(cf.instance, kv);
+			const client = await getClient(cf.instance);
 
 			const { id } = await client.getCommunity(
 				`${cf.community.name}@${cf.community.instance.host}`,
@@ -349,7 +338,6 @@ export function getFederationErrorReason(err: unknown): string {
 
 export async function resetSubscriptions(
 	instance: Instance,
-	prisma: PrismaClient,
 	opts: { soft?: boolean } = {},
 ) {
 	// make all follows "WAITING"
@@ -368,6 +356,18 @@ export async function resetSubscriptions(
 	if (!(instance.client_id && instance.client_secret)) {
 		throw new Error("Bot name and password are required");
 	}
-	// Note: For full reset, we'd need KV, but soft reset doesn't need it
-	// This function is called without KV in soft reset mode
+	const client = await getClient(instance);
+	while (true) {
+		const subscriptions = await client.listCommunities({
+			type_: "Subscribed",
+			limit: 50,
+			page: 1,
+		});
+		if (subscriptions.length === 0) {
+			break;
+		}
+		for (const subscription of subscriptions) {
+			await client.followCommunity(subscription.id, false);
+		}
+	}
 }
