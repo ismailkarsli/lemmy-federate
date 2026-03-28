@@ -1,6 +1,6 @@
 name = "lemmy-federate"
 main = "src/index.ts"
-compatibility_date = "2024-12-01"
+compatibility_date = "2026-03-28"
 compatibility_flags = ["nodejs_compat"]
 
 # Static assets from frontend build
@@ -17,12 +17,6 @@ migrations_dir = "prisma/migrations"
 [[kv_namespaces]]
 binding = "CACHE"
 id = "b833ea68933f4bc58d8e9496ca3df22c"
-
-# Environment variables (secrets set via `wrangler secret put`)
-# SECRET_KEY, MASTER_KEY, BLACKLISTED_INSTANCES
-
-[vars]
-NODE_ENV = "production"
 
 # Cron triggers for background jobs
 [triggers]

@@ -9,6 +9,13 @@
 	"files": {
 		"ignoreUnknown": true
 	},
+	"assist": {
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	},
 	"formatter": {
 		"enabled": true
 	},
@@ -22,6 +29,9 @@
 		}
 	},
 	"html": {
+		"formatter": {
+			"enabled": true
+		},
 		"experimentalFullSupportEnabled": true
 	},
 	"css": {
@@ -31,20 +41,11 @@
 	},
 	"overrides": [
 		{
-			"includes": ["src/types/worker-bindings.d.ts"],
+			"includes": [
+				"src/types/worker-bindings.d.ts"
+			],
 			"linter": {
 				"enabled": false
-			}
-		},
-		{
-			"includes": ["**/*.vue"],
-			"linter": {
-				"rules": {
-					"correctness": {
-						"noUnusedVariables": "off",
-						"noUnusedImports": "off"
-					}
-				}
 			}
 		}
 	]
