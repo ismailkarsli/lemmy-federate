@@ -4,7 +4,10 @@ compatibility_date = "2026-03-28"
 compatibility_flags = ["nodejs_compat"]
 
 # Static assets from frontend build
-assets = { directory = "frontend/dist" }
+[assets]
+directory = "frontend/dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
 
 # D1 Database
 [[d1_databases]]
