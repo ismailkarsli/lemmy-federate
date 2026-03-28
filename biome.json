@@ -6,9 +6,6 @@
 		"useIgnoreFile": true,
 		"defaultBranch": "main"
 	},
-	"files": {
-		"ignoreUnknown": true
-	},
 	"assist": {
 		"actions": {
 			"source": {
@@ -46,6 +43,19 @@
 			],
 			"linter": {
 				"enabled": false
+			}
+		},
+		{
+			"includes": [
+				"**/*.vue"
+			],
+			"linter": {
+				"rules": {
+					"correctness": {
+						"noUnusedVariables": "off",
+						"noUnusedImports": "off"
+					}
+				}
 			}
 		}
 	]

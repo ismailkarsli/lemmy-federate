@@ -35,11 +35,11 @@ function getJsonAsTree(
 </script>
 
 <template>
-  <v-treeview
-    :items="[getJsonAsTree('Object', props.object, 'parent')]"
-    item-value="id"
-    open-all
-    density="compact"
-    fluid
-  ></v-treeview>
+	<v-treeview
+		:items="[getJsonAsTree('Object', props.object, 'parent')]"
+		item-value="id"
+		open-all
+		density="compact"
+		fluid
+	></v-treeview>
 </template>

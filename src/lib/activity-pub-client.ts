@@ -166,6 +166,7 @@ export class ActivityPubClient implements LFClient {
 			};
 		} finally {
 			// Restore original loader
+			// biome-ignore lint/suspicious/noExplicitAny: idk
 			(jsonld as any).documentLoader = originalLoader;
 		}
 	}

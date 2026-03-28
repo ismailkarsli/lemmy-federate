@@ -1,12 +1,9 @@
 ignoredBuiltDependencies:
   - esbuild
-  - msgpackr-extract
   - sharp
   - vue-demi
 
 onlyBuiltDependencies:
-  - '@biomejs/biome'
-  - '@prisma/client'
   - '@prisma/engines'
   - prisma
   - workerd

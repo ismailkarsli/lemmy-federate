@@ -49,50 +49,58 @@ const { mutate: submit, isPending } = useMutation({
 </script>
 
 <template>
-<v-container width="640">
-    <v-app-bar-title class="mb-4">
-        Manage instance
-    </v-app-bar-title>
-    <v-form @submit.prevent="submit()">
-        <v-text-field
-          v-model="instance"
-          label="Instance"
-          :loading="isPending"
-          id="username"
-          name="username"
-          autocomplete="username"
-        />
-        <v-text-field
-          v-model="apiKey"
-          label="API Key (optional)"
-          :loading="isPending"
-          id="current-password"
-          name="current-password"
-          autocomplete="current-password"
-        />
+	<v-container width="640">
+		<v-app-bar-title class="mb-4">Manage instance </v-app-bar-title>
+		<v-form @submit.prevent="submit()">
+			<v-text-field
+				v-model="instance"
+				label="Instance"
+				:loading="isPending"
+				id="username"
+				name="username"
+				autocomplete="username"
+			/>
+			<v-text-field
+				v-model="apiKey"
+				label="API Key (optional)"
+				:loading="isPending"
+				id="current-password"
+				name="current-password"
+				autocomplete="current-password"
+			/>
 
-        <v-card-actions>
-          <v-spacer></v-spacer>
-          <v-btn type="submit" color="primary" variant="text"
-            >Login
-          </v-btn>
-        </v-card-actions>
-        <v-alert v-if="alert" :type="alert.type" prominent>
-          {{ alert.message }}
-        </v-alert>
-        <div v-if="publicKey && privateKey">
-          <p class="my-2">
-          API key generated successfully. To use it, add the following TXT record to your instance's DNS.
-          </p>
-          <v-text-field :value="`lemmy-federate-verification=${publicKey}`" variant="solo" density="compact" hide-details></v-text-field>
-          <p class="mt-4 mb-2">
-            You can then log in using this API key. Make sure you save it.
-          </p>
-          <v-text-field :value="privateKey" variant="solo" density="compact" hide-details></v-text-field>
-        </div>
-        <div v-else-if="!apiKey">
-          If you have not created an API key before, you can leave that field blank.
-        </div>
-    </v-form>
-</v-container>
+			<v-card-actions>
+				<v-spacer></v-spacer>
+				<v-btn type="submit" color="primary" variant="text">Login </v-btn>
+			</v-card-actions>
+			<v-alert v-if="alert" :type="alert.type" prominent>
+				{{ alert.message }}
+			</v-alert>
+			<div v-if="publicKey && privateKey">
+				<p class="my-2">
+					API key generated successfully. To use it, add the following TXT
+					record to your instance's DNS.
+				</p>
+				<v-text-field
+					:value="`lemmy-federate-verification=${publicKey}`"
+					variant="solo"
+					density="compact"
+					hide-details
+				></v-text-field>
+				<p class="mt-4 mb-2">
+					You can then log in using this API key. Make sure you save it.
+				</p>
+				<v-text-field
+					:value="privateKey"
+					variant="solo"
+					density="compact"
+					hide-details
+				></v-text-field>
+			</div>
+			<div v-else-if="!apiKey">
+				If you have not created an API key before, you can leave that field
+				blank.
+			</div>
+		</v-form>
+	</v-container>
 </template>
