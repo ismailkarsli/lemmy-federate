@@ -25,8 +25,8 @@ jobs:
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          username: ${{ github.repository_owner }}
+          password: ${{ github.token }}
       - uses: docker/build-push-action@v6
         with:
           push: true
@@ -51,7 +51,7 @@ jobs:
       - run: pnpm run check
 
   deploy:
-    if: github.ref_name == github.event.repository.default_branch
+    if: 0 && github.ref_name == github.event.repository.default_branch
     runs-on: lemy
     needs: [build_push, test]
     steps:
