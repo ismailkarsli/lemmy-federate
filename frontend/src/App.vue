@@ -45,11 +45,11 @@ const { mobile: isMobile } = useDisplay();
     <v-footer class="flex-grow-0 mb-2 bg-transparent text-no-wrap d-flex flex-column flex-sm-row"
       style="margin: 0 auto; width: 100%; max-width: 1200px;">
       <div>
-        <v-btn href="https://github.com/ismailkarsli/lemmy-federate" variant="text" class="text-none" target="_blank">
+        <v-btn href="https://github.com/Fedihosting-Foundation-Forks/lemmy-federate" variant="text" class="text-none" target="_blank">
           <v-icon size="x-large" class="mr-2">mdi-github</v-icon>
           Star on Github
         </v-btn>
-        <v-btn href="https://lemmyverse.link/c/lemmyfederate@lemy.lol" variant="text" class="text-none" target="_blank">
+        <v-btn href="https://lemmyverse.link/c/lemmyfederate@lemmy.world" variant="text" class="text-none" target="_blank">
           <img src="./assets/lemmy.svg" class="v-icon v-icon--size-x-large mr-2">
           Subscribe on Lemmy
         </v-btn>
