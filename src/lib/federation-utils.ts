@@ -336,6 +336,25 @@ export function getFederationErrorReason(err: unknown): string {
 	if (err instanceof TimeoutError) {
 		return "timed out";
 	}
+	if (err instanceof TypeError) {
+		if (err.cause.syscall === "getaddrinfo" && err.cause.code === "ENOTFOUND") {
+			return "DNS resolution failed";
+		}
+		if (err.cause.name === "SocketError" && err.cause.code === "UND_ERR_SOCKET") {
+			try {
+				return err.cause.stack.split("\n")[0];
+			} catch {
+				console.error(err);
+				return err.cause.name;
+			}
+		} else if (err.cause.code === "ERR_TLS_CERT_ALTNAME_INVALID") {
+			try {
+				return err.cause.stack.split("\n")[0];
+			} catch {
+				return err.cause.code;
+			}
+		}
+	}
 	console.error(err);
 	return "unknown";
 }
