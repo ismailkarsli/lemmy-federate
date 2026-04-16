@@ -2,6 +2,8 @@ import { TRPCError } from "@trpc/server";
 import ky, { HTTPError } from "ky";
 import { redis } from "./redis.ts";
 
+const FEDISEER_REQUEST_TIMEOUT = 60000;
+
 type FediseerResponse = {
 	domains: string[];
 };
@@ -34,7 +36,10 @@ export const getGuarantees = async (instance: string) => {
 
 		const guarantees = await ky<FediseerResponse>(
 			`https://fediseer.com/api/v1/guarantees/${instance}`,
-			{ searchParams: { domains: true } },
+			{
+				searchParams: { domains: true },
+				timeout: FEDISEER_REQUEST_TIMEOUT,
+			},
 		).json();
 		await cache.set(guarantees);
 		return guarantees;
@@ -56,6 +61,7 @@ export const getCensuresGiven = async (instance: string) => {
 			`https://fediseer.com/api/v1/censures_given/${instance}`,
 			{
 				searchParams: { domains: true },
+				timeout: FEDISEER_REQUEST_TIMEOUT,
 			},
 		).json();
 		await cache.set(censures);
@@ -80,7 +86,10 @@ export const getEndorsements = async (instance: string) => {
 		if (cached) return cached;
 		const endorsements = await ky<FediseerResponse>(
 			`https://fediseer.com/api/v1/endorsements/${instance}`,
-			{ searchParams: { domains: true } },
+			{
+				searchParams: { domains: true },
+				timeout: FEDISEER_REQUEST_TIMEOUT,
+			},
 		).json();
 		await cache.set(endorsements);
 		return endorsements;
