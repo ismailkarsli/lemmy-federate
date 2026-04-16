@@ -328,6 +328,10 @@ export function getFederationErrorReason(err: unknown): string {
 		if (err.response.status === 429) {
 			return "rate limited";
 		}
+		if (err.response.status === 502) {
+			return "502 bad gateway";
+		}
+		return `HTTP status ${err.response.status}`;
 	}
 	if (err instanceof TimeoutError) {
 		return "timed out";
