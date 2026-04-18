@@ -105,3 +105,16 @@ export function randomString(length: number) {
 	}
 	return result;
 }
+
+export function isErrnoException(
+	error: unknown,
+): error is NodeJS.ErrnoException {
+	return (
+		error instanceof Error &&
+		// make sure the error contains at least one of the expected properties
+		("code" in error ||
+			"errno" in error ||
+			"path" in error ||
+			"syscall" in error)
+	);
+}
