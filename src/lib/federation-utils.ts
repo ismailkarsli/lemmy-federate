@@ -14,7 +14,7 @@ import { getCensuresGiven, getEndorsements } from "./fediseer.ts";
 import { LemmyClient } from "./lemmy.ts";
 import { MbinClient } from "./mbin.ts";
 import { prisma } from "./prisma.ts";
-import { isGenericAP } from "./utils.ts";
+import { isErrnoException, isGenericAP } from "./utils.ts";
 
 /**
  * Caches LemmyClient and MbinClient instances to avoid creating new instances and authenticating them
@@ -336,23 +336,18 @@ export function getFederationErrorReason(err: unknown): string {
 	if (err instanceof TimeoutError) {
 		return "timed out";
 	}
-	if (err instanceof TypeError) {
+	if (err instanceof TypeError && isErrnoException(err.cause)) {
 		if (err.cause.syscall === "getaddrinfo" && err.cause.code === "ENOTFOUND") {
 			return "DNS resolution failed";
 		}
-		if (err.cause.name === "SocketError" && err.cause.code === "UND_ERR_SOCKET") {
-			try {
-				return err.cause.stack.split("\n")[0];
-			} catch {
-				console.error(err);
-				return err.cause.name;
-			}
-		} else if (err.cause.code === "ERR_TLS_CERT_ALTNAME_INVALID") {
-			try {
-				return err.cause.stack.split("\n")[0];
-			} catch {
-				return err.cause.code;
-			}
+		if (
+			err.cause.name === "SocketError" &&
+			err.cause.code === "UND_ERR_SOCKET"
+		) {
+			return err.cause.stack?.split("\n")[0] ?? err.cause.name;
+		}
+		if (err.cause.code === "ERR_TLS_CERT_ALTNAME_INVALID") {
+			return err.cause.stack?.split("\n")[0] ?? err.cause.code;
 		}
 	}
 	console.error(err);
